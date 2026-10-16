@@ -208,10 +208,30 @@ describe("site and session model (ChargingSessionFlow)", () => {
     expect(grantedPower(SITES.dc, 350, 600)).toMatchObject({ kw: 0, suspended: true });
   });
 
-  it("suspends an AC session when the share falls below the 6 A pilot minimum", () => {
+  it("suspends an AC session only when the site's offer falls below the 6 A pilot minimum", () => {
     const g = grantedPower(SITES.ac, 11.5, 59);
     expect(g.suspended).toBe(true);
+    expect(g.pilotDuty).toBeNull();
     expect(grantedPower(SITES.ac, 7.7, 0)).toMatchObject({ kw: 7.7, limitedBy: "vehicle", suspended: false });
+  });
+
+  it("advertises the EVSE's offer on the AC pilot, independent of what the car draws", () => {
+    // a small on-board charger still sees the full 80 A offer
+    const small = grantedPower(SITES.ac, 3.3, 0);
+    expect(small).toMatchObject({ kw: 3.3, limitedBy: "vehicle", suspended: false });
+    expect(small.pilotAmps).toBeCloseTo(80, 6);
+    expect(small.pilotDuty).toBeCloseTo(96, 6);
+    expect(small.drawAmps).toBeCloseTo(13.75, 6);
+    // the slider minimum (1.4 kW = 5.8 A) is a draw below 6 A, not a suspension, when the site has headroom
+    const tiny = grantedPower(SITES.ac, 1.4, 36);
+    expect(tiny).toMatchObject({ kw: 1.4, suspended: false });
+    expect(tiny.pilotAmps).toBeCloseTo(80, 6);
+    expect(tiny.drawAmps).toBeCloseTo(5.83, 2);
+    // with 10 kW free the offer, not the car, sets the duty cycle
+    const capped = grantedPower(SITES.ac, 11.5, 50);
+    expect(capped).toMatchObject({ kw: 10, offerKw: 10, limitedBy: "site", suspended: false });
+    expect(capped.pilotAmps).toBeCloseTo(41.67, 2);
+    expect(capped.pilotDuty).toBeCloseTo(69.44, 2);
   });
 
   it("maps J1772 pilot duty cycle to amps both ways", () => {
@@ -294,9 +314,71 @@ describe("visualization behaviour", () => {
     fireEvent.change(screen.getByRole("slider", { name: /other stalls/i }), { target: { value: "500" } });
     expect(container.textContent).toMatch(/granted 100 kW, set by the site's load-management cap/);
     fireEvent.click(screen.getByRole("radio", { name: "AC Level 2" }));
-    expect(container.textContent).toMatch(/47\.9 A at 240 V, a 79\.9 % pilot duty cycle/);
+    // default AC state: 11.5 kW on-board charger, 24 kW of headroom on a 19.2 kW (80 A) port
+    expect(container.textContent).toMatch(/EVSE offers 80\.0 A \(96\.0 % duty\); car draws 47\.9 A/);
+    fireEvent.change(screen.getByRole("slider", { name: /on-board charger draws/i }), { target: { value: "1.4" } });
+    expect(container.textContent).toMatch(/EVSE offers 80\.0 A \(96\.0 % duty\); car draws 5\.8 A/);
+    expect(container.textContent).not.toMatch(/SuspendedEVSE/);
+    fireEvent.change(screen.getByRole("slider", { name: /other stalls/i }), { target: { value: "50" } });
+    expect(container.textContent).toMatch(/EVSE offers 41\.7 A \(69\.4 % duty\); car draws 5\.8 A/);
     fireEvent.change(screen.getByRole("slider", { name: /other stalls/i }), { target: { value: "59" } });
-    expect(container.textContent).toMatch(/SuspendedEVSE/);
+    expect(container.textContent).toMatch(/below the 6 A pilot minimum.*SuspendedEVSE/);
+  });
+});
+
+describe("quiz answer positions", () => {
+  it("spreads correct answers across A-D and does not make the answer the longest choice", () => {
+    const overall = [0, 0, 0, 0];
+    let answerIsLongest = 0;
+    let total = 0;
+    for (const { slug, data } of lessons) {
+      const perLesson = [0, 0, 0, 0];
+      for (const q of data.quiz) {
+        overall[q.answer]++;
+        perLesson[q.answer]++;
+        total++;
+        const lengths = q.choices.map((c) => c.length);
+        const max = Math.max(...lengths);
+        if (lengths[q.answer] === max && lengths.filter((l) => l === max).length === 1) answerIsLongest++;
+      }
+      // always picking the same letter must not pass a lesson's quiz
+      expect(Math.max(...perLesson), slug).toBeLessThanOrEqual(3);
+    }
+    for (const n of overall) expect(n).toBeGreaterThanOrEqual(4);
+    expect(answerIsLongest).toBeLessThanOrEqual(Math.floor(total / 4));
+  });
+});
+
+/** Attributes holding a number with more than two decimals, such as raw Math.cos or Math.exp output. */
+function overPrecise(root: Element): string[] {
+  const bad: string[] = [];
+  for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
+    for (const a of Array.from(el.attributes)) {
+      if (/\d\.\d{3,}/.test(a.value)) bad.push(`<${el.tagName} ${a.name}="${a.value}">`);
+    }
+  }
+  return bad;
+}
+
+describe("hydration-safe SVG coordinates", () => {
+  it("keeps every coordinate in the three static figures to two decimals", () => {
+    for (const { slug, Lesson } of lessons) {
+      const { container } = render(<Lesson />);
+      const figures = Array.from(container.querySelectorAll("#theory figure svg"));
+      expect(figures.length, slug).toBeGreaterThan(0);
+      for (const f of figures) expect(overPrecise(f), slug).toEqual([]);
+      cleanup();
+    }
+  });
+
+  it("rounds the charging-curve markers and paths, which come from Math.exp", () => {
+    const { container } = render(<ChargingCurve />);
+    for (const t of ["-7", "3", "17", "33", "47"]) {
+      fireEvent.change(screen.getByRole("slider", { name: /pack temperature/i }), { target: { value: t } });
+      const marks = Array.from(container.querySelectorAll("svg circle, svg path"));
+      expect(marks.length).toBeGreaterThan(3);
+      for (const m of marks) expect(overPrecise(m), t).toEqual([]);
+    }
   });
 });
 

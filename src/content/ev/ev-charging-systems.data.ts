@@ -106,49 +106,55 @@ const data: LessonData = {
     },
     {
       q: "During DC fast charging, where is AC converted to DC?",
-      choices: ["In the car's on-board charger", "In the charging station's power modules", "In the battery cells", "In the utility transformer"],
-      answer: 1,
+      choices: ["In the car's on-board charger", "In the battery cells themselves", "In the utility's pad-mount transformer", "In the station's power modules"],
+      answer: 3,
       explain:
         "A DC fast charger rectifies grid AC and converts it to the DC voltage and current the car requests, delivering it straight to the battery and bypassing the on-board charger. The utility transformer only changes AC voltage.",
     },
     {
       q: "OCPP is the protocol between",
       choices: [
-        "the car and the charger",
         "the charger and the operator's backend (CSMS)",
-        "the battery cells and the BMS",
-        "the utility meter and the transformer",
+        "the car's BMS and the charger, over the pilot wire",
+        "the battery cells and the module monitor board",
+        "the utility meter and the site's transformer",
       ],
-      answer: 1,
+      answer: 0,
       explain:
-        "OCPP carries authorization, transactions, meter values, status and charging profiles between a charger and its backend. The car-to-charger conversation is ISO 15118 or DIN SPEC 70121 over powerline communication.",
+        "OCPP carries authorization, transactions, meter values, status and charging profiles between a charger and its backend. The car-to-charger conversation over the pilot wire is ISO 15118 or DIN SPEC 70121.",
     },
     {
       q: "Plug & Charge, where the car authenticates itself with a certificate, is defined in",
-      choices: ["OCPP 1.6", "ISO 15118", "The J1772 pilot duty cycle", "IEC 62196-2"],
-      answer: 1,
+      choices: ["OCPP 1.6", "The J1772 pilot duty cycle", "ISO 15118", "IEC 62196-2"],
+      answer: 2,
       explain:
         "ISO 15118 defines Plug & Charge: the car stores a contract certificate and proves its identity inside the charging session, so no card or app is needed. OCPP can relay certificate data to the backend, but the mechanism belongs to ISO 15118.",
     },
     {
       q: "A J1772 pilot runs at 50 % duty cycle. What current may the car draw?",
-      choices: ["12 A", "30 A", "50 A", "80 A"],
-      answer: 1,
-      explain: "Between 10 % and 85 % duty, amps = duty × 0.6, so 50 × 0.6 = 30 A. A 96 % duty cycle would mean the 80 A maximum.",
+      choices: ["30 A", "32 A", "40 A", "50 A"],
+      answer: 0,
+      explain:
+        "Between 10 % and 85 % duty, amps = duty × 0.6, so 50 × 0.6 = 30 A. 32 A would need 53.3 % duty, and reading the duty percentage directly as amps (50 A) is the classic mistake.",
     },
     {
       q: "Eight 150 kW dispensers share power cabinets at a 2:1 ratio. Around what charging power should the service be sized?",
-      choices: ["150 kW", "600 kW", "1,200 kW", "2,400 kW"],
-      answer: 1,
+      choices: ["150 kW", "300 kW", "600 kW", "1,200 kW"],
+      answer: 2,
       explain:
-        "8 × 150 kW = 1,200 kW of nameplate, halved by 2:1 sharing to 600 kW of cabinet output. Add conversion losses and auxiliaries (about 653 kVA) and pick the next standard transformer, 750 kVA.",
+        "8 × 150 kW = 1,200 kW of nameplate, halved by 2:1 sharing to 600 kW of cabinet output; 1,200 kW ignores the sharing and 150 kW is a single dispenser. Add conversion losses and auxiliaries (about 653 kVA) and pick the next standard transformer, 750 kVA.",
     },
     {
       q: "On a 44 °C afternoon a 150 kW dispenser delivers about 50 kW, and an 800 V car on it draws the same current as a 400 V car. What is the most likely limit?",
-      choices: ["The utility transformer", "The cable and connector thermal limit", "The car's on-board charger", "The OCPP backend"],
-      answer: 1,
+      choices: [
+        "The utility transformer is overloaded",
+        "The car's on-board charger is overheating",
+        "The OCPP backend has lowered the site cap",
+        "The cable and connector thermal limit",
+      ],
+      answer: 3,
       explain:
-        "A limit that holds current constant across pack voltages points to I²R heating in the cable and connector. Hot ambient, direct sun or a clogged coolant radiator push the pin temperature sensors to their limit, and the dispenser cuts current to protect them.",
+        "A limit that holds current constant across pack voltages points to I²R heating in the cable and connector; a transformer or site cap would limit power, not current, and the on-board charger is not in the circuit during DC charging. Hot ambient, direct sun or a clogged coolant radiator push the pin temperature sensors to their limit, and the dispenser cuts current to protect them.",
     },
   ],
 };

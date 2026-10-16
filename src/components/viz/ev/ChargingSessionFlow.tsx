@@ -8,9 +8,13 @@ import { SITES, grantedPower, type ChargeMode, type Grant } from "@/components/v
 type Channel = "pilot" | "ev" | "ocpp";
 
 interface Ctx {
+  /** power the car draws, kW */
   kw: number;
+  /** AC: current the EVSE offers on the pilot */
   amps: number;
   duty: number | null;
+  /** AC: current the car draws */
+  draw: number;
 }
 
 interface Step {
@@ -127,7 +131,12 @@ const AC_STEPS: Step[] = [
     channels: ["pilot", "ocpp"],
     text: () =>
       "Basic AC charging has no digital negotiation. The car's on-board charger reads the duty cycle, takes the lower of that and its own rating, and closes switch S2, which adds a 1.3 kΩ resistor in parallel and drops the pilot to 6 V (state C): supply power, please.",
-    messages: () => ["Car reads the pilot current limit", "S2 closes: state B (9 V) → state C (6 V)", "OCPP StartTransaction / TransactionEvent (Started)"],
+    messages: (c) => [
+      `Car reads the pilot: ${c.amps.toFixed(1)} A on offer`,
+      `On-board charger will draw ${c.draw.toFixed(1)} A, the lesser of the offer and its own rating`,
+      "S2 closes: state B (9 V) → state C (6 V)",
+      "OCPP StartTransaction / TransactionEvent (Started)",
+    ],
   },
   {
     name: "Charging",
@@ -186,10 +195,9 @@ const pingPong = (p: number) => {
   return q < 1 ? q : 2 - q;
 };
 
-const limitWords: Record<Grant["limitedBy"], string> = {
-  vehicle: "the car's own request",
-  port: "the dispenser rating",
-  site: "the site's load-management cap",
+const limitWords: Record<ChargeMode, Record<Grant["limitedBy"], string>> = {
+  dc: { vehicle: "the car's own request", port: "the dispenser rating", site: "the site's load-management cap" },
+  ac: { vehicle: "the car's on-board charger", port: "the EVSE's 80 A rating", site: "the site's load-management cap" },
 };
 
 const EV = "#fb923c";
@@ -216,7 +224,8 @@ export function ChargingSessionFlow() {
   const grant = grantedPower(site, request, others);
   const { index, progress } = locate(phase, steps);
   const step = steps[index];
-  const ctx: Ctx = { kw: grant.kw, amps: grant.pilotAmps ?? 0, duty: grant.pilotDuty ?? null };
+  const ctx: Ctx = { kw: grant.kw, amps: grant.pilotAmps ?? 0, duty: grant.pilotDuty ?? null, draw: grant.drawAmps ?? 0 };
+  const headroomKw = Math.max(0, site.capKw - others);
   const nowKw = grant.suspended ? 0 : grant.kw * powerFraction(index, progress, mode);
   const total = others + nowKw;
   const flowing = nowKw > 0.01;
@@ -455,14 +464,21 @@ export function ChargingSessionFlow() {
       <p className="mt-3 text-sm">
         {grant.suspended ? (
           <span className="text-red-300">
-            {`No headroom: the site has ${Math.max(0, site.capKw - others)} kW left${mode === "ac" ? ", below the 6 A pilot minimum" : ""}, so this session waits (OCPP status SuspendedEVSE).`}
+            {mode === "ac"
+              ? `No headroom: the site has ${kwText(headroomKw)} kW left, ${(grant.pilotAmps ?? 0).toFixed(1)} A at 240 V, below the 6 A pilot minimum, so this session waits (OCPP status SuspendedEVSE).`
+              : `No headroom: the site has ${kwText(headroomKw)} kW left, so this session waits (OCPP status SuspendedEVSE).`}
+          </span>
+        ) : mode === "ac" ? (
+          <span className="text-text/90">
+            {`Port rating ${site.portMaxKw} kW, site headroom ${kwText(headroomKw)} kW → EVSE offers ${(grant.pilotAmps ?? 0).toFixed(1)} A (${(
+              grant.pilotDuty ?? 0
+            ).toFixed(1)} % duty); car draws ${(grant.drawAmps ?? 0).toFixed(1)} A (${kwText(grant.kw)} kW at 240 V), set by ${limitWords.ac[grant.limitedBy]}.`}
           </span>
         ) : (
           <span className="text-text/90">
-            {`Car asks for ${kwText(request)} kW → ${mode === "dc" ? "dispenser" : "port"} rating ${site.portMaxKw} kW → site headroom ${kwText(
-              Math.max(0, site.capKw - others),
-            )} kW → granted ${kwText(grant.kw)} kW, set by ${limitWords[grant.limitedBy]}.`}
-            {mode === "ac" && grant.pilotDuty != null && ` That is ${grant.pilotAmps?.toFixed(1)} A at 240 V, a ${grant.pilotDuty.toFixed(1)} % pilot duty cycle.`}
+            {`Car asks for ${kwText(request)} kW → dispenser rating ${site.portMaxKw} kW → site headroom ${kwText(headroomKw)} kW → granted ${kwText(
+              grant.kw,
+            )} kW, set by ${limitWords.dc[grant.limitedBy]}.`}
           </span>
         )}
       </p>

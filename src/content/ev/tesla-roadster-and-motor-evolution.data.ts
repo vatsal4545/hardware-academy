@@ -94,37 +94,42 @@ const data: LessonData = {
   quiz: [
     {
       q: "What kind of motor drove the 2008 Tesla Roadster?",
-      choices: ["Brushed DC motor", "Three-phase AC induction motor", "Axial-flux permanent magnet motor", "Switched reluctance motor"],
-      answer: 1,
+      choices: ["Brushed DC motor", "Axial-flux permanent magnet motor", "Switched reluctance motor", "Three-phase AC induction motor"],
+      answer: 3,
       explain:
         "The Roadster used a three-phase AC induction motor of about 185 kW. Tesla kept induction for the Model S and only adopted a permanent-magnet rear motor with the Model 3 in 2017.",
     },
     {
       q: "The 2008 Roadster's 53 kWh pack was built from",
-      choices: ["96 large prismatic cells", "6,831 cylindrical 18650 cells", "4,416 cells of the 2170 format", "16 pouch modules of LFP cells"],
-      answer: 1,
+      choices: [
+        "6,831 cylindrical 18650 cells",
+        "96 large prismatic cells in one module",
+        "4,416 cylindrical cells of the 2170 format",
+        "16 pouch-cell modules of LFP chemistry",
+      ],
+      answer: 0,
       explain:
         "It used 6,831 18650 cells, the laptop-battery format. The 2170 arrived with the Model 3, whose Long Range pack holds 4,416 of them, and the 4680 came later still.",
     },
     {
       q: "Why are the Model S Plaid's permanent-magnet rotors wrapped in a carbon-fiber sleeve?",
       choices: [
-        "To insulate the windings electrically",
+        "To insulate the stator windings electrically from the spinning rotor",
+        "To store extra energy like a flywheel for hard launches",
         "To hold the rotor together against hoop stress at about 20,000 rpm",
-        "To store extra energy like a flywheel",
-        "To make the motor quieter at low speed",
+        "To damp vibration and make the motor quieter at low speed",
       ],
-      answer: 1,
+      answer: 2,
       explain:
         "Hoop stress grows with the square of speed. The sleeve pre-loads the magnets and laminations so they survive about 20,000 rpm, and since power is torque times speed, a faster rotor makes more power from the same size of machine.",
     },
     {
       q: "Which statement about the second-generation Roadster's 0-60 mph time of 1.9 s is accurate?",
       choices: [
-        "It is a measured result from customer cars",
-        "It is a claim from the November 2017 announcement, and the car has been delayed repeatedly",
-        "It was certified by the EPA",
-        "It describes the 2008 Roadster",
+        "It is a measured result from cars delivered to customers",
+        "It is a November 2017 claim, and the car has been delayed repeatedly",
+        "It was certified by the EPA during the car's range testing",
+        "It is the 0-60 time of the original 2008 Roadster in its Sport version",
       ],
       answer: 1,
       explain:
@@ -133,33 +138,33 @@ const data: LessonData = {
     {
       q: "Why is an induction motor a good choice for a part-time front motor?",
       choices: [
-        "It has the highest peak efficiency of any motor type",
-        "With the inverter off it has no rotor field, so it freewheels with almost no drag",
-        "It does not need an inverter",
-        "It uses more rare-earth magnets",
+        "It has the highest peak efficiency of any traction motor type",
+        "It can run straight from the battery's DC without needing an inverter",
+        "Its rare-earth magnets give it more torque at low speed",
+        "With no rotor field when unpowered, it freewheels with little drag",
       ],
-      answer: 1,
+      answer: 3,
       explain:
-        "An induction rotor's field exists only while the stator drives current, so an idle front motor costs almost nothing. A permanent-magnet rotor keeps sweeping flux through the stator steel, causing iron losses whenever the car moves.",
+        "An induction rotor's field exists only while the stator drives current, so an idle front motor costs almost nothing. A permanent-magnet rotor keeps sweeping flux through the stator steel, causing iron losses whenever the car moves; and an induction motor has no magnets at all and still needs an inverter.",
     },
     {
       q: "What does a hairpin stator winding improve?",
       choices: [
-        "Magnet temperature limits",
-        "Slot fill and heat transfer, so copper loss falls and continuous power rises",
-        "Top speed only",
-        "Battery energy density",
+        "Slot fill and heat transfer, so copper loss falls",
+        "The magnets' temperature limit and resistance to demagnetization",
+        "The motor's top speed, by cutting rotor mass",
+        "The battery's energy density, by lowering pack mass",
       ],
-      answer: 1,
+      answer: 0,
       explain:
-        "Rectangular hairpin conductors fill around 70 % of the slot versus roughly 40-50 % for round wire, which lowers resistance and conducts heat into the stator better. The price is higher AC loss from skin and proximity effects at high frequency.",
+        "Rectangular hairpin conductors fill around 70 % of the slot versus roughly 40-50 % for round wire, which lowers resistance and conducts heat into the stator better, so continuous power rises. The price is higher AC loss from skin and proximity effects at high frequency.",
     },
     {
       q: "The Model 3's traction inverter switches with",
-      choices: ["Gallium nitride HEMTs", "Silicon carbide MOSFETs", "Thyristors", "Mechanical relays"],
+      choices: ["Gallium nitride (GaN) transistors", "Silicon carbide (SiC) MOSFETs", "Silicon IGBTs, like the Model S", "Mechanical relays at low frequency"],
       answer: 1,
       explain:
-        "Silicon carbide MOSFETs switch faster and lose less at partial load than silicon IGBTs, cutting inverter losses where a car spends most of its time and adding range from the same pack.",
+        "Silicon carbide MOSFETs switch faster and lose less at partial load than the silicon IGBTs of earlier inverters, cutting losses where a car spends most of its time and adding range from the same pack.",
     },
   ],
 };

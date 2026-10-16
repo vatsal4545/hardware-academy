@@ -54,6 +54,9 @@ function advance(sim: Sim, seconds: number, tempC: number, chargerKw: number): S
 
 const X0 = 64;
 const X1 = 700;
+
+/** Round to 0.01: the model uses Math.exp, whose last bits can differ between Node and the browser. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
 const xOf = makeScale([0, 1], [X0, X1]);
 
 type Key = "powerKw" | "currentA" | "voltageV";
@@ -124,7 +127,7 @@ export function ChargingCurve() {
   const curve = useMemo(() => Array.from({ length: 201 }, (_, i) => chargePoint(i / 200, tempC, chargerKw)), [tempC, chargerKw]);
   const tenTo80 = useMemo(() => minutesBetween(0.1, 0.8, tempC, chargerKw), [tempC, chargerKw]);
   const now = chargePoint(sim.soc, tempC, chargerKw);
-  const x = xOf(sim.soc);
+  const x = r2(xOf(sim.soc));
   const addedKWh = Math.max(0, sim.soc - START_SOC) * CURVE_PACK.energyKWh;
 
   const stats: Array<{ label: string; value: string }> = [
@@ -194,7 +197,7 @@ export function ChargingCurve() {
     >
       <SvgCanvas viewBox="0 0 720 390" title={`Charging power, current and voltage against state of charge at ${tempC} °C on a ${chargerKw} kW charger`}>
         <rect x={0} y={0} width={720} height={390} rx={8} fill={vizColors.bg} />
-        <rect x={xOf(0.1)} y={16} width={xOf(0.8) - xOf(0.1)} height={330} fill={vizColors.green} opacity={0.05} />
+        <rect x={r2(xOf(0.1))} y={16} width={r2(xOf(0.8) - xOf(0.1))} height={330} fill={vizColors.green} opacity={0.05} />
         {PANELS.map((p) => {
           const y = yScale(p);
           return (
@@ -214,7 +217,7 @@ export function ChargingCurve() {
               {runs(curve, p.key, y).map((r, i) => (
                 <path key={i} d={r.d} fill="none" stroke={limitColor[r.limit]} strokeWidth={2.5} strokeLinejoin="round" />
               ))}
-              <circle cx={x} cy={y(now[p.key])} r={5} fill={limitColor[now.limit]} stroke={vizColors.bg} strokeWidth={2} />
+              <circle cx={x} cy={r2(y(now[p.key]))} r={5} fill={limitColor[now.limit]} stroke={vizColors.bg} strokeWidth={2} />
             </g>
           );
         })}

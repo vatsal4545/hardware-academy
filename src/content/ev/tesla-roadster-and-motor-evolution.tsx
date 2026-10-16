@@ -9,9 +9,13 @@ const STATOR = "#2b3445";
 const ROTOR = "#3b4252";
 const SHAFT = "#6b7280";
 
+/** Round to 0.01: Math.cos and Math.sin can differ in their last bits between Node and the browser, which would
+ *  make the server-rendered SVG differ from the client render and break hydration. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
+
 function polar(cx: number, cy: number, r: number, deg: number): [number, number] {
   const a = (deg * Math.PI) / 180;
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  return [r2(cx + r * Math.cos(a)), r2(cy + r * Math.sin(a))];
 }
 
 function Stator({ cx, cy }: { cx: number; cy: number }) {
@@ -50,7 +54,7 @@ function IpmRotor({ cx, cy }: { cx: number; cy: number }) {
         const th = ((k * 45 + 22.5) * Math.PI) / 180;
         const u = [Math.cos(th), Math.sin(th)];
         const t = [-Math.sin(th), Math.cos(th)];
-        const pt = (r: number, s: number): [number, number] => [cx + r * u[0] + s * t[0], cy + r * u[1] + s * t[1]];
+        const pt = (r: number, s: number): [number, number] => [r2(cx + r * u[0] + s * t[0]), r2(cy + r * u[1] + s * t[1])];
         const color = k % 2 === 0 ? vizColors.positive : vizColors.negative;
         return (
           <g key={k}>

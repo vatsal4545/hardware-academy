@@ -51,12 +51,17 @@ export const SITES: Record<ChargeMode, SiteConfig> = {
 export type PowerLimit = "vehicle" | "port" | "site";
 
 export interface Grant {
+  /** power the car actually draws, kW */
   kw: number;
+  /** power the EVSE or dispenser can offer: the lesser of its rating and the site headroom, kW */
+  offerKw: number;
   limitedBy: PowerLimit;
   suspended: boolean;
-  /** AC only: pilot current advertised to the car */
+  /** AC only: current the EVSE advertises on the pilot, from its offer and never from the car's draw */
   pilotAmps?: number;
   pilotDuty?: number | null;
+  /** AC only: current the car's on-board charger actually draws */
+  drawAmps?: number;
 }
 
 /** J1772 pilot: 6-51 A -> duty = A / 0.6; 51-80 A -> duty = A / 2.5 + 64. Below 6 A there is no valid duty. */
@@ -70,26 +75,24 @@ export function ampsForDuty(dutyPct: number): number {
   return dutyPct <= 85 ? dutyPct * 0.6 : (dutyPct - 64) * 2.5;
 }
 
-/** Power the load manager grants this session: vehicle request, then port rating, then site headroom. */
+/**
+ * What the load manager lets this session have. The EVSE or dispenser offers the lesser of its own rating and
+ * the site's headroom; on AC that offer, and only that offer, sets the pilot duty cycle. The car then draws the
+ * lesser of the offer and its own request (its on-board charger rating on AC, its BMS request on DC).
+ */
 export function grantedPower(site: SiteConfig, requestKw: number, othersKw: number): Grant {
   const headroom = Math.max(0, site.capKw - othersKw);
-  let kw = requestKw;
-  let limitedBy: PowerLimit = "vehicle";
-  if (site.portMaxKw < kw) {
-    kw = site.portMaxKw;
-    limitedBy = "port";
-  }
-  if (headroom < kw) {
-    kw = headroom;
-    limitedBy = "site";
-  }
+  const offerKw = Math.min(site.portMaxKw, headroom);
+  const kw = Math.min(requestKw, offerKw);
+  const limitedBy: PowerLimit = requestKw <= offerKw ? "vehicle" : site.portMaxKw <= headroom ? "port" : "site";
   if (site.mode === "ac") {
-    const amps = Math.min(80, (kw * 1000) / site.acVolts);
-    const duty = pilotDutyForAmps(amps);
-    if (duty === null) return { kw: 0, limitedBy, suspended: true, pilotAmps: amps, pilotDuty: null };
-    return { kw, limitedBy, suspended: false, pilotAmps: amps, pilotDuty: duty };
+    const pilotAmps = Math.min(80, (offerKw * 1000) / site.acVolts);
+    const pilotDuty = pilotDutyForAmps(pilotAmps);
+    // below the 6 A J1772 minimum the EVSE cannot advertise anything, so the session pauses
+    if (pilotDuty === null) return { kw: 0, offerKw, limitedBy: "site", suspended: true, pilotAmps, pilotDuty: null, drawAmps: 0 };
+    return { kw, offerKw, limitedBy, suspended: false, pilotAmps, pilotDuty, drawAmps: (kw * 1000) / site.acVolts };
   }
-  return { kw, limitedBy, suspended: kw <= 0 };
+  return { kw, offerKw, limitedBy, suspended: kw <= 0 };
 }
 
 export const STANDARD_TRANSFORMER_KVA = [75, 112.5, 150, 225, 300, 500, 750, 1000, 1500, 2000, 2500, 3750, 5000];
