@@ -36,3 +36,85 @@ body {
     scroll-behavior: auto;
   }
 }
+
+/* Lesson typography */
+.prose-ha {
+  max-width: 72ch;
+  line-height: 1.7;
+}
+.prose-ha p,
+.prose-ha ul,
+.prose-ha ol,
+.prose-ha table,
+.prose-ha blockquote {
+  margin-block: 0.9rem;
+}
+.prose-ha ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+.prose-ha ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.prose-ha li {
+  margin-block: 0.3rem;
+}
+.prose-ha li > ul,
+.prose-ha li > ol {
+  margin-block: 0.3rem;
+}
+.prose-ha h3 {
+  margin-top: 1.6rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.prose-ha h4 {
+  margin-top: 1.2rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.prose-ha strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.prose-ha a {
+  color: var(--color-robotics);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-ha code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+}
+.prose-ha pre code {
+  background: none;
+  padding: 0;
+}
+.prose-ha table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.925rem;
+  display: block;
+  overflow-x: auto;
+}
+.prose-ha th,
+.prose-ha td {
+  border: 1px solid var(--color-border);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-ha th {
+  background: var(--color-surface-2);
+  font-weight: 600;
+}
+.prose-ha blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1rem;
+  color: var(--color-muted);
+}
