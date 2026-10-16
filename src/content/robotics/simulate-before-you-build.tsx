@@ -4,6 +4,7 @@ import { Callout, CodeBlock, Exercise, Figure, Prose, Section } from "@/componen
 import { Label, SvgCanvas, vizColors } from "@/components/viz/shared";
 import { ArenaPreview } from "@/components/viz/robotics/ArenaPreview";
 import { RoundedArrow } from "@/components/viz/robotics/RoundedArrow";
+import { RobotSim } from "@/components/labs/RobotSim";
 
 function Wave({ y, segments, color }: { y: number; segments: Array<[number, number]>; color: string }) {
   // segments: [x0, x1] spans where the signal is high; everything else is low
@@ -255,6 +256,13 @@ export default function Lesson() {
 
       <Section id="viz" title="Interactive: tour the arenas, then open the lab">
         <ArenaPreview />
+        <div className="mt-6">
+          <p className="mb-2 text-sm text-muted">
+            A live copy of the simulator running the obstacle-avoid preset in the open room. Press Run, watch the rays, then open the
+            full lab to edit the controller.
+          </p>
+          <RobotSim presetId="obstacle-avoid" compact />
+        </div>
         <Callout kind="tip" title="Rule of thumb for real-world margins">
           Threshold = speed × total latency + braking distance + clearance. At 40 cm/s with 200 ms of latency, 5 cm of braking and
           8 cm of clearance, that is 21 cm. The lab has no latency, so a threshold that works there is a lower bound, not an answer.
