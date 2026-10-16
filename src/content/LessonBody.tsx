@@ -3,20 +3,17 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { lessonBodies } from "./bodies";
 
-// One lazy component per lesson, created on first use and cached for the session.
-const cache = new Map<string, ComponentType>();
+// One lazy component per lesson, created once at module load; the import itself runs on first render.
+const lazyBodies: Record<string, ComponentType> = Object.fromEntries(
+  Object.entries(lessonBodies).map(([slug, loader]) => [slug, lazy(loader)]),
+);
 
-function lazyBody(slug: string): ComponentType {
-  const cached = cache.get(slug);
-  if (cached) return cached;
-  const loader = lessonBodies[slug];
-  const Body = loader ? lazy(loader) : () => <p className="text-muted">This lesson could not be loaded.</p>;
-  cache.set(slug, Body);
-  return Body;
+function MissingLesson() {
+  return <p className="text-muted">This lesson could not be loaded.</p>;
 }
 
 export function LessonBody({ slug }: { slug: string }) {
-  const Body = lazyBody(slug);
+  const Body = lazyBodies[slug] ?? MissingLesson;
   return (
     <Suspense fallback={<p className="animate-pulse text-muted">Loading lesson…</p>}>
       <Body />
