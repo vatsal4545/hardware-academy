@@ -16,12 +16,14 @@ export interface ArrowProps {
 export function Arrow({ x1, y1, x2, y2, color = vizColors.text, width = 2, head = 8, dashed = false }: ArrowProps) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const spread = Math.PI / 7;
-  const bx1 = x2 - head * Math.cos(angle - spread);
-  const by1 = y2 - head * Math.sin(angle - spread);
-  const bx2 = x2 - head * Math.cos(angle + spread);
-  const by2 = y2 - head * Math.sin(angle + spread);
-  const shaftX = x2 - (head * 0.6) * Math.cos(angle);
-  const shaftY = y2 - (head * 0.6) * Math.sin(angle);
+  // Rounded so server-rendered and client-rendered markup match exactly (trig results can differ in the last bits).
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const bx1 = r2(x2 - head * Math.cos(angle - spread));
+  const by1 = r2(y2 - head * Math.sin(angle - spread));
+  const bx2 = r2(x2 - head * Math.cos(angle + spread));
+  const by2 = r2(y2 - head * Math.sin(angle + spread));
+  const shaftX = r2(x2 - head * 0.6 * Math.cos(angle));
+  const shaftY = r2(y2 - head * 0.6 * Math.sin(angle));
   return (
     <g>
       <line
