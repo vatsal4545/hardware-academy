@@ -184,7 +184,7 @@ export function ArmLab() {
           viewBox={`${-VIEW} ${-VIEW} ${2 * VIEW} ${2 * VIEW}`}
           title="Two-link arm with its reachable workspace"
           role="group"
-          className="mx-auto max-w-[520px] cursor-crosshair rounded-lg bg-bg"
+          className="mx-auto max-w-[520px] cursor-crosshair touch-none rounded-lg bg-bg"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -228,7 +228,7 @@ export function ArmLab() {
             onKeyDown={onHandleKey}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            className="cursor-grab touch-none outline-none"
+            className="cursor-grab outline-none"
           >
             <circle cx={tg.x} cy={tg.y} r={16} fill={targetColor} fillOpacity={0.15} stroke={targetColor} strokeWidth={2} />
             <line x1={tg.x - 22} x2={tg.x + 22} y1={tg.y} y2={tg.y} stroke={targetColor} strokeWidth={1.5} />

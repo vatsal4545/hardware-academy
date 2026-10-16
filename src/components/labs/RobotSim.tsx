@@ -31,6 +31,8 @@ const MAX_BACKLOG = 0.25; // seconds of simulated time a single frame may catch 
 const TRAIL_MAX = 2000;
 const LAB_ID = "robot-sim";
 const LAB_DISTANCE = 100; // cm driven without crashing completes the lab
+/** The full lab keeps the learner's code across reloads; compact lesson embeds always run their preset. */
+export const CODE_STORAGE_KEY = "hardware-academy:robot-sim:code:v1";
 
 type Speed = "1" | "2" | "4";
 const SPEEDS: { value: Speed; label: string }[] = [
@@ -66,6 +68,22 @@ interface Frame {
   sensors: Sensors;
   distance: number;
   goalAt: number | null;
+}
+
+function readSavedCode(): string | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage.getItem(CODE_STORAGE_KEY);
+  } catch {
+    return null; // storage blocked (private mode, sandboxed iframe)
+  }
+}
+
+function writeSavedCode(code: string): void {
+  try {
+    window.localStorage.setItem(CODE_STORAGE_KEY, code);
+  } catch {
+    // storage unavailable or full: the code stays in memory for this visit
+  }
 }
 
 function arenaById(id: string | undefined): Arena {
@@ -139,7 +157,8 @@ export function RobotSim({ presetId, arenaId: arenaProp, compact = false }: Robo
   const [selectedId, setSelectedId] = useState(() => presetById(presetId).id);
   const [loadedId, setLoadedId] = useState(selectedId);
   const [arenaId, setArenaId] = useState(() => arenaById(arenaProp ?? presetById(presetId).arenaId).id);
-  const [code, setCode] = useState(() => presetById(presetId).code);
+  // Saved code is read on the client only; React patches the server-rendered textarea value when it hydrates.
+  const [code, setCode] = useState(() => (compact ? null : readSavedCode()) ?? presetById(presetId).code);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState<Speed>("1");
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +222,7 @@ export function RobotSim({ presetId, arenaId: arenaProp, compact = false }: Robo
     if (sim.control && sim.controlCode === code && !sim.control.lastError) return true;
     const compiled = compileController(code);
     if (!compiled.control) {
-      setError(`Compile error: ${compiled.error ?? "unknown error"}`);
+      setError(`Controller error: ${compiled.error ?? "unknown error"}`);
       return false;
     }
     sim.control = compiled.control;
@@ -237,9 +256,15 @@ export function RobotSim({ presetId, arenaId: arenaProp, compact = false }: Robo
     settle(sim, advance(sim, STEP_TICKS));
   };
 
+  const onCodeChange = (next: string) => {
+    setCode(next);
+    if (!compact) writeSavedCode(next);
+  };
+
   const onReset = () => {
     setRunning(false);
     setError(null);
+    if (!compact) writeSavedCode(code); // Reset keeps the code; the saved copy matches the editor
     resetSim(arenaId);
   };
 
@@ -255,6 +280,7 @@ export function RobotSim({ presetId, arenaId: arenaProp, compact = false }: Robo
     setSelectedId(p.id);
     setLoadedId(p.id);
     setCode(p.code);
+    if (!compact) writeSavedCode(p.code);
     setArenaId(p.arenaId);
     setRunning(false);
     setError(null);
@@ -347,7 +373,7 @@ export function RobotSim({ presetId, arenaId: arenaProp, compact = false }: Robo
             </p>
           </div>
           {arenaPicker}
-          <ControllerEditor value={code} onChange={setCode} />
+          <ControllerEditor value={code} onChange={onCodeChange} />
           {buttons}
           {appliedCode !== null && code !== appliedCode && (
             <p className="text-xs text-amber-300">
@@ -439,8 +465,12 @@ function SensorReference() {
         <li>memory: an object kept between calls until Reset</li>
       </ul>
       <p className="mt-2">
+        Sensors only change between calls, so a loop that waits for one never ends. Loops stop with an error after
+        1,000,000 passes in one call; to wait, remember the state in memory and check again next tick.
+      </p>
+      <p className="mt-2">
         The loop runs at 100 Hz. Wheel base {ROBOT.wheelBase} cm, top speed {ROBOT.maxSpeed} cm/s, body radius{" "}
-        {ROBOT.radius} cm.
+        {ROBOT.radius} cm. Your code is saved in this browser; Load preset replaces it.
       </p>
     </details>
   );

@@ -355,7 +355,215 @@ export type Controller = ((s: Sensors, memory: Record<string, unknown>) => Wheel
   lastError?: string;
 };
 
+// ---- loop guard ------------------------------------------------------------------------------
+// Learner code runs synchronously, so `while (s.ultrasonic.front < 30) {}` (sensors never change
+// inside a call) would freeze the tab. compileController rewrites every loop so each pass calls a
+// guard that throws after LOOP_BUDGET passes in one call. The guard sits in the loop condition
+// (`while (guard() && (cond))`, `for (init; guard() && (cond); step)`, and the `while` tail of
+// `do … while`), which also covers brace-less bodies and stays outside any try/catch inside the
+// body. `for…in` / `for…of` get the call at the start of a braced body.
+
+const LOOP_BUDGET = 1_000_000;
+const LOOP_GUARD = "__haLoopGuard";
+export const LOOP_LIMIT_MESSAGE =
+  "Controller looped more than 1,000,000 times in one tick (sensors do not change inside a call).";
+
+class LoopLimitError extends Error {
+  constructor() {
+    super(LOOP_LIMIT_MESSAGE);
+    this.name = "LoopLimitError";
+  }
+}
+
+interface Token {
+  kind: "id" | "num" | "str" | "tpl" | "re" | "punct";
+  value: string;
+  start: number;
+  end: number;
+}
+
+/** Keywords after which a `/` starts a regular expression rather than a division. */
+const BEFORE_REGEX = new Set(["return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "throw", "case", "do", "else", "yield", "await"]);
+const ID_START = /[A-Za-z_$\u0080-\uffff]/;
+const ID_PART = /[A-Za-z0-9_$\u0080-\uffff]/;
+
+/** Index of `needle` at or after `from`, or the end of `src` when it is missing. */
+function indexOrEnd(src: string, needle: string, from: number): number {
+  const at = src.indexOf(needle, from);
+  return at < 0 ? src.length : at;
+}
+
+function skipString(src: string, i: number): number {
+  const quote = src[i];
+  for (i++; i < src.length; i++) {
+    if (src[i] === "\\") i++;
+    else if (src[i] === quote) return i + 1;
+    else if (src[i] === "\n") return i;
+  }
+  return src.length;
+}
+
+/** Skips a `${ … }` expression inside a template literal; `i` is just past the `{`. */
+function skipTemplateExpression(src: string, i: number): number {
+  let depth = 1;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === "'" || c === '"') i = skipString(src, i);
+    else if (c === "`") i = skipTemplate(src, i);
+    else if (c === "/" && src[i + 1] === "/") i = indexOrEnd(src, "\n", i);
+    else if (c === "/" && src[i + 1] === "*") i = Math.min(src.length, indexOrEnd(src, "*/", i + 2) + 2);
+    else {
+      if (c === "{") depth++;
+      else if (c === "}" && --depth === 0) return i + 1;
+      i++;
+    }
+  }
+  return src.length;
+}
+
+function skipTemplate(src: string, i: number): number {
+  for (i++; i < src.length; ) {
+    const c = src[i];
+    if (c === "\\") i += 2;
+    else if (c === "`") return i + 1;
+    else if (c === "$" && src[i + 1] === "{") i = skipTemplateExpression(src, i + 2);
+    else i++;
+  }
+  return src.length;
+}
+
+function skipRegex(src: string, i: number): number {
+  let inClass = false;
+  for (i++; i < src.length; i++) {
+    const c = src[i];
+    if (c === "\\") i++;
+    else if (c === "\n") return i;
+    else if (inClass) inClass = c !== "]";
+    else if (c === "[") inClass = true;
+    else if (c === "/") {
+      i++;
+      break;
+    }
+  }
+  while (i < src.length && ID_PART.test(src[i])) i++; // flags
+  return i;
+}
+
+/** A small JavaScript tokenizer: enough to find loop headers while skipping strings, template
+ *  literals, regular expressions and comments. */
+function tokenize(src: string): Token[] {
+  const tokens: Token[] = [];
+  const regexAllowed = () => {
+    const prev = tokens[tokens.length - 1];
+    if (!prev) return true;
+    if (prev.kind === "id") return BEFORE_REGEX.has(prev.value);
+    if (prev.kind !== "punct") return false;
+    return prev.value !== ")" && prev.value !== "]" && prev.value !== "}";
+  };
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    const start = i;
+    let kind: Token["kind"];
+    if (/\s/.test(c)) {
+      i++;
+      continue;
+    } else if (c === "/" && src[i + 1] === "/") {
+      i = indexOrEnd(src, "\n", i);
+      continue;
+    } else if (c === "/" && src[i + 1] === "*") {
+      i = Math.min(src.length, indexOrEnd(src, "*/", i + 2) + 2);
+      continue;
+    } else if (c === "'" || c === '"') {
+      i = skipString(src, i);
+      kind = "str";
+    } else if (c === "`") {
+      i = skipTemplate(src, i);
+      kind = "tpl";
+    } else if (ID_START.test(c)) {
+      while (i < src.length && ID_PART.test(src[i])) i++;
+      kind = "id";
+    } else if (/[0-9]/.test(c) || (c === "." && /[0-9]/.test(src[i + 1] ?? ""))) {
+      while (i < src.length && /[0-9A-Za-z_.]/.test(src[i])) i++;
+      kind = "num";
+    } else if (c === "/" && regexAllowed()) {
+      i = skipRegex(src, i);
+      kind = "re";
+    } else {
+      i++;
+      kind = "punct";
+    }
+    tokens.push({ kind, value: src.slice(start, i), start, end: i });
+  }
+  return tokens;
+}
+
+const OPENERS: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
+
+/** Maps the index of every opening bracket token to the index of its closing token. */
+function matchBrackets(tokens: Token[]): Map<number, number> {
+  const pairs = new Map<number, number>();
+  const stack: number[] = [];
+  tokens.forEach((t, i) => {
+    if (t.kind !== "punct") return;
+    if (OPENERS[t.value]) stack.push(i);
+    else if (t.value === ")" || t.value === "]" || t.value === "}") {
+      const open = stack.pop();
+      if (open !== undefined && OPENERS[tokens[open].value] === t.value) pairs.set(open, i);
+    }
+  });
+  return pairs;
+}
+
+/** Rewrites `src` so every for / while / do-while loop calls `guard()` once per pass (see above). */
+export function instrumentLoops(src: string, guard: string): string {
+  const tokens = tokenize(src);
+  const pairs = matchBrackets(tokens);
+  const inserts: Array<{ at: number; text: string }> = [];
+  const isPunct = (t: Token | undefined, v: string) => t?.kind === "punct" && t.value === v;
+
+  tokens.forEach((t, k) => {
+    if (t.kind !== "id" || (t.value !== "while" && t.value !== "for")) return;
+    if (isPunct(tokens[k - 1], ".")) return; // a property called while/for
+    let open = k + 1;
+    const isAwait = t.value === "for" && tokens[open]?.kind === "id" && tokens[open].value === "await";
+    if (isAwait) open++;
+    const close = pairs.get(open);
+    if (!isPunct(tokens[open], "(") || close === undefined) return;
+
+    if (t.value === "while") {
+      inserts.push({ at: tokens[open].end, text: `${guard}() && (` }, { at: tokens[close].start, text: ")" });
+      return;
+    }
+    const semicolons: number[] = [];
+    for (let j = open + 1; j < close; j++) {
+      const inner = pairs.get(j);
+      if (inner !== undefined) j = inner;
+      else if (isPunct(tokens[j], ";")) semicolons.push(j);
+    }
+    if (semicolons.length === 2 && !isAwait) {
+      const [first, second] = semicolons;
+      if (second === first + 1) inserts.push({ at: tokens[first].end, text: ` ${guard}()` });
+      else inserts.push({ at: tokens[first].end, text: ` ${guard}() && (` }, { at: tokens[second].start, text: ")" });
+    } else if (isPunct(tokens[close + 1], "{")) {
+      inserts.push({ at: tokens[close + 1].end, text: ` ${guard}();` }); // for…in / for…of with a block body
+    }
+  });
+
+  let out = src;
+  inserts
+    .map((ins, order) => ({ ...ins, order }))
+    .sort((a, b) => b.at - a.at || b.order - a.order)
+    .forEach((ins) => {
+      out = out.slice(0, ins.at) + ins.text + out.slice(ins.at);
+    });
+  return out;
+}
+
+// ---- compiling learner code ------------------------------------------------------------------
+
 function messageOf(e: unknown): string {
+  if (e instanceof LoopLimitError) return e.message;
   if (e instanceof Error) {
     if (e instanceof ReferenceError && /\bcontrol\b/.test(e.message)) {
       return `${e.name}: ${e.message}. Define function control(sensors, memory) that returns { left, right }.`;
@@ -379,26 +587,61 @@ function sampleSensors(): Sensors {
 
 const SHAPE_ERROR = "control(sensors, memory) must return an object like { left: 0.5, right: 0.5 }.";
 
+type ControllerBody = (sensors: Sensors, memory: Record<string, unknown>, guard: () => boolean) => unknown;
+
 /** Compiles learner code that defines `function control(sensors, memory)`. The code runs with
- *  `new Function` in the learner's own browser. Syntax errors and errors thrown by a first dry
- *  call come back as `error`; at run time the returned controller never throws: a failing call
- *  returns a stop command and records the message in `control.lastError`. */
+ *  `new Function` in the learner's own browser, with every loop guarded (at most 1,000,000 passes
+ *  per call). Syntax errors and errors thrown by a first dry call come back as `error`; at run time
+ *  the returned controller never throws: a failing call returns a stop command and records the
+ *  message in `control.lastError`. */
 export function compileController(code: string): { control?: Controller; error?: string } {
-  let fn: (sensors: Sensors, memory: Record<string, unknown>) => unknown;
+  const tail = "\nreturn control(sensors, memory);";
+  let body: ControllerBody;
   try {
-    fn = new Function("sensors", "memory", `${code}\nreturn control(sensors, memory);`) as typeof fn;
+    // compile the code as written first, so syntax errors describe the learner's own code
+    body = new Function("sensors", "memory", code + tail) as ControllerBody;
   } catch (e) {
     return { error: messageOf(e) };
   }
   try {
-    const probe = fn(sampleSensors(), {});
+    body = new Function("sensors", "memory", LOOP_GUARD, instrumentLoops(code, LOOP_GUARD) + tail) as ControllerBody;
+  } catch {
+    // the loop rewrite tripped over something exotic (say, a method named `for`): run the code as written
+  }
+
+  let passes = 0;
+  let tripped = false;
+  const guard = (): boolean => {
+    passes += 1;
+    if (passes > LOOP_BUDGET) {
+      tripped = true;
+      throw new LoopLimitError();
+    }
+    return true;
+  };
+  /** One call of the learner's code with a fresh loop budget; reports the budget even if their code caught it. */
+  const run = (s: Sensors, memory: Record<string, unknown>): unknown => {
+    passes = 0;
+    tripped = false;
+    let out: unknown;
+    try {
+      out = body(s, memory, guard);
+    } catch (e) {
+      throw tripped ? new LoopLimitError() : e;
+    }
+    if (tripped) throw new LoopLimitError();
+    return out;
+  };
+
+  try {
+    const probe = run(sampleSensors(), {});
     if (probe === null || typeof probe !== "object") return { error: SHAPE_ERROR };
   } catch (e) {
     return { error: messageOf(e) };
   }
   const control: Controller = (s, memory) => {
     try {
-      const out = fn(s, memory);
+      const out = run(s, memory);
       if (out === null || typeof out !== "object") {
         control.lastError = SHAPE_ERROR;
         return { left: 0, right: 0 };

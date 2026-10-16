@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { ProgressProvider, useProgress } from "@/lib/progress";
 import { presets, arenas } from "@/lib/sim/robot";
 import { traceWidth } from "@/lib/sim/traceWidth";
 import { labs } from "@/lib/labs";
-import { RobotSim } from "@/components/labs/RobotSim";
+import { RobotSim, CODE_STORAGE_KEY } from "@/components/labs/RobotSim";
 import { PidLab } from "@/components/labs/PidLab";
 import { ArmLab } from "@/components/labs/ArmLab";
 import { TraceWidthLab } from "@/components/labs/TraceWidthLab";
@@ -39,6 +39,7 @@ beforeEach(() => {
 // vitest runs without globals here, so Testing Library cannot register its own cleanup
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("RobotSim", () => {
@@ -67,8 +68,53 @@ describe("RobotSim", () => {
     renderLab(<RobotSim />);
     fireEvent.change(editor(), { target: { value: "function control(s{" } });
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
-    expect(screen.getByRole("alert").textContent).toMatch(/compile error/i);
+    expect(screen.getByRole("alert").textContent).toMatch(/controller error: syntaxerror/i);
     expect(screen.getByRole("button", { name: "Run" })).toBeTruthy();
+  });
+
+  it("stops a runaway loop with an error instead of freezing the page", () => {
+    renderLab(<RobotSim />);
+    fireEvent.change(editor(), {
+      target: { value: "function control(s) { while (s.t > 0.05) {} return { left: 1, right: 1 }; }" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Step" }));
+    expect(screen.getByRole("alert").textContent).toMatch(/runtime error.*looped more than 1,000,000 times in one tick/i);
+  });
+
+  it("keeps the editor code across a reload", () => {
+    const mine = "// my controller\nfunction control(s) { return { left: 0.2, right: 0.2 }; }";
+    renderLab(<RobotSim />);
+    fireEvent.change(editor(), { target: { value: mine } });
+    expect(localStorage.getItem(CODE_STORAGE_KEY)).toBe(mine);
+    cleanup();
+    renderLab(<RobotSim />);
+    expect(editor().value).toBe(mine);
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(editor().value).toBe(mine);
+    expect(localStorage.getItem(CODE_STORAGE_KEY)).toBe(mine);
+  });
+
+  it("Load preset overwrites the saved code", () => {
+    renderLab(<RobotSim />);
+    fireEvent.change(editor(), { target: { value: "function control(s) { return { left: 0, right: 0 }; }" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Wall follow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Load preset" }));
+    const wallFollow = presets.find((p) => p.id === "wall-follow")!.code;
+    expect(editor().value).toBe(wallFollow);
+    expect(localStorage.getItem(CODE_STORAGE_KEY)).toBe(wallFollow);
+  });
+
+  it("works when storage is blocked", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    renderLab(<RobotSim />);
+    expect(editor().value).toBe(presets[0].code);
+    fireEvent.change(editor(), { target: { value: "function control(s) { return { left: 1, right: 1 }; }" } });
+    expect(editor().value).toContain("left: 1");
   });
 
   it("surfaces runtime errors thrown by the controller", () => {
@@ -112,6 +158,14 @@ describe("RobotSim", () => {
     await waitFor(() => expect(screen.queryByText("0.00 s")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(screen.getByRole("button", { name: "Run" })).toBeTruthy();
+  });
+
+  it("compact mode runs its preset, not the code saved by the full lab", () => {
+    localStorage.setItem(CODE_STORAGE_KEY, "function control(s) { throw new Error('saved code ran'); }");
+    renderLab(<RobotSim compact />);
+    fireEvent.click(screen.getByRole("button", { name: "Step" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(localStorage.getItem(CODE_STORAGE_KEY)).toContain("saved code ran");
   });
 
   it("compact mode hides the editor and telemetry and loads presets directly", () => {
@@ -166,7 +220,8 @@ describe("PidLab", () => {
 describe("ArmLab", () => {
   it("renders the arm svg, joint sliders and elbow switch", () => {
     const { container } = renderLab(<ArmLab />);
-    expect(container.querySelector("svg")).not.toBeNull();
+    // touch-action: none, so a finger drag moves the target instead of scrolling the page
+    expect(container.querySelector("svg")?.getAttribute("class")).toContain("touch-none");
     expect(screen.getByRole("slider", { name: /θ1/ })).toBeTruthy();
     expect(screen.getByRole("slider", { name: /θ2/ })).toBeTruthy();
     expect(screen.getByRole("switch", { name: /elbow up/i }).getAttribute("aria-checked")).toBe("true");
