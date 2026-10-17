@@ -1,13 +1,39 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { QuizQuestion } from "@/lib/curriculum";
 import { useProgress } from "@/lib/progress";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
+// Deterministic shuffle so the correct choice does not sit at a predictable position,
+// while server and client render the same order for a given lesson.
+function hashString(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function seededOrder(seed: number, n: number): number[] {
+  const order = Array.from({ length: n }, (_, i) => i);
+  let s = seed || 1;
+  for (let i = n - 1; i > 0; i--) {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    const j = s % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
 export function Quiz({ slug, questions }: { slug: string; questions: QuizQuestion[] }) {
   const { recordQuiz } = useProgress();
+  const orders = useMemo(
+    () => questions.map((q, i) => seededOrder(hashString(`${slug}:${i}:${q.q}`), q.choices.length)),
+    [slug, questions],
+  );
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [checked, setChecked] = useState(false);
   const name = useId();
@@ -36,7 +62,8 @@ export function Quiz({ slug, questions }: { slug: string; questions: QuizQuestio
               {i + 1}. {q.q}
             </legend>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {q.choices.map((c, ci) => {
+              {orders[i].map((ci) => {
+                const c = q.choices[ci];
                 const id = `${name}-${i}-${ci}`;
                 const state = !checked ? "idle" : ci === q.answer ? "correct" : ci === picked ? "wrong" : "idle";
                 return (
