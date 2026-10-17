@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/Card";
 import { TrackPill } from "@/components/ui/TrackPill";
 import { ButtonLink } from "@/components/ui/Button";
 import { InterviewQuestions, KeyTermsRail, MarkComplete, Quiz, ScenarioCard, Section } from "@/components/lesson";
+import { ReferenceList } from "@/components/lesson/ReferenceList";
+import { referencesFor } from "@/lib/references";
 import { cn } from "@/lib/cn";
 
 function LessonNav({ meta }: { meta: LessonMeta }) {
@@ -106,6 +108,9 @@ export function LessonShell({
           </Section>
           <Section id="quiz" title="Quiz">
             <Quiz slug={meta.slug} questions={data.quiz} />
+          </Section>
+          <Section id="references" title="References and further reading">
+            <ReferenceList items={referencesFor(meta.slug)} />
           </Section>
 
           <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
