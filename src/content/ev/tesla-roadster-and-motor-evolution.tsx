@@ -239,7 +239,7 @@ export default function Lesson() {
               <strong>Integrated drive units</strong>: motor, inverter and reducer in one housing sharing one coolant loop.
             </li>
             <li>
-              <strong>800 V with SiC</strong>: the Porsche Taycan (2019) and Hyundai&apos;s E-GMP cars use it to charge faster through thinner cables.
+              <strong>800 V with SiC</strong>: Hyundai&apos;s E-GMP cars (Ioniq 5, 2021) use it to charge faster through thinner cables.
             </li>
           </ul>
         </Prose>

@@ -181,11 +181,10 @@ export default function Lesson() {
             1,200 V SiC MOSFETs practical: unipolar, fast, no tail current, and rated for 175-200 °C junctions. Tesla’s
             Model 3, launched in 2017, was the first high-volume car with a SiC main inverter, using 24 SiC MOSFET
             modules from STMicroelectronics. With no knee voltage, SiC gains most at the partial loads where cars spend
-            most of their time, commonly credited with several percent more range. 800 V platforms such as the Porsche
-            Taycan, Hyundai Ioniq 5 and Lucid Air need 1,200 V-class switches, and SiC has taken most new 800 V
-            inverter designs. Its weaknesses are cost and maturity: substrates are hard to grow, wafers are moving from
-            150 mm to 200 mm (Wolfspeed opened the first 200 mm SiC fab in 2022), and gate-oxide reliability needs
-            careful qualification.
+            most of their time, commonly credited with several percent more range. 800 V platforms such as the Hyundai
+            Ioniq 5 and Lucid Air need 1,200 V-class switches, and SiC has taken most new 800 V inverter designs. Its
+            weaknesses are cost and maturity: substrates are hard to grow, wafers are moving from 150 mm to 200 mm
+            (Wolfspeed opened the first 200 mm SiC fab in 2022), and gate-oxide reliability needs careful qualification.
           </p>
 
           <h3>Gallium nitride</h3>

@@ -118,6 +118,7 @@ export function IndustryMap() {
     >
       <SvgCanvas
         viewBox="0 0 680 350"
+        role="group"
         title="Semiconductor value chain: EDA and IP feed fabless design, which goes to a foundry supplied by equipment makers, then to OSAT assembly and test, then to systems; IDMs do design and manufacturing in-house"
       >
         <rect x={0} y={0} width={680} height={350} fill={vizColors.bg} />

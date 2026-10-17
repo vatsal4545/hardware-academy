@@ -161,7 +161,7 @@ export default function Lesson() {
           <p>
             A bare MCU needs five things. <strong>Power</strong>: 100 nF at every supply pin, bulk capacitance per rail and a filtered analog
             supply. <strong>Reset</strong>: a 10 kΩ pull-up on the reset or EN pin, often with a capacitor and a button to ground.{" "}
-            <strong>Boot configuration</strong>: strapping pins at defined levels, such as IO0 and EN on an ESP32. <strong>Clock</strong>: the
+            <strong>Boot configuration</strong>: strapping pins at defined levels, such as IO0 and IO12 on an ESP32. <strong>Clock</strong>: the
             internal RC oscillator is good to a few percent, but USB, CAN and accurate timing need a crystal, which uses the MCU&apos;s
             inverting amplifier plus two load capacitors, C1 = C2 = 2 · (CL − Cstray), about 10 pF for an 8 pF crystal with 3 pF of stray
             capacitance. An oscillator module is a powered clock with a buffered output; it costs more but removes the tuning.{" "}

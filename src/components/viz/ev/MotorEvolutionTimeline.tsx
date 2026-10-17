@@ -119,7 +119,7 @@ const ENTRIES: Entry[] = [
       ["Topology", "Axial-flux motors, e.g. YASA (bought by Mercedes-Benz in 2021)"],
       ["Magnets", "Rare-earth-free designs claimed or in development"],
       ["Packaging", "Integrated drive units: motor, inverter and gearbox in one housing"],
-      ["Voltage", "800 V with SiC inverters (Porsche Taycan 2019, Hyundai E-GMP)"],
+      ["Voltage", "800 V platforms: Porsche Taycan (2019) launched on silicon IGBTs; Hyundai E-GMP (2021) uses SiC"],
     ],
     why: "The gains now come from cooling, copper fill, magnet supply and the electrical system around the motor, rather than from a new kind of motor.",
   },

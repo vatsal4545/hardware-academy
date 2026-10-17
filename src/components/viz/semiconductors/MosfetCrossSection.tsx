@@ -111,7 +111,7 @@ export function MosfetCrossSection() {
   return (
     <VizFrame
       title="NMOS transistor: gate opens a channel"
-      description="Raise V_GS past the 1.5 V threshold and an electron channel forms under the gate (darker means more electrons). Raise V_DS and the channel thins toward the drain until it pinches off: the current stops growing and the transistor saturates."
+      description="Raise V_GS past the 1.5 V threshold and an electron channel forms under the gate (brighter means more electrons). Raise V_DS and the channel thins toward the drain until it pinches off: the current stops growing and the transistor saturates."
       controls={
         <>
           <Slider label="Gate voltage V_GS" value={vgs} min={0} max={5} step={0.05} unit="V" onChange={setVgs} format={(v) => `${v.toFixed(2)} V`} />

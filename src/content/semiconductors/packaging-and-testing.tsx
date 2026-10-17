@@ -123,9 +123,9 @@ export default function Lesson() {
             automatic test equipment (ATE) from Advantest or Teradyne runs a short electrical test, storing a pass or
             fail bin for every die in a wafer map. Test structures in the scribe lines are measured too, giving the fab
             sheet resistance and threshold voltage for each lot. The wafer is then back-ground from 775 µm to 50-200 µm,
-            mounted on tape and diced with a diamond blade, which cuts a street about 20-30 µm wide, or with a laser.
-            Only good dies are picked. Die attach glues each one to a lead frame or substrate with silver-filled epoxy,
-            solder, or sintered silver for power devices.
+            mounted on tape and diced with a diamond blade or a laser. The blade’s kerf is about 20-30 µm wide, cut
+            inside a dicing street (scribe lane) of about 50-100 µm. Only good dies are picked. Die attach glues each
+            one to a lead frame or substrate with silver-filled epoxy, solder, or sintered silver for power devices.
           </p>
 
           <h3>Wire bond or flip chip</h3>
