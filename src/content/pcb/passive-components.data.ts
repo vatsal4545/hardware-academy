@@ -46,11 +46,11 @@ const data: LessonData = {
   scenario: {
     title: "The blink timer runs 30% faster on fresh cells",
     context:
-      "A battery-powered asset tag paces its transmissions with an RC relaxation oscillator: a Schmitt-trigger inverter, a resistor and a 100 nF capacitor, nominally a 10 ms timebase. The bill of materials said '100 nF, 6.3 V', and purchasing picked the cheapest match, a Y5V 0402. The designer could only reach 100 Hz on the bench by trimming R from the calculated 100 kΩ down to about 47 kΩ, then froze the design. In the field the tags run roughly 30% faster with fresh cells and slow down as the batteries sag, and the spread between tags is wider than the resistor tolerance can explain.",
+      "A battery-powered asset tag paces its transmissions with an RC relaxation oscillator: a Schmitt-trigger inverter, a resistor and a 100 nF capacitor, nominally a 10 ms timebase. The bill of materials said '100 nF, 6.3 V', and purchasing picked the cheapest match, a Y5V 0402. The designer could only reach 100 Hz on the bench by raising R from the calculated 100 kΩ up to about 220 kΩ, then froze the design. In the field the tags run roughly 30% faster with fresh cells and slow down as the batteries sag, and the spread between tags is wider than the resistor tolerance can explain.",
     symptoms: [
       "Frequency differs by more than 30% between a fresh 4.2 V cell and a nearly flat 3.0 V cell, even though the Schmitt thresholds scale with the supply.",
       "An LCR meter at 1 kHz with no DC bias reads the capacitor at 98 nF, in spec, yet in circuit it behaves like roughly 45 nF.",
-      "R had to be cut from the calculated 100 kΩ to about 47 kΩ to hit 100 Hz, which is the clue that C is not 100 nF in circuit.",
+      "R had to be raised from the calculated 100 kΩ to about 220 kΩ to hit 100 Hz, which is the clue that C is not 100 nF in circuit: the period is proportional to R × C, so a capacitor of about 45 nF needs about 2.2 times the resistance.",
       "Cooling a board in a freezer shifts the frequency again.",
     ],
     hints: [

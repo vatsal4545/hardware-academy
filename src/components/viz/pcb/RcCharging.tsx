@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, Toggle, VizFrame } from "@/components/lesson";
 import { Arrow, Label, SvgCanvas, makeScale, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { ControlBar, e12Range, FlowDots, formatSI, makePath, nearestIndex, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
+import { ControlBar, e12Range, FlowDots, formatSI, makePath, nearestIndex, r2, r3, r6, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
 import { BatterySymbol, ResistorSymbol } from "./SchematicExplorer.symbols";
 
 type Rated = "6.3" | "10" | "16" | "25";
@@ -36,7 +36,7 @@ const nearSource = (x: number, y: number) => Math.abs(x - 70) < 8 && y > 112 && 
  * high-value X7R part: about 82% at a quarter of the rating, 61% at half, 36% at the rating.
  */
 export function x7rDerating(x: number): number {
-  return 1 / (1 + 1.8 * Math.pow(Math.abs(x), 1.5));
+  return r6(1 / (1 + 1.8 * Math.pow(Math.abs(x), 1.5)));
 }
 
 function simulateRc(args: { R: number; c0: number; vs: number; v0: number; derate: boolean; vr: number; tMax: number }): number[] {
@@ -44,14 +44,14 @@ function simulateRc(args: { R: number; c0: number; vs: number; v0: number; derat
   const out: number[] = [];
   if (!derate) {
     const tau = R * c0;
-    for (let i = 0; i <= N; i++) out.push(vs + (v0 - vs) * Math.exp(-((i / N) * tMax) / tau));
+    for (let i = 0; i <= N; i++) out.push(r6(vs + (v0 - vs) * Math.exp(-((i / N) * tMax) / tau)));
     return out;
   }
   const sub = 10;
   const h = tMax / (N * sub);
   let v = v0;
   for (let i = 0; i <= N; i++) {
-    out.push(v);
+    out.push(r6(v));
     for (let s = 0; s < sub; s++) {
       const c = c0 * x7rDerating(v / vr);
       v += ((vs - v) / (R * c)) * h;
@@ -115,7 +115,7 @@ function CircuitPanel({
       <ResistorSymbol cx={150} cy={60} length={52} width={22} />
 
       {/* capacitor plates, dielectric and stored charge */}
-      <rect x={227} y={104} width={76} height={52} fill={vizColors.cyan} opacity={0.04 + 0.12 * q} />
+      <rect x={227} y={104} width={76} height={52} fill={vizColors.cyan} opacity={r3(0.04 + 0.12 * q)} />
       <line x1={223} y1={100} x2={307} y2={100} stroke={vizColors.text} strokeWidth={4} strokeLinecap="round" />
       <line x1={223} y1={160} x2={307} y2={160} stroke={vizColors.text} strokeWidth={4} strokeLinecap="round" />
       {Array.from({ length: slots }, (_, k) => {
@@ -134,7 +134,7 @@ function CircuitPanel({
           </g>
         );
       })}
-      <g opacity={q}>
+      <g opacity={r3(q)}>
         <Arrow x1={247} y1={120} x2={247} y2={140} color={vizColors.violet} width={1.5} head={6} />
         <Arrow x1={265} y1={120} x2={265} y2={140} color={vizColors.violet} width={1.5} head={6} />
         <Arrow x1={283} y1={120} x2={283} y2={140} color={vizColors.violet} width={1.5} head={6} />
@@ -210,9 +210,9 @@ function VoltagePlot({
       {derate && <path d={polyline(pts(ideal))} fill="none" stroke={vizColors.muted} strokeWidth={1.5} strokeDasharray="5 4" />}
       <path d={polyline(pts(samples))} fill="none" stroke={derate ? vizColors.amber : vizColors.cyan} strokeWidth={2.5} />
       {t63 !== null && (
-        <circle cx={x(t63)} cy={y(samples[Math.min(N, Math.round((t63 / tMax) * N))])} r={4} fill="none" stroke={vizColors.green} strokeWidth={2} />
+        <circle cx={r2(x(t63))} cy={r2(y(samples[Math.min(N, Math.round((t63 / tMax) * N))]))} r={4} fill="none" stroke={vizColors.green} strokeWidth={2} />
       )}
-      <circle cx={x((idx / N) * tMax)} cy={y(samples[idx])} r={5} fill={vizColors.text} stroke={vizColors.bg} strokeWidth={2} />
+      <circle cx={r2(x((idx / N) * tMax))} cy={r2(y(samples[idx]))} r={5} fill={vizColors.text} stroke={vizColors.bg} strokeWidth={2} />
       <Label x={Rr} y={B + 28} anchor="end" size={10} color={vizColors.muted}>
         {derate ? "amber: derated X7R    dashed: ideal C" : "green ring: 63.2% of the step at t = τ"}
       </Label>
@@ -251,7 +251,7 @@ function BiasPlot({ rated, vin, vNow, cFracNow }: { rated: number; vin: number; 
       <line x1={x(vin)} y1={T} x2={x(vin)} y2={B} stroke={vizColors.green} strokeWidth={1.2} strokeDasharray="4 4" />
       <Label x={x(vin)} y={B + 12} size={10} mono color={vizColors.green}>{`${vin.toFixed(1)} V`}</Label>
       <path d={polyline(curve)} fill="none" stroke={vizColors.amber} strokeWidth={2.5} />
-      <circle cx={x(Math.min(vNow, vMax))} cy={y(cFracNow)} r={5} fill={vizColors.text} stroke={vizColors.bg} strokeWidth={2} />
+      <circle cx={r2(x(Math.min(vNow, vMax)))} cy={r2(y(cFracNow))} r={5} fill={vizColors.text} stroke={vizColors.bg} strokeWidth={2} />
       <Label x={(L + Rr) / 2} y={B + 28} size={10} color={vizColors.muted}>DC bias across the capacitor (V)</Label>
     </>
   );
@@ -285,7 +285,7 @@ export function RcCharging() {
   const i0 = Math.max(Math.abs(vs - v0) / R, 1e-12);
   const cFracNow = derate ? x7rDerating(vNow / vr) : 1;
   const cNow = c0 * cFracNow;
-  const cNorm = (Math.log10(c0) - Math.log10(CAPS[0])) / (Math.log10(CAPS[CAPS.length - 1]) - Math.log10(CAPS[0]));
+  const cNorm = r6((Math.log10(c0) - Math.log10(CAPS[0])) / (Math.log10(CAPS[CAPS.length - 1]) - Math.log10(CAPS[0])));
 
   // electrons travel against the conventional current, so the rate is negative while charging
   const speed = 1.5 * (iNow / i0);

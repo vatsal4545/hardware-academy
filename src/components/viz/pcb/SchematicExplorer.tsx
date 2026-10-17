@@ -496,6 +496,7 @@ export function SchematicExplorer() {
         <div className={view === "all" ? "overflow-x-auto" : undefined}>
           <SvgCanvas
             viewBox={VIEWBOX[view]}
+            role="group"
             className={view === "all" ? "min-w-[900px]" : "mx-auto max-w-[600px]"}
             title="Schematic of a robot motor-driver board: battery connector, AMS1117 regulator, ESP32 module, TB6612FNG motor driver and two motor connectors, with decoupling capacitors"
           >

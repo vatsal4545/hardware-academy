@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import { Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, vizColors } from "@/components/viz/shared";
 import { ControlBar, Stat } from "./OhmsLawCircuit.helpers";
@@ -273,17 +273,10 @@ export function PcbStackupExploded() {
   const slabs = stack.map((l, i) => ({ l, i, y: ys[i] }));
   const drawn = [...slabs].reverse(); // bottom layer first, so upper slabs occlude lower ones
 
-  const onKey = (e: KeyboardEvent<SVGGElement>, id: string) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setActive(id);
-    }
-  };
-
   return (
     <VizFrame
       title="Exploded PCB stack-up"
-      description="Pull the layers apart and hover, focus or tap one to read what it does. Switch between a 2-layer and a 4-layer board to see where the ground plane and the 50 Ω trace come from."
+      description="Pull the layers apart, then hover or tap a layer, or choose one from the Layer list, to read what it does. Switch between a 2-layer and a 4-layer board to see where the ground plane and the 50 Ω trace come from."
       footer="Thicknesses are labelled in real units but drawn out of scale: at true scale the 35 µm copper would be a hairline next to a 1 mm core. The example stack-up follows a common 1.6 mm, 7628 prepreg, 4-layer fab build."
     >
       <ControlBar>
@@ -297,10 +290,26 @@ export function PcbStackupExploded() {
           onChange={setCount}
         />
         <Slider label="Explode" value={explode} min={0} max={100} step={1} unit="%" onChange={setExplode} />
+        {/* the keyboard and screen-reader route to every layer, in top-to-bottom order (the drawing itself is mouse and touch only) */}
+        <label className="block text-sm">
+          <span className="mb-1 block text-muted">Layer (top to bottom)</span>
+          <select
+            value={current.id}
+            onChange={(e) => setActive(e.target.value)}
+            className="w-full rounded-md border border-border bg-bg px-2 py-1.5 text-sm text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+          >
+            {stack.map((l) => (
+              <option key={l.id} value={l.id}>
+                {`${l.name} · ${l.thick}`}
+              </option>
+            ))}
+          </select>
+        </label>
       </ControlBar>
       <div>
         <SvgCanvas
           viewBox={`0 0 ${VIEW_W} ${H}`}
+          role="group"
           className="mx-auto max-w-[560px]"
           title={`Exploded view of a ${count}-layer PCB with ${n} layers from top silkscreen to bottom silkscreen`}
         >
@@ -325,14 +334,10 @@ export function PcbStackupExploded() {
             return (
               <g
                 key={l.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`${l.name}, ${l.thick}`}
-                aria-pressed={isActive}
+                data-layer={l.id}
+                aria-hidden="true"
                 onMouseEnter={() => setActive(l.id)}
-                onFocus={() => setActive(l.id)}
                 onClick={() => setActive(l.id)}
-                onKeyDown={(e) => onKey(e, l.id)}
                 style={{ cursor: "pointer" }}
               >
                 {/* leader lines and labels */}

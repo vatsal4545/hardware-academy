@@ -5,7 +5,8 @@ import { PlayPause, Segmented, Slider, Toggle, VizFrame } from "@/components/les
 import { Arrow, Label, SvgCanvas, useViz, vizColors } from "@/components/viz/shared";
 import {
   ControlBar,
-  dotLoopRate,
+  dotRate,
+  dotRates,
   e12Range,
   FlowDots,
   formatSI,
@@ -23,6 +24,10 @@ type Rating = "0.125" | "0.25" | "1";
 /** E12 values, 10 ohm to 10 kohm, for the Ohm's-law resistor; 100 ohm to 1 Mohm for the divider. */
 const OHM_R = e12Range(10, 3);
 const WIDE_R = e12Range(100, 4);
+
+/** Dot speed scales: this many amps is one loop per second (see dotRate and dotRates). */
+const OHM_REF_A = 0.01;
+const DIVIDER_REF_A = 300e-6;
 
 const WIRE = "#7b8494";
 const OHM_LOOP = makePath(
@@ -217,7 +222,7 @@ export function OhmsLawCircuit() {
   const iLoad = loaded ? vout / RL : 0;
   const errPct = (1 - vout / vth) * 100;
 
-  const rates = mode === "ohm" ? [dotLoopRate(current), 0, 0] : [dotLoopRate(iR1), dotLoopRate(iR2), dotLoopRate(iLoad)];
+  const rates = mode === "ohm" ? [dotRate(current, OHM_REF_A), 0, 0] : dotRates([iR1, iR2, iLoad], DIVIDER_REF_A);
   const phases = useFlowPhases(rates, viz.playing);
 
   const heatTone = ratio > 1 ? "bad" : ratio > 0.5 ? "warn" : "ok";
@@ -310,8 +315,8 @@ export function OhmsLawCircuit() {
       }
       footer={
         mode === "ohm"
-          ? "Dot speed grows with current (it saturates above about 0.3 A so the animation never strobes). Real resistors are rated at 70 °C ambient; running them at half rating or less keeps them cool."
-          : "ADC rule of thumb: keep the Thevenin resistance below about 10 kΩ, or add a 100 nF capacitor at the pin. The divider current is always the same on both resistors until a load steals some of it at the node."
+          ? "Dot speed is proportional to current: 10 mA is one loop per second, up to a cap of 2.4 loops per second (from 24 mA up, more current no longer looks faster). Real resistors are rated at 70 °C ambient; running them at half rating or less keeps them cool."
+          : "ADC rule of thumb: keep the Thevenin resistance below about 10 kΩ, or add a 100 nF capacitor at the pin. The three streams of dots share one speed scale (300 µA is one loop per second), so a stream that moves ten times slower carries a tenth of the current; the divider current is the same on both resistors until a load steals some at the node."
       }
     >
       <ControlBar>{controls}</ControlBar>

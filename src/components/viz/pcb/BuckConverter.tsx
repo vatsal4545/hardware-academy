@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, makeScale, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { ControlBar, dotLoopRate, FlowDots, formatSI, makePath, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
+import { ControlBar, dotRate, FlowDots, formatSI, makePath, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
 import {
   BatterySymbol,
   CapacitorSymbol,
@@ -21,6 +21,7 @@ const WIRE = "#7b8494";
 const COUT = 22e-6; // output capacitor, farads
 const THETA_JA = 60; // SOT-223 on a modest copper pad, °C/W
 const ANIM_PERIOD = 2.4; // seconds of playback per switching period (slow motion)
+const DOT_REF_A = 1; // dot speed is proportional to the inductor current: one amp is one loop per second
 const M = 90; // samples per switching period in the waveform plots
 
 /** DCR grows with inductance for a given case size. */
@@ -286,7 +287,7 @@ export function BuckConverter() {
   const cursor = (cycles % 3) / 3;
   const on = phase < duty;
   const iNow = inductorCurrent(phase, duty, model.iMin, model.iMax);
-  const [flow] = useFlowPhases([Math.sign(iNow) * dotLoopRate(iNow)], viz.playing);
+  const [flow] = useFlowPhases([dotRate(iNow, DOT_REF_A)], viz.playing);
 
   const lossMax = Math.max(ldo.loss, model.loss.total, 1e-9);
   const tj = 25 + ldo.junctionRise;

@@ -4,6 +4,7 @@
  */
 
 import { vizColors } from "@/components/viz/shared";
+import { r2 } from "./OhmsLawCircuit.helpers";
 
 interface Stroke {
   stroke?: string;
@@ -169,8 +170,9 @@ export function SwitchSymbol({
   const a = closed ? 0 : (openAngle * Math.PI) / 180;
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const ex = x1 + dx * Math.cos(a) - dy * Math.sin(a);
-  const ey = y1 + dx * Math.sin(a) + dy * Math.cos(a);
+  // rotated with sin and cos, so rounded before it reaches markup
+  const ex = r2(x1 + dx * Math.cos(a) - dy * Math.sin(a));
+  const ey = r2(y1 + dx * Math.sin(a) + dy * Math.cos(a));
   return (
     <g stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round">
       <line x1={x1} y1={y1} x2={ex} y2={ey} />

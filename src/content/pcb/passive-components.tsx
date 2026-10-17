@@ -3,7 +3,7 @@
 import { Section, Prose, Callout, Figure, Exercise, CodeBlock } from "@/components/lesson";
 import { Arrow, Label, SvgCanvas, makeScale, polyline, vizColors } from "@/components/viz/shared";
 import { RcCharging } from "@/components/viz/pcb/RcCharging";
-import { WorkedAnswer } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
+import { r2, WorkedAnswer } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { CapacitorSymbol, InductorSymbol, ResistorSymbol } from "@/components/viz/pcb/SchematicExplorer.symbols";
 
 const WIRE = "#7b8494";
@@ -87,7 +87,7 @@ function CapacitorAndInductorFigure() {
         <line x1={566} y1={py(0.7)} x2={752} y2={py(0.7)} stroke={vizColors.grid} strokeWidth={1} strokeDasharray="4 4" />
         <line x1={px(1)} y1={50} x2={px(1)} y2={200} stroke={vizColors.grid} strokeWidth={1} strokeDasharray="4 4" />
         <path d={polyline(curve)} fill="none" stroke={vizColors.violet} strokeWidth={2.5} />
-        <circle cx={px(1)} cy={py(1 / (1 + Math.pow(1 / 1.25, 4)))} r={5} fill={vizColors.amber} stroke={vizColors.bg} strokeWidth={2} />
+        <circle cx={r2(px(1))} cy={r2(py(1 / (1 + Math.pow(1 / 1.25, 4))))} r={5} fill={vizColors.amber} stroke={vizColors.bg} strokeWidth={2} />
         <Label x={560} y={50} anchor="end" size={10} mono color={vizColors.muted}>L0</Label>
         <Label x={560} y={py(0.7)} anchor="end" size={10} mono color={vizColors.muted}>70%</Label>
         <Label x={560} y={200} anchor="end" size={10} mono color={vizColors.muted}>0</Label>

@@ -1,6 +1,6 @@
-import type { ComponentType } from "react";
-import { render, cleanup, fireEvent, screen } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import type { ComponentType, ReactElement } from "react";
+import { render, cleanup, fireEvent, screen, act, type RenderResult } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import type { LessonData } from "@/lib/curriculum";
 import CircuitFundamentals from "@/content/pcb/circuit-fundamentals";
 import circuitFundamentalsData from "@/content/pcb/circuit-fundamentals.data";
@@ -13,6 +13,7 @@ import schematicCaptureData from "@/content/pcb/schematic-capture.data";
 import PcbLayoutAndStackup from "@/content/pcb/pcb-layout-and-stackup";
 import pcbLayoutAndStackupData from "@/content/pcb/pcb-layout-and-stackup.data";
 import { OhmsLawCircuit } from "@/components/viz/pcb/OhmsLawCircuit";
+import { DOT_RATE_CAP, dotRate, dotRates } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { RcCharging, x7rDerating } from "@/components/viz/pcb/RcCharging";
 import { BuckConverter, buckModel, ldoModel } from "@/components/viz/pcb/BuckConverter";
 import { SchematicExplorer } from "@/components/viz/pcb/SchematicExplorer";
@@ -155,6 +156,71 @@ describe("OhmsLawCircuit", () => {
   });
 });
 
+describe("charge-dot speed", () => {
+  it("is strictly proportional to the current below the cap, and keeps its direction", () => {
+    expect(dotRate(0.001, 0.01)).toBeCloseTo(0.1, 9);
+    expect(dotRate(0.002, 0.01)).toBeCloseTo(0.2, 9);
+    expect(dotRate(0.005, 0.01)).toBeCloseTo(0.5, 9);
+    expect(dotRate(0.012, 0.01) / dotRate(0.001, 0.01)).toBeCloseTo(12, 9); // 12 times the current is 12 times the speed
+    expect(dotRate(-0.005, 0.01)).toBeCloseTo(-0.5, 9);
+    expect(dotRate(0, 0.01)).toBe(0);
+  });
+
+  it("has a visible cap, so large currents stop looking faster instead of strobing", () => {
+    expect(dotRate(0.024, 0.01)).toBeCloseTo(DOT_RATE_CAP, 9);
+    expect(dotRate(1.2, 0.01)).toBe(DOT_RATE_CAP);
+    expect(dotRate(-1.2, 0.01)).toBe(-DOT_RATE_CAP);
+  });
+
+  it("divider streams share one scale: speed ratios equal the current ratios (11 : 10 : 1 for a 100 k load)", () => {
+    // 12 V, 27 k over 10 k, 100 k load: 332 uA through R1, 302 uA through R2, 30 uA into the load
+    const currents = [332e-6, 302e-6, 30e-6];
+    const [r1, r2, load] = dotRates(currents, 300e-6);
+    expect(r1 / load).toBeCloseTo(332 / 30, 9);
+    expect(r2 / load).toBeCloseTo(302 / 30, 9);
+    expect(r1 / r2).toBeCloseTo(332 / 302, 9);
+    expect(r2).toBeCloseTo(1.007, 3); // 300 uA is one loop per second
+  });
+
+  it("keeps the ratios when the largest divider current would pass the cap", () => {
+    const [a, b, c] = dotRates([0.1, 0.09, 0.009], 300e-6);
+    expect(a).toBeCloseTo(DOT_RATE_CAP, 9);
+    expect(a / c).toBeCloseTo(0.1 / 0.009, 9);
+    expect(b / c).toBeCloseTo(0.09 / 0.009, 9);
+  });
+
+  it("the animated divider streams really move in proportion to their currents", async () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<OhmsLawCircuit />);
+      fireEvent.click(screen.getByRole("radio", { name: "Voltage divider" }));
+      fireEvent.click(screen.getByRole("switch")); // attach the 100 k load
+      const first = (group: Element | undefined) => {
+        const c = group?.querySelector("circle");
+        return { x: Number(c?.getAttribute("cx")), y: Number(c?.getAttribute("cy")) };
+      };
+      const amber = () => Array.from(container.querySelectorAll('g[fill="#fbbf24"]'));
+      const orange = () => container.querySelector('g[fill="#fb923c"]') ?? undefined;
+      const before = { r1: first(amber()[0]), r2: first(amber()[1]), load: first(orange()) };
+      await act(async () => {
+        vi.advanceTimersByTime(160);
+      });
+      const after = { r1: first(amber()[0]), r2: first(amber()[1]), load: first(orange()) };
+      // phase moved, as a fraction of each stream's path length (R1 124 px, R2 130 px, load 320 px)
+      const dR1 = (after.r1.y - before.r1.y) / 124;
+      const dR2 = (after.r2.y - before.r2.y) / 130;
+      const dLoad = (after.load.x - before.load.x) / 320;
+      expect(dLoad).toBeGreaterThan(0);
+      expect(dR1 / dLoad).toBeGreaterThan(10);
+      expect(dR1 / dLoad).toBeLessThan(12.2);
+      expect(dR2 / dLoad).toBeGreaterThan(9);
+      expect(dR2 / dLoad).toBeLessThan(11.2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("RcCharging", () => {
   it("defaults to 100 kΩ and 10 µF: τ = 1 s, 5τ = 5 s, 63.2% reached at 1 s", () => {
     const { container } = render(<RcCharging />);
@@ -285,6 +351,16 @@ describe("SchematicExplorer", () => {
     expect(container.textContent).toContain("Turns VBAT into 3.3 V");
   });
 
+  it("the drawing is a labelled group, not an image, so its 15 part buttons stay available to assistive technology", () => {
+    const { container } = render(<SchematicExplorer />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.getAttribute("role")).toBe("group");
+    expect(svg.getAttribute("aria-label")).toContain("Schematic of a robot motor-driver board");
+    const partButtons = Array.from(svg.querySelectorAll('[role="button"]'));
+    expect(partButtons).toHaveLength(15);
+    for (const b of partButtons) expect(b.getAttribute("tabindex")).toBe("0");
+  });
+
   it("the view buttons zoom the drawing to one section of the board", () => {
     const { container } = render(<SchematicExplorer />);
     const viewBox = () => container.querySelector("svg")?.getAttribute("viewBox");
@@ -314,29 +390,58 @@ describe("SchematicExplorer", () => {
 });
 
 describe("PcbStackupExploded", () => {
-  const layerButtons = () => screen.getAllByRole("button").filter((b) => b.getAttribute("aria-pressed") !== null);
+  const layerSelect = () => screen.getByRole("combobox", { name: /Layer/ });
+  const optionTexts = () => Array.from(layerSelect().querySelectorAll("option")).map((o) => o.textContent ?? "");
 
   it("draws 11 layers for a 4-layer board and 7 for a 2-layer board", () => {
-    render(<PcbStackupExploded />);
-    expect(layerButtons()).toHaveLength(11);
+    const { container } = render(<PcbStackupExploded />);
+    expect(container.querySelectorAll('rect[data-face="front"]')).toHaveLength(11);
+    expect(optionTexts()).toHaveLength(11);
     fireEvent.click(screen.getByRole("radio", { name: "2 layers" }));
-    expect(layerButtons()).toHaveLength(7);
+    expect(container.querySelectorAll('rect[data-face="front"]')).toHaveLength(7);
+    expect(optionTexts()).toHaveLength(7);
   });
 
-  it("hovering a layer shows its description", () => {
+  it("hovering a layer in the drawing shows its description, and the Layer list follows", () => {
     const { container } = render(<PcbStackupExploded />);
-    fireEvent.mouseEnter(screen.getByRole("button", { name: /^L2 · inner copper \(GND\)/ }));
+    fireEvent.mouseEnter(container.querySelector('[data-layer="l2"]')!);
     expect(container.textContent).toContain("unbroken ground plane");
-    // two prepreg layers; the DOM lists the lower layers first, so index 1 is the upper one
-    fireEvent.focus(screen.getAllByRole("button", { name: /^Prepreg 7628/ })[1]);
+    expect((layerSelect() as HTMLSelectElement).value).toBe("l2");
+  });
+
+  it("the Layer list is the keyboard and screen-reader route, in top-to-bottom order", () => {
+    const { container } = render(<PcbStackupExploded />);
+    expect((layerSelect() as HTMLSelectElement).value).toBe("l1"); // the described layer is the selected one
+    const texts = optionTexts();
+    expect(texts[0]).toMatch(/^Top silkscreen/);
+    expect(texts[2]).toMatch(/^L1 · top copper/);
+    expect(texts[texts.length - 1]).toMatch(/^Bottom silkscreen/);
+    fireEvent.change(layerSelect(), { target: { value: "pp1" } });
     expect(container.textContent).toContain("partly cured glass-and-epoxy");
+    fireEvent.change(layerSelect(), { target: { value: "core" } });
+    expect(container.textContent).toContain("fully cured glass-epoxy core");
+  });
+
+  it("the drawing is a labelled group whose painter-order layer shapes are not tab stops or accessible buttons", () => {
+    const { container } = render(<PcbStackupExploded />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.getAttribute("role")).toBe("group");
+    expect(svg.getAttribute("aria-label")).toContain("Exploded view of a 4-layer PCB");
+    const layers = container.querySelectorAll("[data-layer]");
+    expect(layers).toHaveLength(11);
+    for (const g of Array.from(layers)) {
+      expect(g.getAttribute("aria-hidden")).toBe("true");
+      expect(g.getAttribute("tabindex")).toBeNull();
+      expect(g.getAttribute("role")).toBeNull();
+    }
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 
   it("the explode slider pulls the layers apart", () => {
     const { container } = render(<PcbStackupExploded />);
     const slider = sliders(container)[0];
     const spread = () => {
-      const faces = container.querySelectorAll('g[role="button"] > rect[data-face="front"]');
+      const faces = container.querySelectorAll('rect[data-face="front"]');
       // the bottom layer is drawn first so that upper layers occlude lower ones
       return Math.abs(Number(faces[faces.length - 1].getAttribute("y")) - Number(faces[0].getAttribute("y")));
     };
@@ -394,5 +499,76 @@ describe("TraceWidthCalculator", () => {
     expect(riseAtWidth(w, 2, 1, "external")).toBeCloseTo(25, 3);
     expect(riseAtWidth(60, 3, 1, "external")).toBeCloseTo(8.4, 1);
     expect(riseAtWidth(10, 3, 1, "external")).toBeCloseTo(160, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// Hydration stability of the interactive states. tests/hydration-stability.test.tsx covers every lesson's default
+// markup; this renders each visualization in several other states with and without the transcendental functions
+// nudged by one part in 10^14 (the way a different engine's last-bit differences would look) and requires the same markup.
+// ---------------------------------------------------------------------------------------------------------------
+
+const NUDGE_FUNCS = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "exp", "log", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
+
+function withNudgedMath<T>(fn: () => T): T {
+  const saved: Array<[string, (...args: number[]) => number]> = [];
+  for (const name of NUDGE_FUNCS) {
+    const original = Math[name] as (...args: number[]) => number;
+    saved.push([name, original]);
+    (Math as unknown as Record<string, unknown>)[name] = (...args: number[]) => {
+      const v = original(...args);
+      return v === 0 || !Number.isFinite(v) ? v : v * (1 + 1e-14);
+    };
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [name, original] of saved) (Math as unknown as Record<string, unknown>)[name] = original;
+  }
+}
+
+/** Render, drive the component into a state, and return its markup with generated ids (useId) neutralised. */
+function markupAfter(ui: ReactElement, drive: (utils: RenderResult) => void): string {
+  const utils = render(ui);
+  drive(utils);
+  const html = utils.container.innerHTML.replace(/\b(id|for|aria-labelledby|aria-describedby)="[^"]*"/g, '$1=""');
+  cleanup();
+  return html;
+}
+
+const pick = (name: string | RegExp) => () => fireEvent.click(screen.getByRole("radio", { name }));
+const slide = (container: HTMLElement, index: number, value: number | string) =>
+  fireEvent.change(sliders(container)[index], { target: { value: String(value) } });
+
+const scenarios: Array<[string, ReactElement, (utils: RenderResult) => void]> = [
+  ["OhmsLawCircuit, default", <OhmsLawCircuit key="a" />, () => {}],
+  ["OhmsLawCircuit, 12 V into 68 Ω", <OhmsLawCircuit key="b" />, ({ container }) => (slide(container, 0, 12), slide(container, 1, 10))],
+  ["OhmsLawCircuit, loaded divider", <OhmsLawCircuit key="c" />, () => (pick("Voltage divider")(), fireEvent.click(screen.getByRole("switch")))],
+  ["RcCharging, default", <RcCharging key="d" />, () => {}],
+  ["RcCharging, derated 6.3 V", <RcCharging key="e" />, () => (fireEvent.click(screen.getAllByRole("switch")[1]), pick("6.3 V")())],
+  ["RcCharging, discharging with derating", <RcCharging key="f" />, () => (fireEvent.click(screen.getAllByRole("switch")[0]), fireEvent.click(screen.getAllByRole("switch")[1]))],
+  ["RcCharging, ten times the capacitance", <RcCharging key="g" />, ({ container }) => slide(container, 1, Number(sliders(container)[1].value) + 12)],
+  ["BuckConverter, default", <BuckConverter key="h" />, () => {}],
+  ["BuckConverter, 95% duty", <BuckConverter key="i" />, ({ container }) => slide(container, 0, 95)],
+  ["BuckConverter, light load with 10 µH", <BuckConverter key="j" />, ({ container }) => (slide(container, 1, 50), pick("10 µH")())],
+  ["BuckConverter, 2 MHz, 47 µH, 1.5 A", <BuckConverter key="k" />, ({ container }) => (slide(container, 0, 75), slide(container, 1, 1500), pick("2 MHz")(), pick("47 µH")())],
+  ["SchematicExplorer, default", <SchematicExplorer key="l" />, () => {}],
+  ["SchematicExplorer, ERC mode", <SchematicExplorer key="m" />, () => fireEvent.click(screen.getByRole("switch"))],
+  ["SchematicExplorer, GND net and U3 selected", <SchematicExplorer key="n" />, () => (fireEvent.click(screen.getByRole("button", { name: "GND" })), fireEvent.click(screen.getByRole("button", { name: /^U3, TB6612FNG/ })))],
+  ["SchematicExplorer, motor driver view with ERC", <SchematicExplorer key="o" />, () => (pick("Motor driver")(), fireEvent.click(screen.getByRole("switch")))],
+  ["PcbStackupExploded, default", <PcbStackupExploded key="p" />, () => {}],
+  ["PcbStackupExploded, 2 layers", <PcbStackupExploded key="q" />, () => pick("2 layers")()],
+  ["PcbStackupExploded, fully exploded with L2", <PcbStackupExploded key="r" />, ({ container }) => (slide(container, 0, 100), fireEvent.mouseEnter(container.querySelector('[data-layer="l2"]')!))],
+  ["TraceWidthCalculator, default", <TraceWidthCalculator key="s" />, () => {}],
+  ["TraceWidthCalculator, 10 A internal 2 oz", <TraceWidthCalculator key="t" />, ({ container }) => (slide(container, 0, 10), pick("Internal")(), pick("2 oz")())],
+  ["TraceWidthCalculator, 0.1 A 0.5 oz", <TraceWidthCalculator key="u" />, ({ container }) => (slide(container, 0, 0.1), pick("0.5 oz")())],
+];
+
+describe("hydration stability of interactive states", () => {
+  it.each(scenarios)("%s renders identical markup when sin, cos, exp, log, sqrt, pow and hypot differ in the last bits", (_name, ui, drive) => {
+    const plain = markupAfter(ui, drive);
+    const nudged = withNudgedMath(() => markupAfter(ui, drive));
+    expect(plain.length).toBeGreaterThan(500);
+    expect(nudged).toBe(plain);
   });
 });

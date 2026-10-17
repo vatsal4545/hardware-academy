@@ -10,6 +10,16 @@ import { useState, type ReactNode } from "react";
 import { useAnimationFrame, vizColors } from "@/components/viz/shared";
 import { cn } from "@/lib/cn";
 
+/**
+ * Rounding for anything that reaches markup. Engines can differ in the last bits of sin, cos, exp, log, sqrt, pow and
+ * hypot, and a server-rendered value that differs from the browser's in the 15th digit is a hydration mismatch. So every
+ * SVG attribute derived from those functions goes through r2 (coordinates), r3 (opacities and other unit-range values)
+ * or r6 (simulation outputs that later feed text and geometry). The "+ 0" turns -0 into 0.
+ */
+export const r2 = (v: number): number => Math.round(v * 100) / 100 + 0;
+export const r3 = (v: number): number => Math.round(v * 1000) / 1000 + 0;
+export const r6 = (v: number): number => Math.round(v * 1e6) / 1e6 + 0;
+
 const E12 = [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2] as const;
 
 /** E12 preferred values from `start` upwards over `decades` decades, ending on start * 10^decades. */
@@ -68,15 +78,29 @@ export function formatSI(value: number, unit: string, digits = 3): string {
   return `${sign}${shown} ${PREFIXES[idx][1]}${unit}`;
 }
 
+/** The fastest the charge dots ever go, in loops per second. Above it, more current no longer looks faster. */
+export const DOT_RATE_CAP = 2.4;
+
 /**
- * How fast the charge dots circulate (loops per second) for a current in amps.
- * Almost proportional to the current for small currents, and it saturates above about 0.3 A so
- * large currents never strobe. A small floor keeps milliamp-level flow visible.
+ * Dot speed in loops per second for one current: strictly proportional, so `referenceA` amps is one loop per second
+ * and twice the current is exactly twice as fast, up to DOT_RATE_CAP so very large currents do not strobe.
+ * The sign follows the direction of the current.
  */
-export function dotLoopRate(currentA: number): number {
-  const i = Math.abs(currentA);
-  if (i === 0) return 0;
-  return 0.12 + 2.3 * (1 - Math.exp(-i / 0.08));
+export function dotRate(currentA: number, referenceA: number): number {
+  const v = Math.min(DOT_RATE_CAP, Math.abs(currentA) / referenceA);
+  return currentA < 0 ? -v : v;
+}
+
+/**
+ * Dot speeds for several branches that have to be compared with each other, such as the two halves of a divider
+ * and its load. They share one scale (`referenceA` amps is one loop per second), reduced only if the largest current
+ * would pass the cap, so the speed ratios are exactly the current ratios and the KCL split can be read off the dots.
+ */
+export function dotRates(currentsA: readonly number[], referenceA: number): number[] {
+  const largest = Math.max(0, ...currentsA.map((i) => Math.abs(i)));
+  if (largest === 0) return currentsA.map(() => 0);
+  const loopsPerSecondPerAmp = Math.min(1 / referenceA, DOT_RATE_CAP / largest);
+  return currentsA.map((i) => i * loopsPerSecondPerAmp);
 }
 
 export type Pt = readonly [number, number];
@@ -106,7 +130,8 @@ export function makePath(points: readonly Pt[], closed = false): FlowPath {
       const d = f * total;
       const s = segs.find((seg) => d <= seg.start + seg.len) ?? segs[segs.length - 1];
       const k = s.len === 0 ? 0 : (d - s.start) / s.len;
-      return { x: s.x0 + (s.x1 - s.x0) * k, y: s.y0 + (s.y1 - s.y0) * k };
+      // arc lengths come from Math.hypot, so round the point before it can reach markup
+      return { x: r2(s.x0 + (s.x1 - s.x0) * k), y: r2(s.y0 + (s.y1 - s.y0) * k) };
     },
   };
 }

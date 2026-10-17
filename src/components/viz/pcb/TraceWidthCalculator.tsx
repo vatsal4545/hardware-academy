@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, makeScale, vizColors } from "@/components/viz/shared";
 import { traceWidth } from "@/lib/sim/traceWidth";
-import { ControlBar, formatSI, Stat } from "./OhmsLawCircuit.helpers";
+import { ControlBar, formatSI, r2, r6, Stat } from "./OhmsLawCircuit.helpers";
 
 type Oz = "0.5" | "1" | "2" | "3";
 type LayerKind = "external" | "internal";
@@ -16,12 +16,21 @@ const OZ_M = 35e-6; // metres of copper per ounce
 const OZ_OPTIONS: Oz[] = ["0.5", "1", "2", "3"];
 
 /**
+ * traceWidth() with its pow-derived outputs rounded to 6 decimals (about a millionth of a mil), so that the numbers
+ * reaching text and markup are identical whichever engine computed them.
+ */
+function tw(input: Parameters<typeof traceWidth>[0]): ReturnType<typeof traceWidth> {
+  const r = traceWidth(input);
+  return { areaMil2: r6(r.areaMil2), widthMil: r6(r.widthMil), widthMm: r6(r.widthMm) };
+}
+
+/**
  * The temperature rise (°C) that a trace of this width reaches at this current, found by
  * inverting traceWidth(): the required width falls as the allowed rise grows, so bisect on the rise.
  */
 export function riseAtWidth(widthMil: number, currentA: number, copperOz: number, layer: LayerKind): number {
   if (currentA <= 0 || widthMil <= 0) return 0;
-  const required = (rise: number) => traceWidth({ currentA, tempRiseC: rise, copperOz, layer }).widthMil;
+  const required = (rise: number) => tw({ currentA, tempRiseC: rise, copperOz, layer }).widthMil;
   let lo = 0.01;
   let hi = 2000;
   if (required(hi) > widthMil) return hi;
@@ -30,7 +39,7 @@ export function riseAtWidth(widthMil: number, currentA: number, copperOz: number
     if (required(mid) > widthMil) lo = mid;
     else hi = mid;
   }
-  return (lo + hi) / 2;
+  return r6((lo + hi) / 2);
 }
 
 function formatRise(rise: number): string {
@@ -68,7 +77,7 @@ function PlanView({
         const hot = rise > Math.max(40, budget * 2);
         return (
           <g key={st.title}>
-            <rect x={30} y={st.y - h / 2} width={220} height={h} rx={Math.min(3, h / 2)} fill={vizColors.copper} />
+            <rect x={30} y={r2(st.y - h / 2)} width={220} height={r2(h)} rx={r2(Math.min(3, h / 2))} fill={vizColors.copper} />
             <Label x={270} y={st.y - 9} anchor="start" size={11} bold color={i === 2 ? vizColors.amber : vizColors.text}>{st.title}</Label>
             <Label x={270} y={st.y + 8} anchor="start" size={11} mono color={hot ? vizColors.red : i === 2 ? vizColors.green : vizColors.muted}>
               {`${formatRise(rise)} at ${currentA.toFixed(1)} A`}
@@ -83,9 +92,9 @@ function PlanView({
 }
 
 function OptionBars({ currentA, rise, oz, layer }: { currentA: number; rise: number; oz: Oz; layer: LayerKind }) {
-  const rows = OZ_OPTIONS.map((o) => ({ oz: o, w: traceWidth({ currentA, tempRiseC: rise, copperOz: Number(o), layer }).widthMil }));
-  const other = traceWidth({ currentA, tempRiseC: rise, copperOz: Number(oz), layer: layer === "external" ? "internal" : "external" }).widthMil;
-  const here = traceWidth({ currentA, tempRiseC: rise, copperOz: Number(oz), layer }).widthMil;
+  const rows = OZ_OPTIONS.map((o) => ({ oz: o, w: tw({ currentA, tempRiseC: rise, copperOz: Number(o), layer }).widthMil }));
+  const other = tw({ currentA, tempRiseC: rise, copperOz: Number(oz), layer: layer === "external" ? "internal" : "external" }).widthMil;
+  const here = tw({ currentA, tempRiseC: rise, copperOz: Number(oz), layer }).widthMil;
   const max = Math.max(...rows.map((r) => r.w), 1);
   const x = makeScale([0, max], [0, 190]);
   return (
@@ -97,8 +106,8 @@ function OptionBars({ currentA, rise, oz, layer }: { currentA: number; rise: num
         return (
           <g key={r.oz}>
             <Label x={16} y={y + 12} anchor="start" size={12} bold={on} color={on ? vizColors.amber : vizColors.text}>{`${r.oz} oz`}</Label>
-            <rect x={64} y={y} width={Math.max(2, x(r.w))} height={24} rx={3} fill={on ? vizColors.amber : vizColors.cyan} fillOpacity={on ? 0.9 : 0.55} />
-            <Label x={64 + Math.max(2, x(r.w)) + 8} y={y + 12} anchor="start" size={11} mono color={on ? vizColors.amber : vizColors.muted}>
+            <rect x={64} y={y} width={r2(Math.max(2, x(r.w)))} height={24} rx={3} fill={on ? vizColors.amber : vizColors.cyan} fillOpacity={on ? 0.9 : 0.55} />
+            <Label x={r2(64 + Math.max(2, x(r.w)) + 8)} y={y + 12} anchor="start" size={11} mono color={on ? vizColors.amber : vizColors.muted}>
               {`${r.w.toFixed(1)} mil`}
             </Label>
           </g>
@@ -123,7 +132,7 @@ export function TraceWidthCalculator() {
   const [lengthMm, setLengthMm] = useState(50);
 
   const copperOz = Number(oz);
-  const r = traceWidth({ currentA, tempRiseC: rise, copperOz, layer });
+  const r = tw({ currentA, tempRiseC: rise, copperOz, layer });
   const nice = STANDARD_MIL.find((m) => m >= r.widthMil) ?? Math.ceil(r.widthMil / 100) * 100;
   const niceMm = nice * MM_PER_MIL;
   const riseNice = riseAtWidth(nice, currentA, copperOz, layer);
