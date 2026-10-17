@@ -115,32 +115,54 @@ const urdf = `<robot name="course_robot">
 </robot>`;
 
 const avoidCode = `// Part 1 - obstacle avoidance for the open-room arena.
-// sensors.ultrasonic.{left, front, right} are in cm (capped at 150); return wheel commands in -1..1.
+// sensors.ultrasonic.{left, front, right}: cm from the robot's edge to the first wall or obstacle along each ray.
+// Return wheel commands in -1..1 (1 = 40 cm/s).
 function control(sensors, memory) {
   const { left, front, right } = sensors.ultrasonic;
-  const t = sensors.t;
+  const p = (d) => Math.max(0, 1 - d / 60);          // proximity: 0 beyond 60 cm, 1 at contact
 
-  // Escape: when something is close ahead, commit to a spin for 0.6 s (memory beats oscillation).
-  if (memory.escapeUntil !== undefined && t < memory.escapeUntil) return memory.escapeCmd;
-  if (front < 25) {
-    const dir = left > right ? 1 : -1;               // +1 = turn left, toward the open side
-    memory.escapeUntil = t + 0.6;
-    memory.escapeCmd = { left: -0.5 * dir, right: 0.5 * dir };
-    return memory.escapeCmd;
+  // Blocked ahead: spin toward the more open side. Pick the side once and keep it until the front
+  // reads more than 35 cm (hysteresis: in at 25, out at 35), so the robot cannot flip back and forth.
+  if (front < 25 || (memory.spin && front < 35)) {
+    if (!memory.spin) memory.spin = left > right ? 1 : -1;   // +1 = turn left
+    return { left: -0.5 * memory.spin, right: 0.5 * memory.spin };
   }
+  memory.spin = 0;
 
-  // Braitenberg steering: an obstacle on the right slows the left wheel, so the robot turns left.
-  const p = (d) => Math.max(0, 1 - d / 60);          // proximity 0..1 inside 60 cm
-  const base = front < 60 ? 0.35 : 0.6;              // slow down when something is ahead
-  return { left: base - 0.6 * p(right), right: base - 0.6 * p(left) };
+  // Cruise, slow down when something is ahead, and steer away from the closer side. Steering on
+  // the difference keeps the robot moving when both sides are equally close, instead of stalling.
+  const base = front < 60 ? 0.35 : 0.6;
+  const turn = 0.6 * (p(right) - p(left));           // obstacle on the right: turn left
+  return { left: base - turn, right: base + turn };
 }`;
 
-const latencyCode = `// Part 3 - add 150 ms of sensor latency to any controller (the lab steps at 100 Hz: 15 ticks).
+const latencyCode = `// Part 3 - run a controller on delayed sensors. Rename your control() to avoid() and paste it above this.
+// The lab steps at 100 Hz, so the delay is LATENCY_MS / 10 ticks. Each run first spins for a random
+// time, so every press of Run starts from a different heading: count crashes over several runs.
+const LATENCY_MS = 300;
 function control(sensors, memory) {
+  if (memory.spinFor === undefined) memory.spinFor = Math.random() * 1.9;   // up to one full turn
+  if (sensors.t < memory.spinFor) return { left: -0.5, right: 0.5 };
   memory.queue = memory.queue || [];
   memory.queue.push(JSON.parse(JSON.stringify(sensors)));
-  const delayed = memory.queue.length > 15 ? memory.queue.shift() : memory.queue[0];
-  return avoid(delayed, memory);                     // paste your Part 1 controller here as avoid()
+  const delayed = memory.queue.length > LATENCY_MS / 10 ? memory.queue.shift() : memory.queue[0];
+  return avoid(delayed, memory);
+}`;
+
+const fixedCode = `// Part 3 answer - the Part 1 avoider retuned for 300 ms of latency (keep the wrapper above it).
+function avoid(sensors, memory) {
+  const { left, front, right } = sensors.ultrasonic;
+  const p = (d) => Math.max(0, 1 - d / 70);          // react from 70 cm instead of 60
+
+  if (front < 30 || (memory.spin && front < 45)) {   // wider margins: in at 30, out at 45
+    if (!memory.spin) memory.spin = left > right ? 1 : -1;
+    return { left: -0.25 * memory.spin, right: 0.25 * memory.spin };   // half the spin rate
+  }
+  memory.spin = 0;
+
+  const base = front < 70 ? 0.25 : 0.4;              // two thirds of the speed
+  const turn = 0.3 * (p(right) - p(left));           // half the steering gain
+  return { left: base - turn, right: base + turn };
 }`;
 
 export default function Lesson() {
@@ -190,8 +212,9 @@ export default function Lesson() {
           <p>
             The <a href="/labs/robot-sim">robot simulator lab</a> models the course robot as a differential drive with a 12 cm wheel
             base, a 7 cm radius and a top wheel speed of 40 cm/s, integrated exactly along arcs. It has three ultrasonic rays at +45°,
-            0° and −45°, capped at 150 cm and measured from the robot&apos;s edge; two line sensors 6 cm ahead and 5 cm apart; wheel
-            encoders at 10 ticks per cm; and a yaw rate. Touching a wall or an obstacle stops the robot and sets{" "}
+            0° and −45°, measured from the robot&apos;s edge to the first wall or obstacle (the canvas draws rays beyond the 150 cm
+            rated range in red as open, but the readings go all the way to the far wall); two line sensors 6 cm ahead and 5 cm apart;
+            wheel encoders at 10 ticks per cm; and a yaw rate. Touching a wall or an obstacle stops the robot and sets{" "}
             <code>crashed</code>. It deliberately leaves out noise, cones, latency, slip and motor lag, so you learn the logic first;
             margins for the real world are your job.
           </p>
@@ -296,13 +319,14 @@ export default function Lesson() {
               leaving the line for more than 1 s and without a crash.
             </li>
             <li>
-              Make it realistic: wrap your avoider in the latency wrapper below (150 ms) and run it again. Then fix it without removing
-              the latency.
+              Make it realistic: put your avoider behind the latency wrapper below (300 ms) and press Run five or six times; every
+              run starts from a random heading. Then fix the controller without removing the latency.
             </li>
           </ol>
           <p>
-            <strong>Worked answer, part 1.</strong> A Braitenberg steering law plus a committed escape spin, which stops the
-            left-right dithering that pure reactive steering shows in corners:
+            <strong>Worked answer, part 1.</strong> Braitenberg-style steering on the difference between the side rays, plus an
+            escape spin that commits to one direction with hysteresis, so the robot neither stalls between two obstacles nor
+            dithers in corners:
           </p>
           <CodeBlock lang="js" title="obstacle-avoid.js" code={avoidCode} />
           <p>
@@ -312,11 +336,21 @@ export default function Lesson() {
           </p>
           <CodeBlock lang="js" title="latency-wrapper.js" code={latencyCode} />
           <p>
-            <strong>Part 3, what to look for:</strong> at 0.6 commanded speed (24 cm/s), 150 ms of latency means every reaction
-            happens about 4 cm later, and twice that at full speed. Watch the minimum clearance in the telemetry: it shrinks, and
-            glancing contacts appear first at obstacle edges, where the ±45° rays see the obstacle late. The robust fix is the one from
-            the scenario: make the threshold a function of speed (speed × latency + braking distance + clearance) and slow down
-            whenever anything is within 60 cm. Raising the threshold alone also works, but makes the robot timid in narrow corridors.
+            <strong>Part 3, what you should see.</strong> At 0 and 150 ms nothing visible changes. At 300 ms roughly one run in four
+            ends with Crashed: yes within a minute (270 of 1,000 randomized runs in our tests), and always the same way: the robot
+            cruises toward the small obstacle near the top-right corner, and steering that reacts 0.3 s late cannot get it clear. The escape spins overshoot too: at a command of 0.5 the robot turns at 191°/s, so it keeps spinning about 57° past
+            the gap it saw. Pause and step through a spin while watching θ in the telemetry to see it.
+          </p>
+          <p>
+            The fix follows the margin rule: every gain inside a delayed loop has to shrink, and every margin has to grow with speed
+            × delay. Slow the cruise from 0.6 to 0.4, halve the spin rate and the steering gain, and widen the thresholds:
+          </p>
+          <CodeBlock lang="js" title="obstacle-avoid-with-latency.js" code={fixedCode} />
+          <p>
+            In our tests this version did not crash once in 1,000 randomized runs at each of 0, 150, 300 and 500 ms. One surprise is worth
+            knowing: the Part 1 answer also survives 500 ms from this start, because whether a late reaction hits something depends on
+            where the robot happens to be when it is late. That is exactly why teams randomize latency over a range instead of
+            testing one value.
           </p>
         </Exercise>
       </Section>

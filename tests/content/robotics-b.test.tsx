@@ -16,10 +16,35 @@ import { DiffDriveKinematics } from "@/components/viz/robotics/DiffDriveKinemati
 import { ArmKinematics } from "@/components/viz/robotics/ArmKinematics";
 import { StateMachine } from "@/components/viz/robotics/StateMachine";
 import { WiringDiagram } from "@/components/viz/robotics/WiringDiagram";
-import { ArenaPreview } from "@/components/viz/robotics/ArenaPreview";
+import { ArenaPreview, PREVIEWS, previewPose } from "@/components/viz/robotics/ArenaPreview";
 import { RosGraph } from "@/components/viz/robotics/RosGraph";
+import { arenas, collides, compileController, initialState, sense, step } from "@/lib/sim/robot";
 
 afterEach(cleanup);
+
+/** Text of the first code block in a rendered lesson that contains `marker`. */
+function codeBlock(container: HTMLElement, marker: string): string {
+  const el = Array.from(container.querySelectorAll("pre code")).find((c) => (c.textContent ?? "").includes(marker));
+  if (!el) throw new Error(`no code block contains "${marker}"`);
+  return el.textContent ?? "";
+}
+
+/** Runs learner code in the lab's own physics, the way the robot simulator lab does (control, then step, at 100 Hz). */
+function simulate(code: string, arenaId: string, seconds: number) {
+  const arena = arenas.find((a) => a.id === arenaId);
+  if (!arena) throw new Error(arenaId);
+  const { control, error } = compileController(code);
+  if (!control) throw new Error(error);
+  let s = initialState(arena);
+  const memory: Record<string, unknown> = {};
+  const states = new Set<string>();
+  for (let i = 0; i < seconds * 100 && !s.crashed; i++) {
+    s = step(s, control(sense(s, arena), memory), arena, 0.01);
+    if (typeof memory.state === "string") states.add(memory.state);
+    if (control.lastError) throw new Error(control.lastError);
+  }
+  return { crashed: s.crashed, states };
+}
 
 const lessons: Array<{ slug: string; Lesson: ComponentType; data: LessonData; maxWords?: number }> = [
   { slug: "kinematics-and-motion", Lesson: KinematicsLesson, data: kinematicsData, maxWords: 1200 },
@@ -106,6 +131,46 @@ describe("lesson specifics", () => {
     const { container } = render(<SimulateLesson />);
     expect(container.querySelector('a[href="/labs/robot-sim"]')).not.toBeNull();
   });
+
+  it("firmware treats a missing echo as unknown and declares its types before the first function", () => {
+    const { container } = render(<BuildLesson />);
+    const code = codeBlock(container, "class Motor");
+    expect(code).not.toMatch(/:\s*400\.0f/); // a no-echo pulse must not become 400 cm of free space
+    expect(code).toContain("missedPings");
+    // the Arduino IDE inserts generated prototypes above the first function, so every type must come before it
+    const firstFunction = code.indexOf("void IRAM_ATTR isrLeft()");
+    expect(firstFunction).toBeGreaterThan(0);
+    for (const m of code.matchAll(/enum class \w+/g)) expect(m.index).toBeLessThan(firstFunction);
+    expect(code).toContain("Arduino IDE 2.x");
+  });
+
+  it("the L25 worked state machine exercises AVOID in the open room and FOLLOW on the line track", () => {
+    const { container } = render(<PerceptionLesson />);
+    const code = codeBlock(container, "as a state machine");
+    const room = simulate(code, "open-room", 60);
+    expect(room.crashed).toBe(false);
+    expect(room.states.has("AVOID")).toBe(true);
+    const track = simulate(code, "line-track", 60);
+    expect(track.crashed).toBe(false);
+    expect(track.states.has("FOLLOW")).toBe(true);
+    expect(track.states.has("STOP")).toBe(false);
+  });
+
+  it("the L27 avoiders behave as the lesson says under 300 ms of latency", () => {
+    const { container } = render(<SimulateLesson />);
+    const part1 = codeBlock(container, "Part 1 - obstacle avoidance");
+    const wrapper = codeBlock(container, "Part 3 - run a controller on delayed sensors");
+    const fixed = codeBlock(container, "Part 3 answer");
+    expect(wrapper).toContain("const LATENCY_MS = 300;");
+    expect(simulate(part1, "open-room", 60).crashed).toBe(false);
+    const asAvoid = part1.replace("function control(sensors, memory)", "function avoid(sensors, memory)");
+    // the wrapper starts each run with a random spin; replace it with fixed spins to make the test deterministic
+    const spins = Array.from({ length: 19 }, (_, k) => (k / 10).toFixed(1));
+    const crashes = (body: string) =>
+      spins.filter((spin) => simulate(`${body}\n${wrapper.replace("Math.random() * 1.9", spin)}`, "open-room", 60).crashed).length;
+    expect(crashes(asAvoid)).toBeGreaterThan(0); // latency really does crash the Part 1 answer
+    expect(crashes(fixed)).toBe(0); // and the retuned version survives it
+  }, 60000);
 });
 
 describe("DiffDriveKinematics", () => {
@@ -196,12 +261,26 @@ describe("WiringDiagram", () => {
 });
 
 describe("ArenaPreview", () => {
-  it("switches between the three arenas", () => {
+  it("switches between the lab's three arenas", () => {
     render(<ArenaPreview />);
-    for (const name of ["Open room", "Line track", "Corridor"]) {
-      fireEvent.click(screen.getByRole("radio", { name }));
-      expect(screen.getByRole("img", { name: new RegExp(name, "i") })).toBeTruthy();
+    for (const arena of arenas) {
+      fireEvent.click(screen.getByRole("radio", { name: arena.name }));
+      expect(screen.getByRole("img", { name: new RegExp(arena.name, "i") })).toBeTruthy();
     }
+  });
+
+  it("draws the lab's own arenas, and its sample paths never collide", () => {
+    expect(PREVIEWS.map((p) => p.arena)).toEqual(arenas);
+    PREVIEWS.forEach((p, i) => {
+      let length = 0;
+      for (let k = 1; k < p.path.length; k++) length += Math.hypot(p.path[k][0] - p.path[k - 1][0], p.path[k][1] - p.path[k - 1][1]);
+      let hits = 0;
+      for (let s = 0; s <= length; s += 1) {
+        const q = previewPose(i, s);
+        if (collides(q.x, q.y, p.arena)) hits++;
+      }
+      expect(hits, p.arena.id).toBe(0);
+    });
   });
 });
 
@@ -212,5 +291,14 @@ describe("RosGraph", () => {
     expect(screen.getAllByText(/vision_msgs\/msg\/Detection2DArray/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("radio", { name: /reliable/i }));
     expect(screen.getByText(/incompatible qos/i)).toBeTruthy();
+  });
+
+  it("shows a visible focus ring on keyboard focus", () => {
+    render(<RosGraph />);
+    const node = screen.getByRole("button", { name: /\/detector/ });
+    fireEvent.focus(node);
+    expect(screen.getByTestId("focus-ring-detector")).toBeTruthy();
+    fireEvent.blur(node);
+    expect(screen.queryByTestId("focus-ring-detector")).toBeNull();
   });
 });

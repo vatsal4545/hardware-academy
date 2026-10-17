@@ -166,6 +166,7 @@ function lerp(e: { x1: number; y1: number; x2: number; y2: number }, u: number) 
 export function RosGraph() {
   const { t, playing, toggle, reset } = useViz();
   const [selected, setSelected] = useState<ItemId | null>(null);
+  const [focused, setFocused] = useState<ItemId | null>(null);
   const [subQos, setSubQos] = useState<Reliability>("best_effort");
   const [pubReliable, setPubReliable] = useState(false);
   const [lossy, setLossy] = useState(false);
@@ -330,6 +331,7 @@ export function RosGraph() {
         {/* nodes and topics */}
         {ITEMS.map((it) => {
           const isSel = selected === it.id;
+          const isFocused = focused === it.id;
           const h = it.kind === "node" ? NODE_H : TOPIC_H;
           return (
             <g
@@ -340,8 +342,24 @@ export function RosGraph() {
               aria-pressed={isSel}
               onClick={() => setSelected(it.id)}
               onKeyDown={onKey(it.id)}
+              onFocus={() => setFocused(it.id)}
+              onBlur={() => setFocused((f) => (f === it.id ? null : f))}
               style={{ cursor: "pointer", outline: "none" }}
             >
+              {isFocused && (
+                <rect
+                  data-testid={`focus-ring-${it.id}`}
+                  x={it.x - it.w / 2 - 5}
+                  y={it.y - h / 2 - 5}
+                  width={it.w + 10}
+                  height={h + 10}
+                  rx={it.kind === "node" ? h / 2 + 5 : 7}
+                  fill="none"
+                  stroke={vizColors.text}
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                />
+              )}
               <rect
                 x={it.x - it.w / 2}
                 y={it.y - h / 2}

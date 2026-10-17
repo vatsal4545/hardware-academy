@@ -119,7 +119,10 @@ function PowerFigure() {
 
 const sketch = String.raw`// Hardware Academy course robot
 // ESP32 DevKitC + TB6612FNG + 2x N20 encoder gearmotors + HC-SR04 on an SG90 + 2x TCRT5000.
-// Arduino-ESP32 core 3.x (ledcAttach / ledcWrite take a pin). On core 2.x use ledcSetup + ledcAttachPin.
+// Target: Arduino IDE 2.x with the esp32 boards package 3.x (board: ESP32 Dev Module), saved as robot/robot.ino.
+// Core 3.x API: ledcAttach / ledcWrite take a pin (on core 2.x use ledcSetup + ledcAttachPin).
+// Every type is declared before the first function, so the IDE's auto-generated prototypes compile;
+// the same file also builds as a plain C++ main.cpp, for example in PlatformIO with an Arduino-ESP32 3.x platform.
 // Serial commands at 115200 baud: g = obstacle avoidance, l = line following, s = stop.
 
 #include <Arduino.h>
@@ -151,6 +154,12 @@ constexpr uint32_t LOOP_US = 10000;               // 100 Hz control loop
 constexpr uint32_t PING_MS = 60;                  // HC-SR04 needs ~60 ms between pings
 constexpr uint32_t TELEMETRY_MS = 100;            // 10 Hz
 constexpr int LINE_THRESHOLD = 2000;              // 12-bit ADC: calibrate on your floor and tape
+
+// ---------- Behavior states ----------
+// Declared before any function: the Arduino IDE inserts its generated prototypes (such as
+// setAvoidState(AvoidState)) above the first function, so these types must already exist there.
+enum class Mode { STOPPED, AVOID, LINE };
+enum class AvoidState { CRUISE, LOOK, TURN };
 
 // ---------- Motor: one TB6612 channel ----------
 class Motor {
@@ -214,8 +223,10 @@ void readTicks(int32_t &l, int32_t &r) {
 // ---------- Ultrasonic: non-blocking echo timing ----------
 volatile uint32_t echoStartUs = 0, echoWidthUs = 0;
 volatile bool echoReady = false;
-float distanceCm = -1.0f;                           // -1 = unknown
+float distanceCm = -1.0f;                           // last reading; -1 = unknown (no echo or silent sensor)
+uint8_t missedPings = 0;                            // consecutive pings without a valid echo
 uint32_t lastEchoMs = 0;
+bool sonarDead = true;                              // no echo pulse at all for 250 ms: wire off or module dead
 
 void IRAM_ATTR isrEcho() {
   const uint32_t now = micros();
@@ -237,10 +248,17 @@ void updateDistance() {
   if (echoReady) {
     echoReady = false;
     const uint32_t w = echoWidthUs;
-    distanceCm = (w > 0 && w < 23200) ? w / 58.0f : 400.0f;  // 58 us per cm; no echo = beyond 4 m
     lastEchoMs = millis();
+    if (w > 0 && w < 23200) {                                // 58 us per cm: a real echo within 4 m
+      distanceCm = w / 58.0f;
+      missedPings = 0;
+    } else {                                                 // ~38 ms pulse = no echo came back. An angled
+      distanceCm = -1.0f;                                    // wall can reflect the ping away, so this is
+      if (missedPings < 255) missedPings++;                  // UNKNOWN, never free space.
+    }
   }
-  if (millis() - lastEchoMs > 250) distanceCm = -1.0f;      // sensor silent: unknown, not free
+  sonarDead = millis() - lastEchoMs > 250;                   // not even a timeout pulse
+  if (sonarDead) distanceCm = -1.0f;
 }
 
 // ---------- Servo on LEDC: 50 Hz, 14-bit ----------
@@ -300,8 +318,6 @@ struct SpeedPI {
 SpeedPI piL, piR;
 
 // ---------- Behaviors ----------
-enum class Mode { STOPPED, AVOID, LINE };
-enum class AvoidState { CRUISE, LOOK, TURN };
 Mode mode = Mode::STOPPED;
 AvoidState avoidState = AvoidState::CRUISE;
 uint32_t stateSinceMs = 0;
@@ -320,8 +336,17 @@ void obstacleAvoid(float &vL, float &vR) {
   switch (avoidState) {
     case AvoidState::CRUISE: {
       servoWriteDeg(90);
-      if (distanceCm < 0.0f) {                               // sonar silent: never drive blind
+      if (sonarDead) {                                       // no sonar at all: never drive blind
         vL = vR = 0;
+        return;
+      }
+      if (missedPings >= 3) {                                // ~180 ms without an echo: stop and look around
+        setAvoidState(AvoidState::LOOK);
+        vL = vR = 0;
+        return;
+      }
+      if (distanceCm < 0.0f) {                               // one or two missed echoes: creep, don't assume free
+        vL = vR = 50.0f;
         return;
       }
       if (distanceCm < 25.0f) {                              // obstacle: stop and look around
@@ -337,7 +362,7 @@ void obstacleAvoid(float &vL, float &vR) {
       vL = vR = 0;
       if (inState < 450) {
         servoWriteDeg(160);
-        lookLeftCm = distanceCm;                             // last reading before 450 ms wins
+        lookLeftCm = distanceCm;                             // last reading before 450 ms wins; unknown (-1) loses
       } else if (inState < 900) {
         servoWriteDeg(20);
         lookRightCm = distanceCm;
@@ -378,7 +403,12 @@ void lineFollow(float &vL, float &vR) {
   } else {
     vL = vR = 0;                                             // give up after 3 s
   }
-  if (distanceCm >= 0.0f && distanceCm < 15.0f) vL = vR = 0;  // never drive into something
+  if (sonarDead || (distanceCm >= 0.0f && distanceCm < 15.0f)) {
+    vL = vR = 0;                                             // never drive into something, or blind
+  } else if (distanceCm < 0.0f) {
+    vL *= 0.5f;                                              // no echo: unknown, so slow down
+    vR *= 0.5f;
+  }
 }
 
 // ---------- 100 Hz control step ----------
@@ -690,8 +720,11 @@ export default function Lesson() {
             interrupts collect fast events (encoder edges, the sonar echo), a fixed 100 Hz control step reads sensors, updates
             odometry, runs the active behavior and closes a speed loop per wheel, and telemetry goes out as CSV at 10 Hz so you can
             plot it. Nothing calls <code>delay()</code> or a blocking <code>pulseIn()</code>, so a missing echo can never stall the
-            motors. Upload it with the Arduino IDE or PlatformIO (board: ESP32 Dev Module), open the serial monitor at 115200 baud and
-            type <code>g</code> to start obstacle avoidance, <code>l</code> for line following, <code>s</code> to stop.
+            motors, and a missing echo is treated as unknown, never as open space: the robot creeps, and after three missed pings
+            in a row it stops and looks around. The listing targets the Arduino IDE 2.x with the esp32 boards package 3.x: save it
+            as <code>robot/robot.ino</code>, select ESP32 Dev Module, upload, open the serial monitor at 115200 baud and type{" "}
+            <code>g</code> to start obstacle avoidance, <code>l</code> for line following, <code>s</code> to stop. It also builds
+            unchanged as <code>main.cpp</code> in PlatformIO, provided the platform ships Arduino-ESP32 3.x.
           </p>
         </Prose>
         <CodeBlock lang="cpp" title="robot.ino" code={sketch} />

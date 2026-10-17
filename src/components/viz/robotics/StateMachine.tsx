@@ -33,8 +33,8 @@ const STATES: Record<FsmState, StateInfo> = {
     x: 545,
     y: 165,
     color: vizColors.orange,
-    action: "Arcs right around the obstacle (left 0.6, right 0.15) until the front range reads more than 30 cm.",
-    wheels: [0.6, 0.15],
+    action: "Turns toward the more open side, chosen on entry (inner wheel −0.2, outer 0.5), until the front range reads more than 30 cm for 0.8 s.",
+    wheels: [0.5, -0.2],
   },
   recover: {
     name: "Recover",
