@@ -151,8 +151,9 @@ export default function Lesson() {
             A bench supply is the cheapest diagnostic you own. In constant-current mode with the voltage collapsed, the ratio of the two is the apparent
             load resistance: 1.9 V at 0.8 A is 2.4 Ω, which is no working board. A healthy idle shows the full voltage and a small, steady current that
             matches your estimate. If the current creeps up over several seconds, something is heating and its resistance is falling. Remember the
-            power, too: 1 V at 0.5 A injected into a shorted rail is only 0.5 W, enough to warm a part for a thermal camera but far too little to
-            damage the board.
+            power, too: a supply limited to 1 V and 0.5 A can put at most 0.5 W into a shorted rail, and a real short drags the voltage down (0.5 A
+            through 0.45 Ω is only 0.2 V), so the failed part itself dissipates about 0.1 W. That is enough to warm it for a thermal camera but far
+            too little to damage the board.
           </p>
 
           <h3>Instruments and what each is for</h3>
@@ -178,8 +179,9 @@ export default function Lesson() {
             the edges were clean, so sample at least four times the bus clock and set the threshold for your logic level. A thermal camera turns a
             short into a picture: power the board from a current-limited supply and look for the hot part, remembering that bare copper and shiny
             solder have low emissivity (about 0.1) and read cold, while mould compound and solder mask (about 0.9) read true. Without a camera, a drop
-            of isopropyl alcohol evaporates first on the hottest part, and freeze spray on the culprit makes the supply current change. A current
-            probe or a shunt shows pulsed currents without breaking the circuit.
+            of isopropyl alcohol evaporates first on the hottest part, and freeze spray on the culprit makes the supply current change. A clamp-style
+            current probe, or a sense resistor that is already in the circuit, shows pulsed currents without breaking it; a new series shunt has to be
+            put in the path.
           </p>
 
           <h3>The usual suspects</h3>
@@ -253,7 +255,7 @@ export default function Lesson() {
                 <strong>3V3.</strong> Meter: 3.20 to 3.40 V. Scope with 20 MHz bandwidth limit and spring ground: under 50 mV peak to peak.
               </li>
               <li>
-                <strong>EN and IO0.</strong> Both near 3.3 V; pressing BOOT takes IO0 to 0 V and pressing EN pulses EN low for about 10 ms.
+                <strong>EN and IO0.</strong> Both near 3.3 V; pressing BOOT takes IO0 to 0 V, and pressing EN holds EN at 0 V until you release it, after which it climbs back with a time constant of about 10 ms (10 kΩ and 1 µF).
               </li>
               <li>
                 <strong>Programming.</strong> Adapter TX to RXD0, RX to TXD0, common ground, hold BOOT, tap EN and read the chip ID with esptool. If it

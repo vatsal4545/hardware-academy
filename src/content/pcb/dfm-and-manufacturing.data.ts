@@ -62,9 +62,9 @@ const data: LessonData = {
   scenario: {
     title: "Half the 0402s tombstone",
     context:
-      "A 40-board run comes back from a low-cost assembler with 12 to 15 of the 60 0402 capacitors and LEDs on every board standing on one end after reflow. The failures are not random: each tombstoned part has one pad tied to a large ground pour with a solid connection and the other pad on a 0.2 mm trace. Parts with matching copper on both pads are fine, and so are the 0603 and larger parts. The assembler's profile log shows a preheat ramp of 3.5 °C/s.",
+      "A 40-board run comes back from a low-cost assembler with about half of the 60 0402 capacitors and LEDs on every board, 28 to 32 of them, standing on one end after reflow. The failures are not random: each tombstoned part has one pad tied to a large ground pour with a solid connection and the other pad on a 0.2 mm trace. Parts with matching copper on both pads are fine, and so are the 0603 and larger parts. The assembler's profile log shows a preheat ramp of 3.5 °C/s.",
     symptoms: [
-      "12 to 15 of 60 0402 parts per board stand on one end; 0603 and larger parts are fine",
+      "28 to 32 of the 60 0402 parts on each board stand on one end; 0603 and larger parts are fine",
       "Every failed part has one pad on the ground pour and the other on a thin 0.2 mm trace",
       "The end that is lifted off the board is always the one on the ground pour",
       "The reflow log shows a preheat ramp of 3.5 °C/s with almost no soak",
@@ -94,7 +94,7 @@ const data: LessonData = {
     },
     {
       q: "Walk me through a reflow profile for SAC305 and what goes wrong at each end.",
-      a: "Preheat brings the board up at no more than about 3 °C/s to 150 °C so the parts are not shocked. The soak from 150 to about 200 °C over 60 to 120 seconds activates the flux and evens out temperature between large and small parts. Then the board ramps through the 217 °C liquidus of SAC305 to a peak around 245 °C and spends 45 to 90 seconds above liquidus, long enough to wet but short enough to protect parts and limit intermetallic growth. Too cool or too short gives dull cold joints and poor wetting, while too hot or too long damages components and the laminate. Cooling at no more than 4 to 6 °C/s gives a fine-grained joint.",
+      a: "Preheat brings the board up at no more than about 3 °C/s to 150 °C so the parts are not shocked. The soak from 150 to about 200 °C over 60 to 120 seconds activates the flux and evens out temperature between large and small parts. Then the board ramps through the 217 °C liquidus of SAC305 to a peak around 245 °C and spends 45 to 90 seconds above liquidus, long enough to wet but short enough to protect parts and limit intermetallic growth. Too cool or too short gives dull cold joints and poor wetting, while too hot or too long damages components and the laminate. Cooling quickly but no faster than about 6 °C/s, which would shock the parts, gives a fine-grained joint, while a very slow cool coarsens the grain and thickens the brittle intermetallic layer.",
       level: "deep",
     },
     {
@@ -116,7 +116,7 @@ const data: LessonData = {
   quiz: [
     {
       q: "Which file format carries one layer of PCB artwork, such as a copper layer, to the fab?",
-      choices: ["Excellon", "Gerber RS-274X", "STEP", "BOM CSV"],
+      choices: ["Excellon (.drl)", "Gerber RS-274X", "STEP (.step)", "BOM (.csv)"],
       answer: 1,
       explain:
         "Gerber (RS-274X) is the 2-D vector format used for each layer: copper, solder mask, silkscreen, paste and outline. Excellon carries the drills, STEP is a 3-D mechanical model and the BOM is for the assembler. IPC-2581 can bundle all of them into one file.",
@@ -131,10 +131,10 @@ const data: LessonData = {
     {
       q: "After reflow, an 0402 capacitor stands on one end. The most likely cause is",
       choices: [
-        "Too much flux in the paste",
+        "Too much flux in the paste, which floats one end of the part",
         "Unequal heating of its two pads from unequal thermal mass",
-        "Silkscreen printed over the pads",
-        "A solder mask that is slightly too thick",
+        "Silkscreen printed over the pads, which tilts the part",
+        "A solder mask that is slightly too thick under the part",
       ],
       answer: 1,
       explain:
@@ -143,10 +143,10 @@ const data: LessonData = {
     {
       q: "An acid trap is",
       choices: [
-        "A via with no drill",
-        "An acute-angle copper corner where etchant can pool",
-        "A pad with too little annular ring",
-        "A thermal relief with only two spokes",
+        "A via filled with resin that traps the etchant",
+        "An acute copper corner where etchant can pool",
+        "A pad whose annular ring is too thin for the drill",
+        "A thermal relief with only two spokes instead of four",
       ],
       answer: 1,
       explain:
@@ -155,10 +155,10 @@ const data: LessonData = {
     {
       q: "The centroid file contains",
       choices: [
-        "Net names and trace widths",
+        "Net names, trace widths and clearances per net class",
         "Reference designator, X, Y, rotation and board side",
-        "Drill sizes and hole counts",
-        "Supplier part numbers and prices",
+        "Drill sizes, hole counts and plating type per hole",
+        "Supplier part numbers, quantities and unit prices",
       ],
       answer: 1,
       explain:
@@ -166,7 +166,12 @@ const data: LessonData = {
     },
     {
       q: "Which reflow stage mainly activates the flux and evens out temperature between big and small parts?",
-      choices: ["The peak", "The soak at roughly 150 to 200 °C", "The cooling slope", "A preheat ramp of 5 °C/s"],
+      choices: [
+        "The peak, about 25 to 30 °C above liquidus",
+        "The soak at roughly 150 to 200 °C",
+        "The cooling slope after the peak",
+        "A preheat ramp of 5 °C/s",
+      ],
       answer: 1,
       explain:
         "During the soak, which lasts 60 to 120 s, the flux cleans the oxide from pads and leads while heavy parts and large pours catch up with light ones. Skipping it, or racing through it, is a classic cause of tombstoning and voids. A preheat ramp over 3 °C/s risks thermal shock instead.",
@@ -174,10 +179,10 @@ const data: LessonData = {
     {
       q: "Your CAD DRC is clean. Why still run the fab's DFM check?",
       choices: [
-        "DRC cannot read Gerber files",
-        "DRC only knows the rules you gave it, while the fab also checks process limits against its own capability",
-        "DFM checks are required by law before manufacture",
-        "DRC results are only valid for two-layer boards",
+        "The fab's DFM check replaces your DRC, so your own rules are ignored",
+        "DRC knows only the rules you entered, not the fab's own process limits",
+        "DFM checks are legally required before any board is built",
+        "DRC results only apply to two-layer boards, not four-layer ones",
       ],
       answer: 1,
       explain:

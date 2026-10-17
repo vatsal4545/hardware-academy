@@ -123,11 +123,12 @@ export default function Lesson() {
 
           <h3>How the bare board is made</h3>
           <ol>
-            <li>Imaging: photoresist on 35 µm copper-clad laminate is exposed with your artwork.</li>
-            <li>Etching removes the unprotected copper, and automated optical inspection checks each inner layer.</li>
+            <li>Imaging: photoresist on 35 µm copper-clad laminate is exposed with your artwork, inner layers first.</li>
+            <li>Etching removes the unprotected inner-layer copper, and automated optical inspection checks each inner layer.</li>
             <li>Lamination presses the layers and prepreg together at about 180 °C.</li>
             <li>Drilling cuts the holes: mechanical down to 0.2 mm, laser for microvias.</li>
             <li>Plating puts about 20 µm of copper in the barrels so the holes connect layers.</li>
+            <li>The outer layers are imaged and etched only now, after plating, with tin protecting the copper that stays.</li>
             <li>Solder mask, a liquid photoimageable ink, is printed and exposed, leaving the pads open.</li>
             <li>Legend: silkscreen text is printed by inkjet.</li>
             <li>Surface finish (HASL, ENIG gold over nickel, or OSP) protects the exposed copper.</li>

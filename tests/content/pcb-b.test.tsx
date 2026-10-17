@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { act, type ComponentType } from "react";
 import { hydrateRoot } from "react-dom/client";
@@ -130,6 +130,14 @@ describe.each(cases)("$slug", ({ Lesson, data }) => {
       expect(q.answer).toBeLessThan(4);
       expect(q.explain.length).toBeGreaterThan(60);
     }
+  });
+
+  it("does not let the length of a choice give the answer away", () => {
+    const longest = data.quiz.filter((q) => q.choices.every((c, i) => i === q.answer || c.length < q.choices[q.answer].length));
+    const shortest = data.quiz.filter((q) => q.choices.every((c, i) => i === q.answer || c.length > q.choices[q.answer].length));
+    const names = (list: typeof data.quiz) => list.map((q) => `"${q.q}"`).join(", ");
+    expect(longest.length, `the correct choice is the strictly longest in ${longest.length} of ${data.quiz.length}: ${names(longest)}`).toBeLessThanOrEqual(2);
+    expect(shortest.length, `the correct choice is the strictly shortest in ${shortest.length} of ${data.quiz.length}: ${names(shortest)}`).toBeLessThanOrEqual(2);
   });
 });
 
@@ -390,6 +398,63 @@ describe("DebugFlowchart find-the-short game", () => {
     desolder("C5");
     expect(screen.getByTestId("hunt-message").textContent).toMatch(/removed C5.*no change/i);
   });
+
+  it("keeps its focusable parts out of any image role, so a screen reader can reach them", () => {
+    const { container } = render(<DebugFlowchart />);
+    for (const img of container.querySelectorAll('svg[role="img"]')) {
+      expect(img.querySelector('[role="button"], button, [tabindex]'), `a focusable control sits inside the image "${img.getAttribute("aria-label")}"`).toBeNull();
+    }
+    const board = container.querySelector('svg[role="group"]');
+    expect(board, "the board is not exposed as a group").not.toBeNull();
+    expect(board!.getAttribute("aria-label")).toMatch(/motor-driver board/i);
+    const targets = within(board as unknown as HTMLElement).getAllByRole("button");
+    expect(targets.length).toBeGreaterThanOrEqual(15);
+    for (const t of targets) expect(t.getAttribute("aria-label")).toMatch(/^Inspect [A-Z]+\d+, /);
+  });
+
+  it("announces the readout when a part gains focus", () => {
+    render(<DebugFlowchart />);
+    expect(screen.getByTestId("hunt-hover").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByTestId("hunt-message").getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("lets a keyboard or screen-reader user choose a part from a labelled list and desolder it", () => {
+    render(<DebugFlowchart />);
+    const list = screen.getByRole("combobox", { name: /select a part on the board/i }) as HTMLSelectElement;
+    expect(list.value).toBe("");
+    // holes and connectors cannot be desolder candidates, real parts can
+    expect(within(list).queryByRole("option", { name: /^J1,/ })).toBeNull();
+    expect(within(list).queryByRole("option", { name: /^H1,/ })).toBeNull();
+    const refs = within(list)
+      .getAllByRole("option")
+      .map((o) => o.getAttribute("value"))
+      .filter(Boolean);
+    expect(refs.slice(0, 8)).toEqual(["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"]);
+    expect(refs).toContain("U1");
+    expect(refs.indexOf("C8")).toBeLessThan(refs.indexOf("D1"));
+
+    fireEvent.change(list, { target: { value: "C5" } });
+    expect(screen.getByTestId("hunt-selection").textContent).toMatch(/Selected: C5/);
+    expect(hoverText()).toMatch(/^C5 \(22 µF\): \d+ °C, probe \d+ mV/);
+    expect(screen.getByTestId("hunt-message").textContent).toMatch(/new board is on the bench/i);
+    fireEvent.click(screen.getByRole("button", { name: /^desolder C5$/i }));
+    expect(screen.getByTestId("hunt-message").textContent).toMatch(/that was it.*tantalum/i);
+    expect(list.value).toBe("");
+    expect(within(list).getByRole("option", { name: /^C5, 22 µF \(removed\)$/ })).toBeTruthy();
+  });
+
+  it("keeps the list and the board in step", () => {
+    render(<DebugFlowchart />);
+    const list = screen.getByRole("combobox", { name: /select a part on the board/i }) as HTMLSelectElement;
+    fireEvent.click(part("C7"));
+    expect(list.value).toBe("C7");
+    fireEvent.change(list, { target: { value: "U1" } });
+    expect(screen.getByTestId("hunt-selection").textContent).toMatch(/Selected: U1/);
+    expect(part("U1").getAttribute("aria-pressed")).toBe("true");
+    expect(part("C7").getAttribute("aria-pressed")).toBe("false");
+    fireEvent.change(list, { target: { value: "" } });
+    expect(screen.queryByRole("button", { name: /^desolder /i })).toBeNull();
+  });
 });
 
 describe("SchematicToLayout", () => {
@@ -445,6 +510,54 @@ describe("SchematicToLayout", () => {
     expect(Number((slider() as HTMLInputElement).value)).toBe(0);
     fireEvent.click(screen.getByRole("button", { name: /reset/i }));
     expect(Number((slider() as HTMLInputElement).value)).toBe(0);
+  });
+
+  const value = () => Number((slider() as HTMLInputElement).value);
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const playButton = () => screen.queryByRole("button", { name: "Play" });
+  const pauseButton = () => screen.queryByRole("button", { name: "Pause" });
+
+  it("dragging the slider while playing pauses at the chosen point instead of running on", async () => {
+    render(<SchematicToLayout />);
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(pauseButton()).not.toBeNull();
+    fireEvent.change(slider(), { target: { value: "45" } });
+    expect(playButton()).not.toBeNull();
+    expect(pauseButton()).toBeNull();
+    await sleep(300);
+    expect(value()).toBe(45);
+    expect(playButton()).not.toBeNull();
+  });
+
+  it("jumping to a stage while playing also pauses there", async () => {
+    render(<SchematicToLayout />);
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Footprints" }));
+    const at = value();
+    expect(at).toBeGreaterThan(0);
+    expect(playButton()).not.toBeNull();
+    await sleep(300);
+    expect(value()).toBe(at);
+  });
+
+  it("a run that reaches the end stays finished: scrubbing back does not restart playback by itself", async () => {
+    render(<SchematicToLayout />);
+    fireEvent.change(slider(), { target: { value: "99" } });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    await waitFor(() => expect(value()).toBe(100), { timeout: 4000 });
+    expect(playButton(), "the button still says Pause after the run ended").not.toBeNull();
+    expect(pauseButton()).toBeNull();
+    fireEvent.change(slider(), { target: { value: "45" } });
+    expect(playButton(), "scrubbing after a finished run started playing again").not.toBeNull();
+    await sleep(300);
+    expect(value()).toBe(45);
+    expect(playButton()).not.toBeNull();
+    // and Play after a finished run still replays from the start
+    fireEvent.change(slider(), { target: { value: "100" } });
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(value()).toBe(0);
+    expect(pauseButton()).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
   });
 });
 

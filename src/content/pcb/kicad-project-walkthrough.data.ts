@@ -115,17 +115,22 @@ const data: LessonData = {
     },
     {
       q: "Which KiCad action pushes schematic changes into the board?",
-      choices: ["Annotate Schematic", "Update PCB from Schematic (F8)", "Fill All Zones (B)", "Plot Gerbers"],
+      choices: [
+        "Tools, Annotate Schematic",
+        "Tools, Update PCB from Schematic",
+        "Inspect, Design Rules Checker",
+        "File, Fabrication Outputs, Gerbers",
+      ],
       answer: 1,
       explain:
-        "Update PCB from Schematic brings the netlist, new footprints and net renames into the board editor. Annotate assigns reference designators, Fill All Zones recomputes copper pours, and Plot writes the fabrication files.",
+        "Update PCB from Schematic (F8) brings the netlist, new footprints and net renames into the board editor. Annotate assigns reference designators, the Design Rules Checker only reports problems in the board, and the Fabrication Outputs menu writes the Gerbers.",
     },
     {
       q: "On which layer is the board outline drawn for the fab?",
-      choices: ["F.Silkscreen", "Edge.Cuts", "F.Courtyard", "User.Drawings"],
+      choices: ["F.Silkscreen", "Edge.Cuts", "F.Courtyard", "B.Paste"],
       answer: 1,
       explain:
-        "Edge.Cuts holds a closed outline that the fab routes. Silkscreen is printed legend, courtyards are placement clearance and user drawing layers are for your own notes, such as an imported chassis DXF.",
+        "Edge.Cuts holds a closed outline that the fab routes. Silkscreen is printed legend, courtyards are placement clearance and B.Paste is the stencil layer for the back side. User drawing layers are for your own notes, such as an imported chassis DXF.",
     },
     {
       q: "By IPC-2221, the trace width for 3 A on a 1 oz external layer at a 10 °C rise is about",
@@ -137,10 +142,10 @@ const data: LessonData = {
     {
       q: "What does the ESP32-WROOM-32 antenna area need on the board?",
       choices: [
-        "A solid ground pour beneath it on every layer",
-        "No copper on any layer beneath it, with the antenna end at the board edge",
-        "A metal shield can over it",
-        "Stitching vias around its perimeter",
+        "A solid ground pour under it on every layer, stitched to L2",
+        "No copper on any layer beneath it, antenna end at the board edge",
+        "A grounded metal shield can soldered over the whole module",
+        "A ring of stitching vias around its whole perimeter",
       ],
       answer: 1,
       explain:
@@ -149,10 +154,10 @@ const data: LessonData = {
     {
       q: "Why check the assembler's placement preview before confirming an order?",
       choices: [
-        "To choose the solder mask colour",
-        "To catch rotation and polarity errors on diodes, tantalums and ICs",
-        "To reduce the number of layers",
-        "To check the Gerber file format",
+        "To confirm the solder mask colour and the silkscreen font",
+        "To catch rotation and polarity errors on diodes and tantalums",
+        "To reduce the layer count and the board price before ordering",
+        "To verify that the Gerber files use the right file format",
       ],
       answer: 1,
       explain:
@@ -160,7 +165,7 @@ const data: LessonData = {
     },
     {
       q: "Which file carries drill sizes and hole positions?",
-      choices: ["Excellon drill file", "BOM CSV", "Position file", "STEP model"],
+      choices: ["Excellon drill file", "BOM CSV file", "Position (.pos) file", "STEP model file"],
       answer: 0,
       explain:
         "The Excellon file lists each tool size and the coordinates of every drilled hole, plated and non-plated. The BOM lists parts, the position file lists where parts go, and STEP is a 3-D mechanical model.",

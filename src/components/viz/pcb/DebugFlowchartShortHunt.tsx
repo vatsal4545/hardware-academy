@@ -58,6 +58,18 @@ const ON_3V3 = new Set(["C4", "C5", "C6", "C7", "U1", "U2", "U3"]);
 /** Parts you can desolder: not holes or connectors. */
 const REMOVABLE = (p: Part) => p.kind !== "hole" && p.kind !== "conn";
 
+const refKey = (ref: string): [string, number] => {
+  const m = /^([A-Za-z]+)(\d+)$/.exec(ref);
+  return m ? [m[1], Number(m[2])] : [ref, 0];
+};
+
+/** The same parts as a plain list, in reference order (C1, C2 ... C8, D1, Q1 ...), for the keyboard and screen-reader route. */
+const SELECTABLE = parts.filter(REMOVABLE).sort((a, b) => {
+  const [pa, na] = refKey(a.ref);
+  const [pb, nb] = refKey(b.ref);
+  return pa === pb ? na - nb : pa < pb ? -1 : 1;
+});
+
 const VIN = 7.4;
 const LDO_LIMIT = 1.1; // A, AMS1117 internal current limit (about)
 const LDO_ON_RES = 1.4; // ohm, pass element in dropout
@@ -157,6 +169,9 @@ function temperatureAt(x: number, y: number, culprit: Part, e: Electrical): numb
 
 const buttonClass =
   "inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400";
+
+const selectClass =
+  "h-8 rounded-md border border-border bg-surface px-2 text-sm text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400";
 
 export function ShortHunt() {
   const [culpritIndex, setCulpritIndex] = useState(0);
@@ -273,27 +288,43 @@ export function ShortHunt() {
               </dd>
             </div>
           </dl>
-          <p className="text-sm" data-testid="hunt-hover">
+          <p className="text-sm" data-testid="hunt-hover" aria-live="polite" aria-atomic="true">
             {infoPart
               ? `${infoPart.ref} (${infoPart.label}): ${temperatureAt(infoPart.x, infoPart.y, culpritPart, e).toFixed(0)} °C, probe ${probe(infoPart)}`
               : "Hover over, tap or focus a part to read its temperature and its millivolt probe reading."}
           </p>
-          <div className="flex flex-wrap items-center gap-2" data-testid="hunt-selection">
-            {selectedPart ? (
-              <>
-                <span className="text-sm text-text">
-                  Selected: {selectedPart.ref} ({selectedPart.label})
-                </span>
-                <button type="button" className={buttonClass} onClick={() => desolder(selectedPart)}>
-                  Desolder {selectedPart.ref}
-                </button>
-                <button type="button" className={buttonClass} onClick={() => setSelected(null)}>
-                  Clear selection
-                </button>
-              </>
-            ) : (
-              <span className="text-sm">Click or tap a part to select it, then desolder it once you are sure.</span>
-            )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <label htmlFor={`${uid}-part`} className="text-text">
+                Select a part on the board
+              </label>
+              <select id={`${uid}-part`} className={selectClass} value={selected ?? ""} onChange={(ev) => setSelected(ev.target.value === "" ? null : ev.target.value)}>
+                <option value="">Choose a part</option>
+                {SELECTABLE.map((p) => (
+                  <option key={p.ref} value={p.ref}>
+                    {p.ref}, {p.label}
+                    {removed.includes(p.ref) ? " (removed)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2" data-testid="hunt-selection">
+              {selectedPart ? (
+                <>
+                  <span className="text-sm text-text">
+                    Selected: {selectedPart.ref} ({selectedPart.label})
+                  </span>
+                  <button type="button" className={buttonClass} onClick={() => desolder(selectedPart)}>
+                    Desolder {selectedPart.ref}
+                  </button>
+                  <button type="button" className={buttonClass} onClick={() => setSelected(null)}>
+                    Clear selection
+                  </button>
+                </>
+              ) : (
+                <span className="text-sm">Click or tap a part on the board, or pick one from the list, then desolder it once you are sure.</span>
+              )}
+            </div>
           </div>
           <p className="text-xs">
             Simulation: each failed part dissipates P = I² × R, so with a 0.45 Ω short at 0.5 A it is only about 0.1 W, while a dead short of 0.02 Ω
@@ -302,7 +333,8 @@ export function ShortHunt() {
         </div>
       }
     >
-      <SvgCanvas viewBox="0 0 720 470" title="Motor-driver board with a simulated thermal camera overlay and clickable parts">
+      {/* role="group", not the default "img": the part targets inside are focusable buttons, which an image role would hide from a screen reader. */}
+      <SvgCanvas viewBox="0 0 720 470" role="group" title="Motor-driver board with a simulated thermal camera overlay and selectable parts">
         <defs>
           <KeepoutHatch id={`${uid}-hatch`} />
           <linearGradient id={`${uid}-scale`} x1="0" x2="1" y1="0" y2="0">

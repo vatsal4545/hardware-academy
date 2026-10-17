@@ -99,7 +99,7 @@ const list: FlowNode[] = [
     body: "Start at 0 V and raise the supply while watching the current. Where does it jump?",
     options: [
       { label: "At about 0.6 V", tag: "0.6 V", to: "e_polar" },
-      { label: "When the regulator starts, near 3 V", tag: "near 3 V", to: "e_ldo" },
+      { label: "Once the regulator conducts (a healthy one only regulates above about 4.6 V in)", tag: "regulator on", to: "e_ldo" },
       { label: "Only when the motors are enabled", tag: "motors only", to: "e_driver" },
     ],
   },
@@ -283,7 +283,7 @@ const list: FlowNode[] = [
     tool: "DMM",
     short: "BOOT and EN behaviour",
     title: "Does GPIO0 really go low, and does EN pulse?",
-    body: "Probe GPIO0 while holding BOOT: it should read near 0 V. Probe EN while pressing the EN button: it should drop to 0 V and recover in about 10 ms. What do you measure?",
+    body: "Probe GPIO0 while holding BOOT: it should read near 0 V. Probe EN while pressing the EN button: it should sit at 0 V while pressed and climb back with a time constant of about 10 ms after you release it. What do you measure?",
     options: [
       { label: "GPIO0 stays high, or EN does not move", tag: "stuck", to: "e_button" },
       { label: "Both behave", tag: "both fine", to: "e_progok" },

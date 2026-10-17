@@ -63,7 +63,7 @@ const data: LessonData = {
       "Which parts on the 3V3 net are polarised, and does each one match the assembler's placement preview?",
     ],
     rootCause:
-      "C5, the 22 µF tantalum on the AMS1117 output, was soldered 180 degrees rotated. The assembler's pick-and-place library used a different zero orientation for that tantalum case than the KiCad footprint, and nobody compared the placement preview with the board. A tantalum has almost no tolerance for reverse voltage, so it conducts heavily and pulls the 3V3 rail toward ground. With 0.5 A injected into the rail the thermal camera showed C5 at 85 °C against 28 °C elsewhere.",
+      "C5, the 22 µF tantalum on the AMS1117 output, was soldered 180 degrees rotated. The assembler's pick-and-place library used a different zero orientation for that tantalum case than the KiCad footprint, and nobody compared the placement preview with the board. A tantalum has almost no tolerance for reverse voltage, so it conducts heavily and pulls the 3V3 rail toward ground. With 0.5 A injected into the rail, about 0.1 W in C5, the thermal camera showed it at about 42 °C against 25 °C for the rest of the board.",
     fix:
       "Remove C5 and fit a new one with the stripe, which marks the positive end, on the 3V3 side. Check the regulator for thermal damage, then check every tantalum, diode and LED on the board against the datasheet and the assembler's preview. Correct the rotation offset for that footprint in the position file or in the assembler's preview before the next order. From now on set the supply limit just above the expected current, 100 to 150 mA here, so a fault like this stops at a fraction of the heat.",
     lesson:
@@ -105,10 +105,10 @@ const data: LessonData = {
     {
       q: "What is the first measurement to make on a freshly assembled board?",
       choices: [
-        "The 3V3 rail voltage with power applied",
-        "Resistance from each supply rail to ground with power off",
-        "The crystal frequency on a scope",
-        "The motor driver output waveform",
+        "The 3V3 rail voltage, measured with the board powered",
+        "Resistance from each supply rail to ground, power off",
+        "The oscillator frequency, probed with a 10x scope probe",
+        "The motor driver output waveform at 20 % PWM duty",
       ],
       answer: 1,
       explain:
@@ -116,7 +116,7 @@ const data: LessonData = {
     },
     {
       q: "On a moulded SMD tantalum capacitor, the stripe marks",
-      choices: ["The negative terminal", "The positive terminal", "The case ground", "The end that should face the regulator"],
+      choices: ["The negative terminal pin", "The positive terminal", "The case connection to ground", "The end facing the regulator"],
       answer: 1,
       explain:
         "The stripe on a moulded tantalum marks the positive terminal, the reverse of an aluminium electrolytic's stripe, which marks the negative terminal. Tantalums tolerate almost no reverse voltage, so a rotated one can conduct heavily and burn.",
@@ -124,10 +124,10 @@ const data: LessonData = {
     {
       q: "Which probe ground connection gives the least ringing on a 1 ns edge?",
       choices: [
-        "A 15 cm alligator clip lead to a distant ground point",
-        "A 1.5 cm spring ground tip touching a ground pad beside the signal",
-        "No ground connection at all",
-        "A ground wire twisted around the probe cable",
+        "A 15 cm clip lead to a ground point far from the signal",
+        "A 1.5 cm spring ground tip on a ground pad beside the signal",
+        "No ground connection, relying on the scope's earth alone",
+        "A ground wire twisted around the probe cable for shielding",
       ],
       answer: 1,
       explain:
@@ -142,7 +142,12 @@ const data: LessonData = {
     },
     {
       q: "Which instrument would you use to see whether an I2C sensor is receiving the address byte?",
-      choices: ["A multimeter in DC volts", "A logic analyzer with an I2C decoder", "A thermal camera", "A current probe"],
+      choices: [
+        "A multimeter set to DC volts on the SDA line",
+        "A logic analyzer with an I2C decoder",
+        "A thermal camera aimed at the sensor",
+        "A clamp-style current probe on the supply",
+      ],
       answer: 1,
       explain:
         "A logic analyzer captures the clock and data lines and decodes the address and acknowledge bits. A scope can show the same signals but without decoding. A multimeter averages away the fast signals, and neither a thermal camera nor a current probe shows protocol content.",
@@ -150,7 +155,7 @@ const data: LessonData = {
     {
       q: "A supply set to 7.4 V with a 150 mA limit shows 150 mA at 1.2 V on first power-up. The most likely explanation is",
       choices: [
-        "The board is working normally",
+        "The board is working normally and charging its capacitors",
         "The supply is faulty",
         "A short or a very heavy load on one of the rails",
         "The oscilloscope probe is loading the board",
@@ -162,10 +167,10 @@ const data: LessonData = {
     {
       q: "A thermal camera shows a shiny solder joint cooler than the plastic part beside it, though both are at the same temperature. Why?",
       choices: [
-        "The solder conducts heat away from the camera",
-        "Shiny metal has low emissivity, so it radiates less infrared and reads cold",
-        "The camera is out of focus",
-        "Solder is cooler than plastic by nature",
+        "Solder conducts the heat into the copper, so it really is cooler",
+        "Shiny metal has low emissivity, so it radiates less infrared",
+        "The camera's autofocus locked onto the brighter plastic part",
+        "Solder has a lower melting point than plastic, so it stays cooler",
       ],
       answer: 1,
       explain:

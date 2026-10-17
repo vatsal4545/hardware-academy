@@ -116,7 +116,7 @@ export function ReturnPathDemo() {
           <Segmented<Speed>
             label="Signal edge"
             options={[
-              { value: "fast", label: "Fast (above 1 MHz)" },
+              { value: "fast", label: "Fast (above about 100 kHz)" },
               { value: "slow", label: "Slow (about DC)" },
             ]}
             value={speed}

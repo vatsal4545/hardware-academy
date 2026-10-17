@@ -106,10 +106,10 @@ const data: LessonData = {
     {
       q: "Above roughly 100 kHz, where does the return current of a trace over a solid plane flow?",
       choices: [
-        "Spread evenly across the whole plane",
+        "Spread evenly across the whole plane, as it does at DC",
         "Directly beneath the trace, along the path of least inductance",
         "Along the shortest straight line to the power connector",
-        "Through the dielectric only, not in the copper",
+        "Through the dielectric only, with no current in the copper",
       ],
       answer: 1,
       explain:
@@ -117,14 +117,14 @@ const data: LessonData = {
     },
     {
       q: "An MCU pulls 50 mA in 2 ns through 10 nH of loop inductance. The voltage spike is closest to",
-      choices: ["25 mV", "250 mV", "2.5 V", "25 V"],
+      choices: ["0.025 V", "0.25 V", "2.5 V", "25 V"],
       answer: 1,
       explain:
         "V = L·di/dt = 10 nH × (50 mA / 2 ns) = 10 nH × 25 MA/s = 0.25 V. With 1 nH the same burst gives only 25 mV, which is why a capacitor with a short, low-inductance loop works and a distant one barely helps.",
     },
     {
       q: "A 100 nF ceramic capacitor with 10 nH of total loop inductance is self-resonant at about",
-      choices: ["500 kHz", "5 MHz", "50 MHz", "500 MHz"],
+      choices: ["0.5 MHz", "5.0 MHz", "50 MHz", "500 MHz"],
       answer: 1,
       explain:
         "f = 1 / (2π√(LC)) = 1 / (2π√(10 nH × 100 nF)) ≈ 5 MHz. Above that frequency the part is an inductor, so a capacitor placed far from the pin does nothing for the fast edges. Cutting the loop to 1 nH moves the resonance to about 16 MHz.",
@@ -153,9 +153,9 @@ const data: LessonData = {
     {
       q: "Why is a slit in the ground plane under a fast trace harmful?",
       choices: [
-        "It raises the plane's DC resistance by a large factor",
-        "It forces the return current around the slit, enlarging the loop area",
-        "It changes the dielectric constant of the prepreg",
+        "It multiplies the plane's DC resistance and starves the load",
+        "It forces the return current to detour, enlarging the loop area",
+        "It lowers the prepreg's dielectric constant and speeds up the edge",
         "It makes the trace's characteristic impedance exactly zero",
       ],
       answer: 1,

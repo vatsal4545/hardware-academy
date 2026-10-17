@@ -361,8 +361,17 @@ function SchematicLabels() {
 export function SchematicToLayout() {
   const [p, setP] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // A run that reaches the end stops for good. Without this, "playing" would stay true at 100 % and the first scrub back
+  // would start the animation again by itself. Setting state during render, guarded by a condition, is the documented
+  // way to derive one piece of state from another without an effect.
+  if (playing && p >= 100) setPlaying(false);
   const running = playing && p < 100;
   useAnimationFrame((dt) => setP((x) => Math.min(100, x + dt * 5)), running);
+  /** The viewer takes control: dragging the slider or jumping to a stage pauses playback at the chosen point. */
+  const seek = (v: number) => {
+    setPlaying(false);
+    setP(v);
+  };
 
   const stage = stageOf(p);
   const fly = clamp01((p - FLY_START) / FLY_LEN);
@@ -392,7 +401,7 @@ export function SchematicToLayout() {
             min={0}
             max={100}
             step={1}
-            onChange={setP}
+            onChange={seek}
             format={(v) => `${Math.round(v)} %, ${STAGE_INFO[stageOf(v)].title}`}
           />
           <Segmented<Stage>
@@ -405,7 +414,7 @@ export function SchematicToLayout() {
               { value: "pour", label: "Pour" },
             ]}
             value={stage}
-            onChange={(s) => setP(STAGE_JUMP[s])}
+            onChange={(s) => seek(STAGE_JUMP[s])}
           />
           <PlayPause
             playing={running}

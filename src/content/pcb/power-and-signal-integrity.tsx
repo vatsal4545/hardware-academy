@@ -240,8 +240,8 @@ export default function Lesson() {
               <li>Areas: loop 1 is 55 × 14 = 770 mm², loop 2 is 40 × 10 = 400 mm², loop 3 is 12 × 6 = 72 mm², loop 4 is 80 × 5 = 400 mm².</li>
               <li>
                 For equal current and frequency emission follows area: loop 1, then loops 2 and 4, then loop 3. The currents are not equal, though.
-                Loop 1 carries amps with microsecond edges (the largest di/dt), loop 3 carries only tens of milliamps but with 1 to 3 ns edges (the
-                highest frequencies), and loop 4 carries microamps but is a receiving antenna for everything else. Fix 1 and 3 first.
+                Loop 1 carries amps switched in tens of nanoseconds (the largest di/dt, a few amps in 30 ns), loop 3 carries only tens of milliamps but
+                with 1 to 3 ns edges (the highest frequencies), and loop 4 carries microamps but is a receiving antenna for everything else. Fix 1 and 3 first.
               </li>
               <li>
                 With the plane: loop 1 becomes 55 × 0.2 = 11 mm² (70 times smaller, about 37 dB less), loop 3 becomes 12 × 0.2 = 2.4 mm² (30 times,
