@@ -309,7 +309,6 @@ export function PcbStackupExploded() {
       <div>
         <SvgCanvas
           viewBox={`0 0 ${VIEW_W} ${H}`}
-          role="group"
           className="mx-auto max-w-[560px]"
           title={`Exploded view of a ${count}-layer PCB with ${n} layers from top silkscreen to bottom silkscreen`}
         >

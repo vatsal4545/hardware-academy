@@ -5,8 +5,10 @@ import { PlayPause, Segmented, Slider, Toggle, VizFrame } from "@/components/les
 import { Arrow, Label, SvgCanvas, useViz, vizColors } from "@/components/viz/shared";
 import {
   ControlBar,
-  dotRate,
-  dotRates,
+  dotCount,
+  dotSpeed,
+  dotSpeedCap,
+  dotSpeeds,
   e12Range,
   FlowDots,
   formatSI,
@@ -24,10 +26,6 @@ type Rating = "0.125" | "0.25" | "1";
 /** E12 values, 10 ohm to 10 kohm, for the Ohm's-law resistor; 100 ohm to 1 Mohm for the divider. */
 const OHM_R = e12Range(10, 3);
 const WIDE_R = e12Range(100, 4);
-
-/** Dot speed scales: this many amps is one loop per second (see dotRate and dotRates). */
-const OHM_REF_A = 0.01;
-const DIVIDER_REF_A = 300e-6;
 
 const WIRE = "#7b8494";
 const OHM_LOOP = makePath(
@@ -52,6 +50,26 @@ const DIV_LOAD = makePath([
   [340, 160],
   [340, 290],
 ]);
+
+/*
+ * Charge-dot speed is proportional to current on the screen, in px per second, not in loops per second: the divider's
+ * three streams run on paths of 124, 130 and 320 px, so equal loop rates would not mean equal currents. Every stream
+ * gets about the same dot spacing (6, 6 and 15 dots), so the dots passing a point per second are proportional too.
+ */
+export const OHM_REF_A = 0.01; // 10 mA moves the dots once round the 920 px loop each second
+export const OHM_PX_PER_S_AT_REF = 920;
+export const OHM_DOTS = 14;
+export const DIVIDER_REF_A = 300e-6; // 300 µA moves the dots 124 px per second
+export const DIVIDER_PX_PER_S_AT_REF = 124;
+export const DIVIDER_DOT_SPACING_PX = 21;
+const DIV_PATHS = [DIV_R1, DIV_R2, DIV_LOAD] as const;
+export const DIVIDER_DOTS = DIV_PATHS.map((p) => dotCount(p.length, DIVIDER_DOT_SPACING_PX));
+// the caps keep one 60 Hz frame under half a dot spacing, which is where dots start to look as if they run backwards
+export const OHM_SPEED_CAP = dotSpeedCap(OHM_LOOP.length / OHM_DOTS);
+export const DIVIDER_SPEED_CAP = dotSpeedCap(Math.min(...DIV_PATHS.map((p, k) => p.length / DIVIDER_DOTS[k])));
+// path lengths of the drawing itself, exported so the tests check the real geometry rather than copies of its numbers
+export const OHM_LOOP_LENGTH = OHM_LOOP.length;
+export const DIVIDER_PATH_LENGTHS: readonly number[] = DIV_PATHS.map((p) => p.length);
 
 function heat(ratio: number) {
   const g = Math.min(1, Math.max(0, (ratio - 0.15) / 1.35));
@@ -106,7 +124,7 @@ function OhmDrawing({
         fillOpacity={0.12 + 0.5 * g}
       />
       {/* dots skip the source: it is where charge gains energy */}
-      <FlowDots path={OHM_LOOP} phase={phase} count={14} hide={(x, y) => x < 100 && y > 110 && y < 140} />
+      <FlowDots path={OHM_LOOP} phase={phase} count={OHM_DOTS} hide={(x, y) => x < 100 && y > 110 && y < 140} />
       <BatterySymbol cx={90} cy={124} />
       <Arrow x1={210} y1={60} x2={275} y2={60} color={vizColors.amber} width={2} />
       <Label x={242} y={42} color={vizColors.amber} bold mono>{`I = ${formatSI(current, "A")}`}</Label>
@@ -159,9 +177,9 @@ function DividerDrawing({
       {loaded && <ResistorSymbol cx={340} cy={230} length={60} width={28} vertical stroke={vizColors.orange} />}
       <JunctionDot x={150} y={160} />
       {loaded ? <JunctionDot x={300} y={160} /> : <circle cx={300} cy={160} r={5} fill={vizColors.bg} stroke={vizColors.cyan} strokeWidth={2} />}
-      {showR1 && <FlowDots path={DIV_R1} phase={phases[0]} count={6} />}
-      {rates[1] > 0 && <FlowDots path={DIV_R2} phase={phases[1]} count={6} />}
-      {loaded && rates[2] > 0 && <FlowDots path={DIV_LOAD} phase={phases[2]} count={9} color={vizColors.orange} />}
+      {showR1 && <FlowDots path={DIV_R1} phase={phases[0]} count={DIVIDER_DOTS[0]} />}
+      {rates[1] > 0 && <FlowDots path={DIV_R2} phase={phases[1]} count={DIVIDER_DOTS[1]} />}
+      {loaded && rates[2] > 0 && <FlowDots path={DIV_LOAD} phase={phases[2]} count={DIVIDER_DOTS[2]} color={vizColors.orange} />}
       <Label x={138} y={31} anchor="end" bold mono>{`Vin ${vin.toFixed(1)} V`}</Label>
       <Label x={118} y={90} anchor="end" mono>{`R1 ${formatSI(r1, "Ω")}`}</Label>
       <Label x={118} y={230} anchor="end" mono>{`R2 ${formatSI(r2, "Ω")}`}</Label>
@@ -222,7 +240,10 @@ export function OhmsLawCircuit() {
   const iLoad = loaded ? vout / RL : 0;
   const errPct = (1 - vout / vth) * 100;
 
-  const rates = mode === "ohm" ? [dotRate(current, OHM_REF_A), 0, 0] : dotRates([iR1, iR2, iLoad], DIVIDER_REF_A);
+  // loops per second = on-screen px per second divided by the path length
+  const ohmSpeed = dotSpeed(current, OHM_REF_A, OHM_PX_PER_S_AT_REF, OHM_SPEED_CAP);
+  const dividerSpeeds = dotSpeeds([iR1, iR2, iLoad], DIVIDER_REF_A, DIVIDER_PX_PER_S_AT_REF, DIVIDER_SPEED_CAP);
+  const rates = mode === "ohm" ? [ohmSpeed / OHM_LOOP.length, 0, 0] : dividerSpeeds.map((v, k) => v / DIV_PATHS[k].length);
   const phases = useFlowPhases(rates, viz.playing);
 
   const heatTone = ratio > 1 ? "bad" : ratio > 0.5 ? "warn" : "ok";
@@ -315,8 +336,8 @@ export function OhmsLawCircuit() {
       }
       footer={
         mode === "ohm"
-          ? "Dot speed is proportional to current: 10 mA is one loop per second, up to a cap of 2.4 loops per second (from 24 mA up, more current no longer looks faster). Real resistors are rated at 70 °C ambient; running them at half rating or less keeps them cool."
-          : "ADC rule of thumb: keep the Thevenin resistance below about 10 kΩ, or add a 100 nF capacitor at the pin. The three streams of dots share one speed scale (300 µA is one loop per second), so a stream that moves ten times slower carries a tenth of the current; the divider current is the same on both resistors until a load steals some at the node."
+          ? "Dot speed is proportional to current: 10 mA sends the dots once round the loop each second, up to a cap of about 1.7 loops per second (above 17 mA more current no longer looks faster, to keep the dots from appearing to run backwards). Real resistors are rated at 70 °C ambient; running them at half rating or less keeps them cool."
+          : "ADC rule of thumb: keep the Thevenin resistance below about 10 kΩ, or add a 100 nF capacitor at the pin. In every stream the dots are evenly spaced and move at a speed proportional to the current (300 µA moves them 124 pixels per second; if the busiest stream passes 1.2 mA, all three slow down by the same factor so the dots stay readable), so both the speed and the number of dots passing a point per second show the current: a stream ten times slower carries a tenth of the current. The divider current is the same on both resistors until a load steals some at the node."
       }
     >
       <ControlBar>{controls}</ControlBar>

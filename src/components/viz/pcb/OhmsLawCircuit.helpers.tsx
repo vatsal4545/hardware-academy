@@ -78,29 +78,49 @@ export function formatSI(value: number, unit: string, digits = 3): string {
   return `${sign}${shown} ${PREFIXES[idx][1]}${unit}`;
 }
 
-/** The fastest the charge dots ever go, in loops per second. Above it, more current no longer looks faster. */
-export const DOT_RATE_CAP = 2.4;
+/*
+ * Charge-dot speed. What the learner sees is speed on the screen, so that is what is made proportional to the
+ * current: px per second, not loops per second (loops differ in length from path to path).
+ */
+
+const DISPLAY_HZ = 60;
 
 /**
- * Dot speed in loops per second for one current: strictly proportional, so `referenceA` amps is one loop per second
- * and twice the current is exactly twice as fast, up to DOT_RATE_CAP so very large currents do not strobe.
- * The sign follows the direction of the current.
+ * The fastest a dot may move on screen, in px per second, for dots spaced `spacingPx` apart: 40% of the spacing per
+ * frame on a 60 Hz display. Past half the spacing per frame the eye sees the dots run backwards (the wagon-wheel effect).
  */
-export function dotRate(currentA: number, referenceA: number): number {
-  const v = Math.min(DOT_RATE_CAP, Math.abs(currentA) / referenceA);
+export function dotSpeedCap(spacingPx: number): number {
+  return 0.4 * spacingPx * DISPLAY_HZ;
+}
+
+/**
+ * On-screen speed (px per second) of the dots for one current: strictly proportional, `pxPerSecAtReference` at
+ * `referenceA` amps and twice that at twice the current, up to `capPxPerSecond`. The sign follows the current.
+ */
+export function dotSpeed(currentA: number, referenceA: number, pxPerSecAtReference: number, capPxPerSecond: number): number {
+  const v = Math.min(capPxPerSecond, (Math.abs(currentA) / referenceA) * pxPerSecAtReference);
   return currentA < 0 ? -v : v;
 }
 
 /**
- * Dot speeds for several branches that have to be compared with each other, such as the two halves of a divider
- * and its load. They share one scale (`referenceA` amps is one loop per second), reduced only if the largest current
- * would pass the cap, so the speed ratios are exactly the current ratios and the KCL split can be read off the dots.
+ * On-screen speeds for several branches that are compared with each other, such as the two halves of a divider and its
+ * load. One scale for all (`pxPerSecAtReference` px per second at `referenceA` amps), reduced by one common factor only if
+ * the largest current would pass the cap, so the speed ratios are exactly the current ratios whatever the path lengths.
+ * Divide each speed by its own path length to get the loop rate that useFlowPhases wants.
  */
-export function dotRates(currentsA: readonly number[], referenceA: number): number[] {
+export function dotSpeeds(currentsA: readonly number[], referenceA: number, pxPerSecAtReference: number, capPxPerSecond: number): number[] {
   const largest = Math.max(0, ...currentsA.map((i) => Math.abs(i)));
   if (largest === 0) return currentsA.map(() => 0);
-  const loopsPerSecondPerAmp = Math.min(1 / referenceA, DOT_RATE_CAP / largest);
-  return currentsA.map((i) => i * loopsPerSecondPerAmp);
+  const pxPerSecPerAmp = Math.min(pxPerSecAtReference / referenceA, capPxPerSecond / largest);
+  return currentsA.map((i) => i * pxPerSecPerAmp);
+}
+
+/**
+ * How many dots put about `spacingPx` between them along a path. Use the same spacing on every stream that is compared:
+ * the dots passing a point per second are then proportional to the current as well (speed divided by spacing).
+ */
+export function dotCount(lengthPx: number, spacingPx: number): number {
+  return Math.max(2, Math.round(lengthPx / spacingPx));
 }
 
 export type Pt = readonly [number, number];

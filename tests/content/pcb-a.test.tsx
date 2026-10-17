@@ -12,10 +12,22 @@ import SchematicCapture from "@/content/pcb/schematic-capture";
 import schematicCaptureData from "@/content/pcb/schematic-capture.data";
 import PcbLayoutAndStackup from "@/content/pcb/pcb-layout-and-stackup";
 import pcbLayoutAndStackupData from "@/content/pcb/pcb-layout-and-stackup.data";
-import { OhmsLawCircuit } from "@/components/viz/pcb/OhmsLawCircuit";
-import { DOT_RATE_CAP, dotRate, dotRates } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
+import {
+  DIVIDER_DOTS,
+  DIVIDER_PATH_LENGTHS,
+  DIVIDER_PX_PER_S_AT_REF,
+  DIVIDER_REF_A,
+  DIVIDER_SPEED_CAP,
+  OHM_DOTS,
+  OHM_LOOP_LENGTH,
+  OHM_PX_PER_S_AT_REF,
+  OHM_REF_A,
+  OHM_SPEED_CAP,
+  OhmsLawCircuit,
+} from "@/components/viz/pcb/OhmsLawCircuit";
+import { dotSpeed, dotSpeeds, parallel } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { RcCharging, x7rDerating } from "@/components/viz/pcb/RcCharging";
-import { BuckConverter, buckModel, ldoModel } from "@/components/viz/pcb/BuckConverter";
+import { BUCK_DOTS, BUCK_LOOP_LENGTHS, BUCK_SPEED_CAP, BuckConverter, buckModel, ldoModel } from "@/components/viz/pcb/BuckConverter";
 import { SchematicExplorer } from "@/components/viz/pcb/SchematicExplorer";
 import { PcbStackupExploded } from "@/components/viz/pcb/PcbStackupExploded";
 import { TraceWidthCalculator, riseAtWidth } from "@/components/viz/pcb/TraceWidthCalculator";
@@ -157,67 +169,149 @@ describe("OhmsLawCircuit", () => {
 });
 
 describe("charge-dot speed", () => {
-  it("is strictly proportional to the current below the cap, and keeps its direction", () => {
-    expect(dotRate(0.001, 0.01)).toBeCloseTo(0.1, 9);
-    expect(dotRate(0.002, 0.01)).toBeCloseTo(0.2, 9);
-    expect(dotRate(0.005, 0.01)).toBeCloseTo(0.5, 9);
-    expect(dotRate(0.012, 0.01) / dotRate(0.001, 0.01)).toBeCloseTo(12, 9); // 12 times the current is 12 times the speed
-    expect(dotRate(-0.005, 0.01)).toBeCloseTo(-0.5, 9);
-    expect(dotRate(0, 0.01)).toBe(0);
+  // helper behaviour with round numbers: 10 mA moves the dots 920 px per second, capped at 1500 px per second
+  const ohmSpeed = (i: number) => dotSpeed(i, 0.01, 920, 1500);
+
+  it("is strictly proportional to the current on screen, in px per second, and keeps its direction", () => {
+    expect(ohmSpeed(0.001)).toBeCloseTo(92, 9);
+    expect(ohmSpeed(0.002)).toBeCloseTo(184, 9);
+    expect(ohmSpeed(0.005)).toBeCloseTo(460, 9);
+    expect(ohmSpeed(0.012) / ohmSpeed(0.001)).toBeCloseTo(12, 9); // 12 times the current is 12 times the speed
+    expect(ohmSpeed(-0.005)).toBeCloseTo(-460, 9);
+    expect(ohmSpeed(0)).toBe(0);
   });
 
   it("has a visible cap, so large currents stop looking faster instead of strobing", () => {
-    expect(dotRate(0.024, 0.01)).toBeCloseTo(DOT_RATE_CAP, 9);
-    expect(dotRate(1.2, 0.01)).toBe(DOT_RATE_CAP);
-    expect(dotRate(-1.2, 0.01)).toBe(-DOT_RATE_CAP);
+    expect(ohmSpeed(0.0163)).toBeCloseTo(1500, 0);
+    expect(ohmSpeed(1.2)).toBe(1500);
+    expect(ohmSpeed(-1.2)).toBe(-1500);
   });
 
-  it("divider streams share one scale: speed ratios equal the current ratios (11 : 10 : 1 for a 100 k load)", () => {
-    // 12 V, 27 k over 10 k, 100 k load: 332 uA through R1, 302 uA through R2, 30 uA into the load
-    const currents = [332e-6, 302e-6, 30e-6];
-    const [r1, r2, load] = dotRates(currents, 300e-6);
-    expect(r1 / load).toBeCloseTo(332 / 30, 9);
-    expect(r2 / load).toBeCloseTo(302 / 30, 9);
-    expect(r1 / r2).toBeCloseTo(332 / 302, 9);
-    expect(r2).toBeCloseTo(1.007, 3); // 300 uA is one loop per second
+  it("the real caps keep one 60 Hz frame under half the dot spacing in every drawing, so dots never seem to run backwards", () => {
+    const drawings = [
+      { cap: OHM_SPEED_CAP, spacings: [OHM_LOOP_LENGTH / OHM_DOTS] },
+      { cap: DIVIDER_SPEED_CAP, spacings: DIVIDER_PATH_LENGTHS.map((length, k) => length / DIVIDER_DOTS[k]) },
+      { cap: BUCK_SPEED_CAP, spacings: [BUCK_LOOP_LENGTHS.on / BUCK_DOTS.on, BUCK_LOOP_LENGTHS.off / BUCK_DOTS.off] },
+    ];
+    for (const { cap, spacings } of drawings) {
+      for (const spacing of spacings) expect(cap / 60).toBeLessThan(spacing / 2);
+    }
+    // review N2: 14 dots on the Ohm loop flip direction above 60 / (2 x 14) = 2.14 loops per second, and the cap is at most 2
+    expect(OHM_SPEED_CAP / OHM_LOOP_LENGTH).toBeLessThanOrEqual(2);
+    expect(BUCK_SPEED_CAP / BUCK_LOOP_LENGTHS.on).toBeLessThan(60 / (2 * BUCK_DOTS.on));
+    expect(BUCK_SPEED_CAP / BUCK_LOOP_LENGTHS.off).toBeLessThan(60 / (2 * BUCK_DOTS.off));
   });
 
-  it("keeps the ratios when the largest divider current would pass the cap", () => {
-    const [a, b, c] = dotRates([0.1, 0.09, 0.009], 300e-6);
-    expect(a).toBeCloseTo(DOT_RATE_CAP, 9);
+  // 12 V across 27 k over 10 k with a 100 k load, the drawing's own numbers: the load and R2 see the same voltage, so their
+  // currents are in the ratio 100 k : 10 k, and R1 carries the sum of the two, which makes 11 : 10 : 1
+  const rEff = parallel(10e3, 100e3);
+  const iR1 = 12 / (27e3 + rEff);
+  const vOut = 12 - iR1 * 27e3;
+  const dividerCurrents = [iR1, vOut / 10e3, vOut / 100e3];
+
+  it("divider streams share one on-screen scale: px per second are the current ratios, whatever the path lengths", () => {
+    const [r1, r2, load] = dotSpeeds(dividerCurrents, DIVIDER_REF_A, DIVIDER_PX_PER_S_AT_REF, DIVIDER_SPEED_CAP);
+    expect(r1 / load).toBeCloseTo(11, 9);
+    expect(r2 / load).toBeCloseTo(10, 9);
+    expect(r1).toBeCloseTo((DIVIDER_PX_PER_S_AT_REF * iR1) / DIVIDER_REF_A, 9); // 300 uA is 124 px per second
+    expect(r1).toBeLessThan(DIVIDER_SPEED_CAP);
+  });
+
+  it("keeps those ratios when the largest divider current would pass the cap", () => {
+    const [a, b, c] = dotSpeeds([0.1, 0.09, 0.009], DIVIDER_REF_A, DIVIDER_PX_PER_S_AT_REF, DIVIDER_SPEED_CAP);
+    expect(a).toBeCloseTo(DIVIDER_SPEED_CAP, 9);
     expect(a / c).toBeCloseTo(0.1 / 0.009, 9);
     expect(b / c).toBeCloseTo(0.09 / 0.009, 9);
   });
 
-  it("the animated divider streams really move in proportion to their currents", async () => {
+  it("spaces the dots about evenly on every stream, so dots per second follow the current too", () => {
+    expect(DIVIDER_DOTS).toEqual([6, 6, 15]);
+    const spread = (spacings: number[]) => Math.max(...spacings) / Math.min(...spacings);
+    expect(spread(DIVIDER_PATH_LENGTHS.map((length, k) => length / DIVIDER_DOTS[k]))).toBeLessThan(1.06);
+    // the two buck loops (the long one through the high-side switch and the short freewheeling one) share one spacing as well
+    expect(spread([BUCK_LOOP_LENGTHS.on / BUCK_DOTS.on, BUCK_LOOP_LENGTHS.off / BUCK_DOTS.off])).toBeLessThan(1.06);
+  });
+
+  /** First amber dot of the first stream, before and after `ms` of animation (fake timers), as raw on-screen px. */
+  async function firstDotTravel(setup: (container: HTMLElement) => void, ms: number): Promise<number> {
+    vi.useFakeTimers();
+    try {
+      const { container, unmount } = render(<OhmsLawCircuit />);
+      setup(container);
+      const dot = () => {
+        const c = container.querySelector('g[fill="#fbbf24"] circle');
+        return { x: Number(c?.getAttribute("cx")), y: Number(c?.getAttribute("cy")) };
+      };
+      const before = dot();
+      await act(async () => {
+        vi.advanceTimersByTime(ms);
+      });
+      const after = dot();
+      unmount();
+      return Math.hypot(after.x - before.x, after.y - before.y);
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  it("the animated divider streams really move in proportion to their currents, in px per second and in dots per second", async () => {
     vi.useFakeTimers();
     try {
       const { container } = render(<OhmsLawCircuit />);
       fireEvent.click(screen.getByRole("radio", { name: "Voltage divider" }));
       fireEvent.click(screen.getByRole("switch")); // attach the 100 k load
-      const first = (group: Element | undefined) => {
-        const c = group?.querySelector("circle");
+      const streams = () => [
+        container.querySelectorAll('g[fill="#fbbf24"]')[0], // R1
+        container.querySelectorAll('g[fill="#fbbf24"]')[1], // R2
+        container.querySelector('g[fill="#fb923c"]'), // load
+      ];
+      const firstDot = (g: Element | null) => {
+        const c = g?.querySelector("circle");
         return { x: Number(c?.getAttribute("cx")), y: Number(c?.getAttribute("cy")) };
       };
-      const amber = () => Array.from(container.querySelectorAll('g[fill="#fbbf24"]'));
-      const orange = () => container.querySelector('g[fill="#fb923c"]') ?? undefined;
-      const before = { r1: first(amber()[0]), r2: first(amber()[1]), load: first(orange()) };
+      expect(streams().map((g) => g?.querySelectorAll("circle").length)).toEqual(DIVIDER_DOTS);
+      const before = streams().map(firstDot);
       await act(async () => {
-        vi.advanceTimersByTime(160);
+        vi.advanceTimersByTime(480);
       });
-      const after = { r1: first(amber()[0]), r2: first(amber()[1]), load: first(orange()) };
-      // phase moved, as a fraction of each stream's path length (R1 124 px, R2 130 px, load 320 px)
-      const dR1 = (after.r1.y - before.r1.y) / 124;
-      const dR2 = (after.r2.y - before.r2.y) / 130;
-      const dLoad = (after.load.x - before.load.x) / 320;
-      expect(dLoad).toBeGreaterThan(0);
-      expect(dR1 / dLoad).toBeGreaterThan(10);
-      expect(dR1 / dLoad).toBeLessThan(12.2);
-      expect(dR2 / dLoad).toBeGreaterThan(9);
-      expect(dR2 / dLoad).toBeLessThan(11.2);
+      const after = streams().map(firstDot);
+      // raw displacement in px, no path-length normalisation: R1 and R2 run straight down, the load runs right first
+      const moved = [after[0].y - before[0].y, after[1].y - before[1].y, after[2].x - before[2].x];
+      expect(moved.every((d) => d > 0)).toBe(true);
+      expect(moved[0]).toBeLessThan(DIVIDER_PATH_LENGTHS[0]); // no wrap-around hiding in the measurement
+      expect(moved[0] / moved[2]).toBeGreaterThan(11 * 0.985);
+      expect(moved[0] / moved[2]).toBeLessThan(11 * 1.015);
+      expect(moved[1] / moved[2]).toBeGreaterThan(10 * 0.985);
+      expect(moved[1] / moved[2]).toBeLessThan(10 * 1.015);
+      // dots passing a point each second = displacement / dot spacing, which differs by under 5% from stream to stream
+      const dotsPassed = moved.map((d, k) => d / (DIVIDER_PATH_LENGTHS[k] / DIVIDER_DOTS[k]));
+      expect(dotsPassed[0] / dotsPassed[2]).toBeGreaterThan(11 * 0.94);
+      expect(dotsPassed[0] / dotsPassed[2]).toBeLessThan(11 * 1.06);
+      expect(dotsPassed[1] / dotsPassed[2]).toBeGreaterThan(10 * 0.94);
+      expect(dotsPassed[1] / dotsPassed[2]).toBeLessThan(10 * 1.06);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("Ohm's-law mode: twice the current is twice the on-screen speed, and the biggest current runs at the cap, not faster", async () => {
+    // the viz starts at 5 V across 1 kOhm; E12 index 0 is 10 ohm
+    const at = (volts: string, rIndex?: string) => (container: HTMLElement) => {
+      const [v, r] = sliders(container);
+      fireEvent.change(v, { target: { value: volts } });
+      if (rIndex !== undefined) fireEvent.change(r, { target: { value: rIndex } });
+    };
+    const fiveMilliamps = await firstDotTravel(at("5"), 160);
+    const tenMilliamps = await firstDotTravel(at("10"), 160); // 10 V across 1 kOhm
+    expect(fiveMilliamps).toBeCloseTo((OHM_PX_PER_S_AT_REF * 0.005) / OHM_REF_A * 0.16, 0);
+    expect(tenMilliamps / fiveMilliamps).toBeGreaterThan(2 * 0.98);
+    expect(tenMilliamps / fiveMilliamps).toBeLessThan(2 * 1.02);
+    // 12 V across 10 ohm is 1.2 A, far past the cap: the dots run at the cap, so one frame still moves under half a spacing
+    const frame = await firstDotTravel(at("12", "0"), 16);
+    expect(frame).toBeGreaterThan(0);
+    expect(frame).toBeLessThan(OHM_LOOP_LENGTH / OHM_DOTS / 2);
+    const capped = await firstDotTravel(at("12", "0"), 160);
+    expect(capped).toBeCloseTo(OHM_SPEED_CAP * 0.16, 0);
   });
 });
 
@@ -422,10 +516,10 @@ describe("PcbStackupExploded", () => {
     expect(container.textContent).toContain("fully cured glass-epoxy core");
   });
 
-  it("the drawing is a labelled group whose painter-order layer shapes are not tab stops or accessible buttons", () => {
+  it("the drawing is a labelled image whose painter-order layer shapes are hidden from assistive technology and are not tab stops", () => {
     const { container } = render(<PcbStackupExploded />);
     const svg = container.querySelector("svg")!;
-    expect(svg.getAttribute("role")).toBe("group");
+    expect(svg.getAttribute("role")).toBe("img"); // nothing inside is interactive for AT; the Layer list is the control
     expect(svg.getAttribute("aria-label")).toContain("Exploded view of a 4-layer PCB");
     const layers = container.querySelectorAll("[data-layer]");
     expect(layers).toHaveLength(11);

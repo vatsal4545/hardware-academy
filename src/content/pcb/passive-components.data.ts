@@ -59,7 +59,7 @@ const data: LessonData = {
       "Find the DC-bias curve for a 6.3 V, 100 nF Y5V 0402 and read the capacitance at 3.3 V and at 4.2 V.",
     ],
     rootCause:
-      "A Y5V ceramic loses capacitance as DC bias rises, roughly half of its 100 nF at 3.3 V on a 6.3 V part and more at 4.2 V, and it loses more again at temperature extremes (Y5V allows +22/−82% over −30 to +85 °C). The oscillator period is proportional to R × C, so the frequency follows the supply and the temperature instead of staying fixed. Trimming R on the bench hid the problem at one voltage and one temperature.",
+      "A Y5V ceramic loses capacitance as DC bias rises, roughly half of its 100 nF at 3.3 V on a 6.3 V part and more at 4.2 V, and it loses more again at temperature extremes (Y5V allows +22/−82% over −30 to +85 °C). The oscillator period is proportional to R × C, so the frequency follows the supply and the temperature instead of staying fixed. Adjusting R on the bench hid the problem at one voltage and one temperature.",
     fix: "Use a C0G (NP0) capacitor, whose value does not move with bias and drifts only ±30 ppm/°C; a 100 nF C0G in 0805 costs a few cents more. Recalculate R for the true value (back to 100 kΩ), or move the timebase to the MCU's crystal-driven timer. If a Class II part is unavoidable, choose X7R rated at least 3 times the working voltage and read the manufacturer's DC-bias curve instead of trusting the label.",
     lesson:
       "A ceramic capacitor's label is its value at zero volts and room temperature. Buy C0G where the value matters, and for decoupling accept the derating and over-size it.",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, makeScale, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { ControlBar, dotRate, FlowDots, formatSI, makePath, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
+import { ControlBar, dotCount, dotSpeed, dotSpeedCap, FlowDots, formatSI, makePath, Stat, useFlowPhases } from "./OhmsLawCircuit.helpers";
 import {
   BatterySymbol,
   CapacitorSymbol,
@@ -21,7 +21,6 @@ const WIRE = "#7b8494";
 const COUT = 22e-6; // output capacitor, farads
 const THETA_JA = 60; // SOT-223 on a modest copper pad, °C/W
 const ANIM_PERIOD = 2.4; // seconds of playback per switching period (slow motion)
-const DOT_REF_A = 1; // dot speed is proportional to the inductor current: one amp is one loop per second
 const M = 90; // samples per switching period in the waveform plots
 
 /** DCR grows with inductance for a given case size. */
@@ -112,6 +111,21 @@ const P_OFF = makePath(
 );
 const nearSource = (x: number, y: number) => x < 55 && y > 118 && y < 162;
 
+/*
+ * Dot speed on screen is proportional to the inductor current (1 A moves a dot 800 px per second), whichever of the two
+ * loops is carrying it, so the speed does not jump when the switches change state; both loops use the same dot spacing.
+ */
+export const BUCK_REF_A = 1;
+export const BUCK_PX_PER_S_AT_REF = 800;
+export const BUCK_DOT_SPACING_PX = 61;
+const P_ON_DOTS = dotCount(P_ON.length, BUCK_DOT_SPACING_PX);
+const P_OFF_DOTS = dotCount(P_OFF.length, BUCK_DOT_SPACING_PX);
+// the cap keeps one 60 Hz frame under half a dot spacing on both loops, so the dots never appear to run backwards
+export const BUCK_SPEED_CAP = dotSpeedCap(Math.min(P_ON.length / P_ON_DOTS, P_OFF.length / P_OFF_DOTS));
+// geometry of the drawing itself, exported so the tests check the real loops rather than copies of their numbers
+export const BUCK_LOOP_LENGTHS = { on: P_ON.length, off: P_OFF.length } as const;
+export const BUCK_DOTS = { on: P_ON_DOTS, off: P_OFF_DOTS } as const;
+
 function SchematicPanel({
   vin,
   vout,
@@ -162,7 +176,7 @@ function SchematicPanel({
       <JunctionDot x={340} y={60} />
       <JunctionDot x={340} y={230} />
       <JunctionDot x={190} y={230} />
-      <FlowDots path={active} phase={flow} count={14} hide={nearSource} />
+      <FlowDots path={active} phase={flow} count={on ? P_ON_DOTS : P_OFF_DOTS} hide={nearSource} />
 
       <Label x={115} y={22} size={11} bold color={on ? vizColors.green : vizColors.muted}>{`S1 high side ${on ? "ON" : "off"}`}</Label>
       <Label x={230} y={140} anchor="start" size={11} bold color={!on ? vizColors.green : vizColors.muted}>{`S2 low side ${!on ? "ON" : "off"}`}</Label>
@@ -287,7 +301,8 @@ export function BuckConverter() {
   const cursor = (cycles % 3) / 3;
   const on = phase < duty;
   const iNow = inductorCurrent(phase, duty, model.iMin, model.iMax);
-  const [flow] = useFlowPhases([dotRate(iNow, DOT_REF_A)], viz.playing);
+  const activeLoop = on ? P_ON : P_OFF;
+  const [flow] = useFlowPhases([dotSpeed(iNow, BUCK_REF_A, BUCK_PX_PER_S_AT_REF, BUCK_SPEED_CAP) / activeLoop.length], viz.playing);
 
   const lossMax = Math.max(ldo.loss, model.loss.total, 1e-9);
   const tj = 25 + ldo.junctionRise;
