@@ -149,7 +149,8 @@ export function ArmLab() {
   };
 
   // screen coordinates (y down)
-  const S = (p: Vec) => ({ x: p.x, y: -p.y });
+  // Rounded so server and client markup match exactly (trig results can differ in the last bits).
+  const S = (p: Vec) => ({ x: Math.round(p.x * 100) / 100, y: Math.round(-p.y * 100) / 100 });
   const es = S(elbow);
   const hs = S(pose);
   const tg = S(target);

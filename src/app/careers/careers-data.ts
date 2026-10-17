@@ -193,7 +193,7 @@ export const roles: Role[] = [
     ],
     resumeBullets: [
       "Designed EV charging sites with load-managed DC fast chargers, sizing transformers and switchgear for shared-power dispensers and ADA-compliant stall layouts.",
-      "Modeled a 96s46p 2170 pack (79.6 kWh nominal) and its CC-CV charging taper versus temperature to set realistic charge-time expectations for site planning.",
+      "Modeled a 96s46p 2170 pack (76.3 kWh nominal) and its CC-CV charging taper versus temperature to set realistic charge-time expectations for site planning.",
     ],
   },
 ];

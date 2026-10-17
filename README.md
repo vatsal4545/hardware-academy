@@ -11,7 +11,7 @@ browser.
 ## Stack
 
 - Next.js 16 (App Router, static generation, Cache Components), React 19, TypeScript
-- Tailwind CSS v4, `motion`, React Three Fiber (two lazy-loaded 3D scenes)
+- Tailwind CSS v4, React Three Fiber (two lazy-loaded 3D scenes)
 - Vitest + Testing Library (jsdom) for simulation logic, components, content and curriculum integrity
 - Deployed on Vercel
 
@@ -23,7 +23,7 @@ npm run dev          # http://localhost:3000
 npm run build        # production build (type-checks too)
 npm test             # vitest run
 npm run lint         # eslint
-npm run gen:registry # regenerate src/content/registry.ts from the curriculum and create stubs for new lessons
+npm run gen:registry # regenerate src/content/registry.ts and bodies.ts from the curriculum; creates stubs for new lessons
 ```
 
 ## Structure
@@ -34,7 +34,8 @@ src/lib/curriculum.ts   tracks, lessons, days (single source of truth)
 src/lib/sim             pure simulation logic: robot, PID, kinematics, IPC-2221 trace width
 src/lib/progress.tsx    localStorage-backed progress store
 src/content/<track>     one <slug>.tsx (lesson body) and <slug>.data.ts (quiz, interview, scenario, key terms) per lesson
-src/content/registry.ts generated map from slug to data and lazily-loaded body
+src/content/registry.ts generated maps from slug to data and body component (server only)
+src/content/bodies.ts    generated map from slug to a body loader (used by the hydration test)
 src/components/lesson   lesson building blocks (Section, Prose, Figure, VizFrame, Slider, Quiz, ScenarioCard, ...)
 src/components/viz      visualizations per track, plus shared SVG helpers and animation hooks
 src/components/labs     robot simulator, PID lab, arm lab, trace-width lab

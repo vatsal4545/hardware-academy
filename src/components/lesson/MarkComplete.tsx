@@ -9,7 +9,6 @@ export function MarkComplete({ slug }: { slug: string }) {
   return (
     <Button
       variant={done ? "secondary" : "primary"}
-      aria-pressed={done}
       disabled={!ready}
       onClick={() => (done ? unmark(slug) : markComplete(slug))}
     >

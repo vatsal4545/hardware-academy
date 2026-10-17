@@ -40,7 +40,7 @@ export function Stepper({ steps, index, onChange, autoplayMs }: StepperProps) {
           Next
         </Button>
         {autoplayMs && (
-          <Button size="sm" variant="ghost" onClick={() => setAuto((a) => !a)} aria-pressed={auto}>
+          <Button size="sm" variant="ghost" onClick={() => setAuto((a) => !a)}>
             {auto ? "Pause" : "Auto-play"}
           </Button>
         )}

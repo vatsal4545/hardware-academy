@@ -1,10 +1,12 @@
+import { useId } from "react";
 import type { KeyTerm } from "@/lib/curriculum";
 
 export function KeyTermsRail({ terms }: { terms: KeyTerm[] }) {
+  const headingId = useId();
   if (terms.length === 0) return null;
   return (
-    <aside aria-labelledby="key-terms-heading" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="key-terms-heading" className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+    <aside aria-labelledby={headingId} className="rounded-xl border border-border bg-surface p-4">
+      <h3 id={headingId} className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
         Key terms
       </h3>
       <dl className="space-y-3 text-sm">

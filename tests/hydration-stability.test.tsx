@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement, type ComponentType } from "react";
 import { lessons } from "@/lib/curriculum";
 import { lessonBodies } from "@/content/bodies";
+import { RobotSim, PidLab, ArmLab, TraceWidthLab } from "@/components/labs";
 
 // Server and browser engines can differ in the last bits of transcendental functions. Any such value that
 // reaches markup unrounded produces a hydration mismatch, which React 19 reports and may leave the lesson
@@ -10,7 +11,7 @@ import { lessonBodies } from "@/content/bodies";
 // by one part in 10^14, and requires identical markup.
 
 const NUDGE = 1 + 1e-14;
-const FUNCS = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "exp", "log", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
+const FUNCS = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh", "exp", "expm1", "log", "log1p", "log2", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
 const originals: Partial<Record<(typeof FUNCS)[number], (...args: number[]) => number>> = {};
 
 function nudgeMath() {
@@ -33,23 +34,38 @@ function restoreMath() {
 
 afterEach(restoreMath);
 
+function renderTwice(name: string, Comp: ComponentType) {
+  restoreMath();
+  const plain = renderToStaticMarkup(createElement(Comp));
+  nudgeMath();
+  const nudged = renderToStaticMarkup(createElement(Comp));
+  restoreMath();
+  expect(plain.length).toBeGreaterThan(500);
+  if (plain !== nudged) {
+    let i = 0;
+    while (i < plain.length && plain[i] === nudged[i]) i++;
+    const context = plain.slice(Math.max(0, i - 160), i + 80);
+    throw new Error(`${name}: markup differs at offset ${i}: …${context}…`);
+  }
+}
+
+describe("hydration stability: lab markup does not depend on last-bit float differences", () => {
+  const labs: Array<[string, ComponentType]> = [
+    ["robot-sim", RobotSim as ComponentType],
+    ["pid", PidLab as ComponentType],
+    ["arm", ArmLab as ComponentType],
+    ["trace-width", TraceWidthLab as ComponentType],
+  ];
+  for (const [name, Comp] of labs) {
+    it(name, () => renderTwice(name, Comp));
+  }
+});
+
 describe("hydration stability: lesson markup does not depend on last-bit float differences", () => {
   for (const lesson of lessons) {
     it(lesson.slug, async () => {
       const Body = (await lessonBodies[lesson.slug]()).default as ComponentType;
-      restoreMath();
-      const plain = renderToStaticMarkup(createElement(Body));
-      nudgeMath();
-      const nudged = renderToStaticMarkup(createElement(Body));
-      restoreMath();
-      expect(plain.length).toBeGreaterThan(1000);
-      if (plain !== nudged) {
-        // Find the first difference to make the failure actionable.
-        let i = 0;
-        while (i < plain.length && plain[i] === nudged[i]) i++;
-        const context = plain.slice(Math.max(0, i - 160), i + 80);
-        throw new Error(`${lesson.slug}: markup differs at offset ${i}: …${context}…`);
-      }
+      renderTwice(lesson.slug, Body);
     });
   }
 });

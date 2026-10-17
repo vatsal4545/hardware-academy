@@ -29,6 +29,8 @@ npx vercel --prod --yes   # builds on Vercel and deploys to production
 ```
 
 The CLI prints the production URL. Running `npx vercel` without `--prod` creates a preview deployment instead.
+Preview deployments on a Vercel team are protected by Vercel Authentication by default (they redirect to a Vercel
+login), so share the production URL, or turn protection off under Project → Settings → Deployment Protection.
 
 ### Option B: Connect the GitHub repo in the Vercel dashboard
 
