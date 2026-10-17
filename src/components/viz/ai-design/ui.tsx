@@ -2,6 +2,7 @@
 
 import { useState, type ButtonHTMLAttributes } from "react";
 import { useAnimationFrame, usePrefersReducedMotion } from "@/components/viz/shared";
+import { r2 } from "./num";
 
 /** Joins class names, skipping falsy parts. Local to the AI-design visualizations. */
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -48,28 +49,31 @@ export interface CurveArrowProps {
   dashOffset?: number;
 }
 
-/** A quadratic curve with an arrowhead at (x2, y2), for feedback loops in diagrams. */
+/**
+ * A quadratic curve with an arrowhead at (x2, y2), for feedback loops in diagrams.
+ * Every number derived from atan2, cos or sin is rounded to 2 decimals, so server and browser markup match.
+ */
 export function CurveArrow({ x1, y1, cx, cy, x2, y2, color = "#9ca3af", width = 1.6, head = 8, dashed = false, dashOffset = 0 }: CurveArrowProps) {
   const ang = Math.atan2(y2 - cy, x2 - cx);
   const spread = Math.PI / 7;
-  const bx1 = x2 - head * Math.cos(ang - spread);
-  const by1 = y2 - head * Math.sin(ang - spread);
-  const bx2 = x2 - head * Math.cos(ang + spread);
-  const by2 = y2 - head * Math.sin(ang + spread);
-  const ex = x2 - head * 0.6 * Math.cos(ang);
-  const ey = y2 - head * 0.6 * Math.sin(ang);
+  const bx1 = r2(x2 - head * Math.cos(ang - spread));
+  const by1 = r2(y2 - head * Math.sin(ang - spread));
+  const bx2 = r2(x2 - head * Math.cos(ang + spread));
+  const by2 = r2(y2 - head * Math.sin(ang + spread));
+  const ex = r2(x2 - head * 0.6 * Math.cos(ang));
+  const ey = r2(y2 - head * 0.6 * Math.sin(ang));
   return (
     <g>
       <path
-        d={`M${x1} ${y1} Q${cx} ${cy} ${ex} ${ey}`}
+        d={`M${r2(x1)} ${r2(y1)} Q${r2(cx)} ${r2(cy)} ${ex} ${ey}`}
         fill="none"
         stroke={color}
         strokeWidth={width}
         strokeLinecap="round"
         strokeDasharray={dashed ? "6 5" : undefined}
-        strokeDashoffset={dashOffset}
+        strokeDashoffset={r2(dashOffset)}
       />
-      <polygon points={`${x2},${y2} ${bx1},${by1} ${bx2},${by2}`} fill={color} />
+      <polygon points={`${r2(x2)},${r2(y2)} ${bx1},${by1} ${bx2},${by2}`} fill={color} />
     </g>
   );
 }

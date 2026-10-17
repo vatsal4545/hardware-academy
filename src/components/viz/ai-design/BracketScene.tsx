@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { vizColors } from "@/components/viz/shared";
 import { toScreen, FLANGE_HOLE_Z, HOLE_END, THICKNESS, WIDTH, type BracketModel, type FacePoly, type Pt, type V3, type View } from "./bracketModel";
+import { r2 } from "./num";
 
 /** The card colour behind the viz; "see-through" areas of a hole are painted with it. */
 export const SURFACE = "#121826";
@@ -54,7 +55,7 @@ function polyPath(view: View, poly: FacePoly): string {
 
 function centroid(view: View, pts: V3[]): Pt {
   const s = pts.map((p) => toScreen(view, p));
-  return { x: s.reduce((a, b) => a + b.x, 0) / s.length, y: s.reduce((a, b) => a + b.y, 0) / s.length };
+  return { x: r2(s.reduce((a, b) => a + b.x, 0) / s.length), y: r2(s.reduce((a, b) => a + b.y, 0) / s.length) };
 }
 
 /** Neutral shading by surface normal: top lightest, the +y side medium, the +x side darkest. */
@@ -76,7 +77,7 @@ function Dimensions({ model, view }: { model: BracketModel; view: View }) {
   const b = toScreen(view, [p.length, yd, 0]);
   const ea = toScreen(view, [0, WIDTH + 1.5, 0]);
   const eb = toScreen(view, [p.length, WIDTH + 1.5, 0]);
-  const mid = { x: (a.x + b.x) / 2 - 5, y: (a.y + b.y) / 2 + 11 };
+  const mid = { x: r2((a.x + b.x) / 2 - 5), y: r2((a.y + b.y) / 2 + 11) };
   const text = { fill: vizColors.text, ...HALO };
   const baseAt = baseHole && toScreen(view, [p.length - HOLE_END + baseHole.radius + 3, WIDTH / 2, THICKNESS]);
   const flangeAt = flangeHole && toScreen(view, [THICKNESS, WIDTH / 2, FLANGE_HOLE_Z + flangeHole.radius + 3.5]);
@@ -84,8 +85,8 @@ function Dimensions({ model, view }: { model: BracketModel; view: View }) {
   return (
     <g fontFamily="var(--font-mono)" fontSize={11}>
       <g stroke={vizColors.muted} strokeWidth={1}>
-        <line x1={ea.x} y1={ea.y} x2={a.x + (a.x - ea.x) * 0.2} y2={a.y + (a.y - ea.y) * 0.2} />
-        <line x1={eb.x} y1={eb.y} x2={b.x + (b.x - eb.x) * 0.2} y2={b.y + (b.y - eb.y) * 0.2} />
+        <line x1={ea.x} y1={ea.y} x2={r2(a.x + (a.x - ea.x) * 0.2)} y2={r2(a.y + (a.y - ea.y) * 0.2)} />
+        <line x1={eb.x} y1={eb.y} x2={r2(b.x + (b.x - eb.x) * 0.2)} y2={r2(b.y + (b.y - eb.y) * 0.2)} />
         <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
       </g>
       <text x={mid.x} y={mid.y} textAnchor="middle" transform={`rotate(30 ${mid.x} ${mid.y})`} fill={vizColors.text}>
@@ -97,7 +98,7 @@ function Dimensions({ model, view }: { model: BracketModel; view: View }) {
         </text>
       )}
       {flangeAt && (
-        <text x={flangeAt.x + 6} y={flangeAt.y - 4} {...text}>
+        <text x={r2(flangeAt.x + 6)} y={r2(flangeAt.y - 4)} {...text}>
           {`Ø${dim(flangeHole!.radius * 2)}`}
         </text>
       )}
@@ -107,15 +108,14 @@ function Dimensions({ model, view }: { model: BracketModel; view: View }) {
 }
 
 function FilletLabel({ view, radius }: { view: View; radius: number }) {
-  const c = Math.cos(Math.PI / 4);
-  const at = THICKNESS + radius - radius * c;
+  const at = r2(THICKNESS + radius - radius * Math.SQRT1_2);
   const arcMid = toScreen(view, [at, WIDTH, at]);
   // the label sits on the flange's inner face just above the fillet, where there is always room
   const label = toScreen(view, [THICKNESS, WIDTH - 5, THICKNESS + radius + 6]);
   return (
     <g>
-      <line x1={arcMid.x} y1={arcMid.y} x2={label.x} y2={label.y + 3} stroke={vizColors.muted} strokeWidth={1} />
-      <text x={label.x + 3} y={label.y} fill={vizColors.text} {...HALO}>
+      <line x1={arcMid.x} y1={arcMid.y} x2={label.x} y2={r2(label.y + 3)} stroke={vizColors.muted} strokeWidth={1} />
+      <text x={r2(label.x + 3)} y={label.y} fill={vizColors.text} {...HALO}>
         {`R${dim(radius)}`}
       </text>
     </g>

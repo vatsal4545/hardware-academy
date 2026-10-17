@@ -12,7 +12,7 @@ const SERVER_CODE = `# /// script
 import re
 from math import pi
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from build123d import Axis, Box, Cylinder, GeomType, Pos, export_step as write_step
 from mcp.server.fastmcp import FastMCP
@@ -34,7 +34,7 @@ def get(name: str):
     return PARTS[name]
 
 
-def store(name: str, part) -> dict:
+def store(name: str, part) -> dict[str, Any]:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", name):
         raise ValueError("name must be 1 to 40 letters, digits, hyphens or underscores")
     PARTS[name] = part
@@ -44,7 +44,7 @@ def store(name: str, part) -> dict:
 
 
 @mcp.tool()
-def make_box(name: str, length: Dim, width: Dim, height: Dim) -> dict:
+def make_box(name: str, length: Dim, width: Dim, height: Dim) -> dict[str, Any]:
     """Create a block centred on the origin (x=length, y=width, z=height), in mm."""
     return store(name, Box(length, width, height))
 
@@ -54,7 +54,7 @@ def make_plate_with_holes(
     name: str, length: Dim, width: Dim,
     thickness: Annotated[float, Field(ge=MIN_WALL, le=50)],
     hole_diameter: Dim, hole_inset: Dim, bore_diameter: Annotated[float, Field(ge=0, le=500)] = 0.0,
-) -> dict:
+) -> dict[str, Any]:
     """Create a plate centred on the origin with four through-holes, each hole_inset mm from
     its two nearest edges (to the hole centre), plus an optional centre bore. In mm."""
     if not hole_diameter / 2 < hole_inset < min(length, width) / 2:
@@ -72,7 +72,7 @@ def make_plate_with_holes(
 
 
 @mcp.tool()
-def fillet_edges(name: str, radius: Dim, which: Literal["corners", "top", "bottom"] = "corners") -> dict:
+def fillet_edges(name: str, radius: Dim, which: Literal["corners", "top", "bottom"] = "corners") -> dict[str, Any]:
     """Round edges of a plate: the four vertical "corners", or the outer edge loop of the
     "top" or "bottom" face (not the holes). In mm. Fails if the radius cannot fit."""
     part = get(name)
@@ -93,14 +93,15 @@ def fillet_edges(name: str, radius: Dim, which: Literal["corners", "top", "botto
 
 
 @mcp.tool()
-def dfm_check(name: str) -> dict:
+def dfm_check(name: str) -> dict[str, Any]:
     """Check a plate against the shop's CNC rules: minimum wall 1.5 mm, fastener-hole rim at
     least one diameter from the edge, fillet radius at least 0.5 mm. Returns pass, one message
     per violated rule, and the measured values so the design can be corrected."""
     part = get(name)
     top = part.faces().sort_by(Axis.Z)[-1]
     outline, holes = top.outer_wire(), list(top.inner_wires())
-    wall = part.bounding_box().size.Z  # the plate thickness is the first candidate for thinnest wall
+    size = part.bounding_box().size
+    wall = min(size.X, size.Y, size.Z)  # the smallest bounding-box dimension is the first candidate for thinnest wall
     fasteners = []                     # (rim-to-edge gap, diameter) of each fastener-sized hole
     for i, hole in enumerate(holes):
         gap = hole.distance_to(outline)
@@ -124,7 +125,7 @@ def dfm_check(name: str) -> dict:
 
 
 @mcp.tool()
-def export_step(name: str) -> dict:
+def export_step(name: str) -> dict[str, Any]:
     """Write the part to ~/cad-out/<name>.step. Refuses unless dfm_check passes."""
     part = get(name)
     report = dfm_check(name)
@@ -219,15 +220,16 @@ def test_known_bad_design_must_fail():
 
 def test_export_refuses_a_thin_part(tmp_path, monkeypatch):
     monkeypatch.setattr(cad, "OUT_DIR", tmp_path)
-    cad.make_box("thin", 40, 40, 1.0)               # 1 mm wall: below the 1.5 mm rule
-    with pytest.raises(ValueError):
-        cad.export_step("thin")
+    for size in [(40, 40, 1.0), (1.0, 40, 40), (40, 1.0, 40)]:   # a 1 mm wall in z, in x and in y
+        cad.make_box("thin", *size)                              # below the 1.5 mm rule
+        with pytest.raises(ValueError):
+            cad.export_step("thin")
     assert not list(tmp_path.iterdir())`;
 
 const PREVIEW_CODE = `from build123d import export_stl
 
 @mcp.tool()
-def preview(name: str) -> dict:
+def preview(name: str) -> dict[str, Any]:
     """Tessellate a part to STL so Blender or a viewer can show it. Returns the path."""
     path = OUT_DIR / f"{name}.stl"
     OUT_DIR.mkdir(exist_ok=True)
@@ -357,8 +359,7 @@ export default function Lesson() {
           </p>
           <p>
             A server can offer three kinds of capability: tools (functions the model chooses to call), resources (data the application attaches, such as a file or a part list) and prompts (templates the user picks). For CAD, tools do
-            the work. Each tool has a name, a natural-language description and a JSON Schema for its arguments, and the model reads those to decide what to call, so they are part of the prompt. A result comes back as content blocks plus
-            an isError flag, and when a tool raises an exception the Python SDK turns it into an isError result that carries the message.
+            the work. Each tool has a name, a natural-language description and a JSON Schema for its arguments, and the model reads those to decide what to call, so they are part of the prompt. A result comes back as content blocks plus an isError flag. A tool with a declared return type (dict[str, Any] in our server) also gets an output schema and a structuredContent copy of its data, and when a tool raises an exception the Python SDK turns it into an isError result that carries the message.
           </p>
         </Prose>
         <Figure caption="Architecture of the Claude CAD tool: the model never touches the kernel directly. Every call crosses the MCP boundary, where the server validates it, runs it and measures the result.">
@@ -423,7 +424,7 @@ export default function Lesson() {
               <code>fillet_edges</code> selects by geometry (vertical edges at the bounding-box corners) and refuses a radius that cannot fit. The kernel&apos;s own failure message is already readable.
             </li>
             <li>
-              <code>dfm_check</code> measures the geometry with exact kernel distances. A failed check is a normal return value with the rule, the worst measured value and the limit, so the model can repair the design.
+              <code>dfm_check</code> measures the geometry with exact kernel distances, and its thinnest-wall search starts at the smallest bounding-box dimension, so a block that is only 0.5 mm thick in x, y or z fails. A failed check is a normal return value with the rule, the worst measured value and the limit, so the model can repair the design.
             </li>
             <li>
               <code>export_step</code> calls <code>dfm_check</code> itself and raises on failure. Nothing is written outside <code>~/cad-out</code>, and names are restricted to letters, digits, hyphens and underscores.
@@ -484,7 +485,7 @@ export default function Lesson() {
             <li>Call <code>make_plate_with_holes</code> for a 50 × 50 × 6 mm NEMA 17 mount (holes 3.4 mm, inset 9.5, bore 22.5), then <code>fillet_edges</code> with radius 4, <code>dfm_check</code> and <code>export_step</code>. Note the numbers.</li>
             <li>Add the server to Claude Desktop, restart it, and ask for the 42 mm plate with 8 mm corners from the example conversation. Watch for the failure and the retry.</li>
             <li>Open <code>~/cad-out/mount.step</code> in FreeCAD and measure the bore diameter and the hole spacing.</li>
-            <li>Break it on purpose: ask for a 0.5 mm plate, then export a 1 mm block made with <code>make_box</code>. Which layer stops each?</li>
+            <li>Break it on purpose: ask for a 0.5 mm plate, then try to export a block that is only 1 mm thick in x (<code>make_box</code> with length 1, width 40, height 40). Which layer stops each?</li>
           </ol>
           <details className="mt-3 rounded-lg border border-border bg-bg px-4 py-3">
             <summary className="cursor-pointer font-semibold">Answer</summary>
@@ -505,8 +506,7 @@ export default function Lesson() {
                 <strong>FreeCAD.</strong> The bore measures 22.5 mm and the hole centres are 31.0 mm apart. The STEP carries exact surfaces, so the numbers match the script.
               </p>
               <p>
-                <strong>Breaking it.</strong> The 0.5 mm plate is rejected by the schema before any code runs. The 1 mm block is a valid <code>make_box</code> call, because the schema only bounds sizes, but <code>export_step</code> refuses
-                with <code>min_wall: thinnest wall is 1.00 mm</code>. That is the point of layers: a schema limit for the obvious cases, a geometric check for everything the schema cannot express, and a gate so the check cannot be skipped.
+                <strong>Breaking it.</strong> The 0.5 mm plate is rejected by the schema before any code runs. The 1 mm block is a valid <code>make_box</code> call, because the schema only bounds sizes, but <code>export_step</code> refuses with <code>min_wall: thinnest wall is 1.00 mm</code>: the check starts from the smallest bounding-box dimension, so it does not matter whether the thin direction is x, y or z. That is the point of layers: a schema limit for the obvious cases, a geometric check for everything the schema cannot express, and a gate so the check cannot be skipped.
               </p>
               <p>
                 <strong>If it does not connect.</strong> Check for a relative path, a missing absolute path to <code>uv</code>, an app that was closed but not quit, or a stray <code>print()</code> to stdout. The log in{" "}

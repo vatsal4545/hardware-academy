@@ -59,7 +59,7 @@ const data: LessonData = {
     ],
     rootCause:
       "The constraint was advice, not enforcement. It lived only in a prompt that competes with the request for a light part, so the model traded it away. The tools accepted any positive thickness, so a 0.5 mm plate was a valid call. export_step wrote whatever it was given and was not gated on dfm_check, so verification was optional. And the one DFM run passed because the first version measured only hole-to-hole ligaments and never looked at the plate thickness, so it could not see the problem.",
-    fix: "Put the rule where it cannot be negotiated. Constrain the parameter in the tool schema (thickness at least 1.5 mm), which the model sees up front and the server enforces before any code runs. Make dfm_check measure the thinnest section, including the bounding-box thickness and not only the ligaments around holes. Make export_step run the check and refuse to write on failure, so verification cannot be skipped. Add a regression test: a 0.5 mm part must fail dfm_check and must not export.",
+    fix: "Put the rule where it cannot be negotiated. Constrain the parameter in the tool schema (thickness at least 1.5 mm), which the model sees up front and the server enforces before any code runs. Make dfm_check measure the thinnest section: the smallest bounding-box dimension (x, y or z), not only the ligaments around holes. Make export_step run the check and refuse to write on failure, so verification cannot be skipped. Add a regression test: a 0.5 mm part, thin in any direction, must fail dfm_check and must not export.",
     lesson:
       "Anything that must hold has to be enforced by a tool, measured by a checker and tested with a design that is supposed to fail. Instructions in a prompt are preferences.",
   },
@@ -99,10 +99,10 @@ const data: LessonData = {
     {
       q: "Which transport does Claude Desktop use to run a local MCP server listed in claude_desktop_config.json?",
       choices: [
-        "stdio: it launches the server as a subprocess and exchanges JSON-RPC on stdin and stdout",
-        "A WebSocket to a cloud relay",
-        "A shared SQLite file",
-        "Plain HTTP polling of port 80",
+        "stdio: it starts the server as a subprocess and speaks JSON-RPC over stdin and stdout",
+        "A WebSocket: it connects to a relay in the cloud that forwards each tool call to the server",
+        "A shared SQLite file: the host writes requests into it and the server polls for new rows",
+        "Plain HTTP polling: it calls port 80 on localhost every second to ask for pending results",
       ],
       answer: 0,
       explain:
@@ -111,10 +111,10 @@ const data: LessonData = {
     {
       q: "Your stdio MCP server calls print() for debugging. What happens?",
       choices: [
-        "Nothing: print goes to a log file",
-        "Claude sees the text as a tool result",
-        "The server runs faster",
-        "It corrupts the JSON-RPC stream on stdout, so the connection breaks or messages are lost; log to stderr instead",
+        "Nothing: print goes to a log file that the host collects for you after each tool call",
+        "Claude reads the text and shows it as a normal tool result next to the real output",
+        "The server runs faster because the host no longer waits for the log buffer to flush",
+        "It corrupts the JSON-RPC stream on stdout, so messages are lost; use stderr for logs instead",
       ],
       answer: 3,
       explain:
@@ -123,10 +123,10 @@ const data: LessonData = {
     {
       q: "Where is a manufacturing constraint such as minimum wall thickness enforced most reliably?",
       choices: [
-        "In the project prompt, written clearly",
-        "In the tool schema and a geometric check, with export gated on the check",
-        "In the model's training data",
-        "In a comment above the tool function",
+        "In the project prompt, written clearly and repeated at the start of every session",
+        "In the tool schema plus a geometric check, with export gated on that check passing",
+        "In the model's training data, because it has seen thousands of machining guides",
+        "In a code comment above the tool function, where the model can read the rule",
       ],
       answer: 1,
       explain:
@@ -135,10 +135,10 @@ const data: LessonData = {
     {
       q: "In the Python SDK's FastMCP, what happens when a tool function raises ValueError(\"hole_inset must keep the whole hole inside the plate\")?",
       choices: [
-        "The server process exits",
-        "The exception becomes an isError result whose text carries the message, which the model can read and act on",
-        "The error is silently ignored and an empty result is returned",
-        "Claude Desktop shows a crash dialog and disables the server",
+        "The server process exits, and Claude Desktop restarts it automatically before the next call",
+        "It becomes an isError result carrying the message, which the model can read and act on",
+        "The error is swallowed and an empty result is returned, so the model assumes success",
+        "Claude Desktop shows a crash dialog and permanently disables the whole server entry",
       ],
       answer: 1,
       explain:
@@ -146,7 +146,12 @@ const data: LessonData = {
     },
     {
       q: "Which JSON-RPC method does a client call to find out which tools a server offers?",
-      choices: ["tools/call", "resources/list", "initialize", "tools/list"],
+      choices: [
+        "tools/call",
+        "resources/list",
+        "initialize",
+        "tools/list",
+      ],
       answer: 3,
       explain:
         "tools/list returns each tool's name, description and JSON Schema. initialize only negotiates protocol version and capabilities, and tools/call runs a tool the client already knows about.",
@@ -154,10 +159,10 @@ const data: LessonData = {
     {
       q: "Why does export_step run dfm_check itself and refuse to write a failing part?",
       choices: [
-        "It makes the STEP file smaller",
-        "STEP requires a DFM stamp",
-        "It makes verification impossible to skip, even if the model never calls dfm_check",
-        "It speeds up the kernel",
+        "It makes the STEP file smaller, because failing parts carry extra unused geometry inside",
+        "STEP requires a DFM stamp, and the exporter rejects any file that was not checked first",
+        "It makes verification impossible to skip, even when the model forgets to call the check",
+        "It speeds up the kernel, because checked parts need fewer boolean operations to rebuild",
       ],
       answer: 2,
       explain:
@@ -166,10 +171,10 @@ const data: LessonData = {
     {
       q: "Which test is most valuable for a DFM checker?",
       choices: [
-        "A test that a good design passes",
-        "A test that the server starts",
-        "A test that the JSON is pretty-printed",
-        "A set of known-bad designs, such as a 1 mm wall, that must fail",
+        "A test that a known-good design passes and exports without any warnings",
+        "A test that the server starts and lists its five tools in the right order",
+        "A test that every JSON result is pretty-printed with two-space indentation",
+        "A set of known-bad designs, such as a 1 mm wall, that must be rejected",
       ],
       answer: 3,
       explain:

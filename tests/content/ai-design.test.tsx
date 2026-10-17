@@ -1,4 +1,5 @@
-import type { ComponentType } from "react";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeAll, afterAll } from "vitest";
 import type { LessonData } from "@/lib/curriculum";
@@ -6,6 +7,9 @@ import { BRepExplorer } from "@/components/viz/ai-design/BRepExplorer";
 import { ParametricBracket } from "@/components/viz/ai-design/ParametricBracket";
 import { DesignPipeline } from "@/components/viz/ai-design/DesignPipeline";
 import { McpSequence } from "@/components/viz/ai-design/McpSequence";
+import { BracketScene, type SceneHighlight, type Selection } from "@/components/viz/ai-design/BracketScene";
+import { CurveArrow } from "@/components/viz/ai-design/ui";
+import { SvgCanvas } from "@/components/viz/shared";
 import {
   ALL_FEATURES,
   AL_DENSITY,
@@ -13,7 +17,10 @@ import {
   bracketVolume,
   buildBracket,
   dfmChecks,
+  makeView,
   rebuild,
+  toScreen,
+  type BracketParams,
   type Features,
 } from "@/components/viz/ai-design/bracketModel";
 import { DEFECTS, STAGES, buildScript, snapshotAt, type DefectId } from "@/components/viz/ai-design/pipelineModel";
@@ -115,6 +122,26 @@ describe.each(lessons)("$slug", ({ Lesson, data }) => {
     }
     // the right answer is not always in the same slot
     expect(new Set(data.quiz.map((q) => q.answer)).size).toBeGreaterThan(1);
+  });
+
+  it("does not give the quiz answers away by length", () => {
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const sizes = data.quiz.map((q) => ({
+      correct: q.choices[q.answer].length,
+      others: q.choices.filter((_, i) => i !== q.answer).map((c) => c.length),
+    }));
+    const longest = sizes.filter((x) => x.correct > Math.max(...x.others)).length;
+    const shortest = sizes.filter((x) => x.correct < Math.min(...x.others)).length;
+    // a strictly longest (or strictly shortest) key is a tell when it happens in most questions
+    expect(longest / sizes.length, "share of questions where the correct choice is strictly the longest").toBeLessThanOrEqual(0.4);
+    expect(shortest / sizes.length, "share of questions where the correct choice is strictly the shortest").toBeLessThanOrEqual(0.4);
+    const ratios = sizes.map((x) => x.correct / mean(x.others));
+    expect(mean(ratios), "mean ratio of the correct length to the mean distractor length").toBeGreaterThan(0.85);
+    expect(mean(ratios), "mean ratio of the correct length to the mean distractor length").toBeLessThan(1.2);
+    for (const r of ratios) {
+      expect(r).toBeGreaterThan(0.6);
+      expect(r).toBeLessThan(1.5);
+    }
   });
 });
 
@@ -501,7 +528,153 @@ describe("the MCP server listing", () => {
     expect((code.match(/@mcp\.tool\(\)/g) ?? []).length).toBe(5);
     expect(code).toContain("mcp.run()");
     expect(code).not.toMatch(/\bprint\(/);
+    // declared return types give every tool an output schema and a structuredContent copy of its result
+    expect((code.match(/-> dict\[str, Any\]:/g) ?? []).length).toBeGreaterThanOrEqual(5);
+    expect(code).not.toMatch(/-> dict:/);
+    // the thinnest-wall search starts from the smallest bounding-box dimension, in x, y and z
+    expect(code).toMatch(/wall = min\(size\.X, size\.Y, size\.Z\)/);
     expect(container.textContent).toMatch(/claude_desktop_config\.json/);
     expect(container.textContent).toMatch(/mcpServers/);
+  });
+
+  it("agrees with the payloads shown in the sequence diagram", () => {
+    const { container } = render(<ClaudeCadTool />);
+    const text = [...container.querySelectorAll("code")].map((c) => c.textContent ?? "");
+    const code = text.find((t) => t.includes("FastMCP(")) ?? "";
+    // structuredContent and outputSchema appear in the payloads exactly when the listing declares return types
+    const declared = !/-> dict:/.test(code) && /-> dict\[str, Any\]:/.test(code);
+    const story = ROWS.map((r) => r.payload).join("\n");
+    expect(story.includes("structuredContent")).toBe(declared);
+    expect(story.includes("outputSchema")).toBe(declared);
+    // the text block of a result is the dict as indent-2 JSON, with newlines escaped on the wire
+    expect(ROWS[5].payload).toContain('\\n  \\"name\\"');
+    // the example conversation and the sequence quote the same failure and the same pass
+    const conversation = text.find((t) => t.startsWith("You: Design a mounting plate")) ?? "";
+    for (const row of [ROWS[FAIL_ROW], ROWS[PASS_ROW]]) {
+      const numbers = row.payload.match(/\d+\.\d+/g) ?? [];
+      for (const n of numbers) expect(conversation, `the conversation should quote ${n}`).toContain(n);
+    }
+  });
+
+  it("tests a thin wall in x, y and z in its pytest examples", () => {
+    const { container } = render(<ClaudeCadTool />);
+    const tests = [...container.querySelectorAll("code")].map((c) => c.textContent ?? "").find((t) => t.includes("def test_export_refuses_a_thin_part")) ?? "";
+    for (const size of ["(40, 40, 1.0)", "(1.0, 40, 40)", "(40, 1.0, 40)"]) expect(tests).toContain(size);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Hydration stability. Server and browser engines can differ in the last bits of sin, cos, atan2, sqrt and
+// friends. Any such value that reaches markup unrounded makes the hydrated page differ from the server HTML.
+// These tests render the same markup with those functions nudged by one part in 10^14 and require identical
+// output, over many more states than the initial render that tests/hydration-stability.test.tsx covers.
+// ---------------------------------------------------------------------------------------------
+
+const NUDGE = 1 + 1e-14;
+const NUDGED = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "exp", "log", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
+
+function withNudgedMath<T>(fn: () => T): T {
+  const saved = new Map<string, (...args: number[]) => number>();
+  for (const name of NUDGED) {
+    const original = Math[name] as (...args: number[]) => number;
+    saved.set(name, original);
+    (Math as unknown as Record<string, unknown>)[name] = (...args: number[]) => {
+      const v = original(...args);
+      return v === 0 || !Number.isFinite(v) ? v : v * NUDGE;
+    };
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [name, original] of saved) (Math as unknown as Record<string, unknown>)[name] = original;
+  }
+}
+
+/** Attribute values containing a number with four or more decimals are almost always an unrounded float. */
+const LONG_DECIMAL = /="[^"]*\d\.\d{4,}[^"]*"/g;
+
+interface SceneState {
+  name: string;
+  params: BracketParams;
+  features: Features;
+  highlight: SceneHighlight;
+  selected: Selection | null;
+  dims: boolean;
+}
+const ON: SceneHighlight = { faces: true, edges: true, vertices: true, xray: true };
+const sceneStates: SceneState[] = [
+  { name: "defaults, everything highlighted", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: ON, selected: null, dims: false },
+  { name: "defaults, plain with dimensions", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: { faces: false, edges: false, vertices: false, xray: false }, selected: null, dims: true },
+  { name: "selected face F4 (the fillet)", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: ON, selected: { kind: "face", id: "F4" }, dims: false },
+  { name: "selected hidden face F1", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: ON, selected: { kind: "face", id: "F1" }, dims: false },
+  { name: "selected edge E24 (a seam)", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: ON, selected: { kind: "edge", id: "E24" }, dims: false },
+  { name: "selected vertex V17", params: DEFAULT_PARAMS, features: ALL_FEATURES, highlight: ON, selected: { kind: "vertex", id: "V17" }, dims: false },
+  { name: "short base, big hole, R16", params: { length: 50, holeD: 14, fillet: 16 }, features: ALL_FEATURES, highlight: ON, selected: null, dims: true },
+  { name: "long base, small hole, no fillet", params: { length: 100, holeD: 4, fillet: 0 }, features: { fillet: false, baseHole: true, flangeHole: true }, highlight: ON, selected: null, dims: true },
+  { name: "odd values, fillet only", params: { length: 63, holeD: 9.5, fillet: 7.5 }, features: { fillet: true, baseHole: false, flangeHole: false }, highlight: ON, selected: null, dims: true },
+  { name: "plain extruded L", params: DEFAULT_PARAMS, features: { fillet: false, baseHole: false, flangeHole: false }, highlight: ON, selected: null, dims: true },
+];
+
+function sceneMarkup(state: SceneState): string {
+  const model = buildBracket(state.params, state.features);
+  const view = makeView(100, 440, 400, 14);
+  return renderToStaticMarkup(
+    <SvgCanvas viewBox="0 0 440 400" title={state.name}>
+      <BracketScene model={model} view={view} highlight={state.highlight} selected={state.selected} dims={state.dims} labels />
+    </SvgCanvas>,
+  );
+}
+
+describe("hydration stability", () => {
+  it.each(sceneStates)("the bracket drawing does not depend on last-bit float differences: $name", (state) => {
+    const plain = sceneMarkup(state);
+    const nudged = withNudgedMath(() => sceneMarkup(state));
+    expect(nudged).toBe(plain);
+    expect(plain.match(LONG_DECIMAL)).toBeNull();
+  });
+
+  it("projects model points to coordinates rounded to two decimals", () => {
+    const view = makeView(100, 440, 400, 14);
+    for (const p of [[0, 0, 0], [70, 40, 6], [12.345, 7.891, 33.3333], [100, 40, 44]] as const) {
+      const { x, y } = toScreen(view, [...p]);
+      expect(Math.round(x * 100) / 100).toBe(x);
+      expect(Math.round(y * 100) / 100).toBe(y);
+    }
+  });
+
+  const arrows: Array<[number, number, number, number, number, number]> = [
+    [382, 112, 328, 58, 277.5, 109],
+    [490, 112, 328, -46, 166, 109],
+    [598, 168, 544, 206, 500, 171],
+    [706, 168, 598, 318, 480, 171],
+    [635, 62, 543, 4, 451, 60],
+    [451, 292, 543, 346, 635, 294],
+    [10, 10, 33.3, 77.7, 91.1, 12.2],
+  ];
+  it.each(arrows)("a curved arrow from (%f, %f) via (%f, %f) to (%f, %f) has stable, short numbers", (x1, y1, cx, cy, x2, y2) => {
+    const markup = () => renderToStaticMarkup(createElement("svg", null, createElement(CurveArrow, { x1, y1, cx, cy, x2, y2, dashed: true, dashOffset: -12.3456789 })));
+    const plain = markup();
+    expect(withNudgedMath(markup)).toBe(plain);
+    expect(plain.match(LONG_DECIMAL)).toBeNull();
+  });
+
+  it.each(lessons)("the initial markup of $slug does not depend on last-bit float differences", ({ Lesson }) => {
+    const plain = renderToStaticMarkup(createElement(Lesson));
+    const nudged = withNudgedMath(() => renderToStaticMarkup(createElement(Lesson)));
+    expect(plain.length).toBeGreaterThan(1000);
+    expect(nudged).toBe(plain);
+    expect(plain.match(LONG_DECIMAL)).toBeNull();
+  });
+
+  it.each([
+    ["BRepExplorer", BRepExplorer],
+    ["ParametricBracket", ParametricBracket],
+    ["DesignPipeline", DesignPipeline],
+    ["McpSequence", McpSequence],
+  ] as Array<[string, ComponentType]>)("%s renders identical, short-number markup under nudged math", (_name, Viz) => {
+    const plain = renderToStaticMarkup(createElement(Viz));
+    const nudged = withNudgedMath(() => renderToStaticMarkup(createElement(Viz)));
+    expect(nudged).toBe(plain);
+    expect(plain.match(LONG_DECIMAL)).toBeNull();
   });
 });

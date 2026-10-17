@@ -8,6 +8,8 @@
  * edge, and a closed circle has one vertex.
  */
 
+import { r2, r3, r4 } from "./num";
+
 export type V3 = [number, number, number];
 
 export const THICKNESS = 6;
@@ -130,15 +132,15 @@ function circlePts(axis: "x" | "z", c: V3, radius: number, theta0: number): V3[]
   const out: V3[] = [];
   for (let i = 0; i < N_CIRCLE; i++) {
     const a = theta0 + (i / N_CIRCLE) * TAU;
-    const u = radius * Math.cos(a);
-    const v = radius * Math.sin(a);
+    const u = r3(radius * Math.cos(a));
+    const v = r3(radius * Math.sin(a));
     out.push(axis === "z" ? [c[0] + u, c[1] + v, c[2]] : [c[0], c[1] + u, c[2] + v]);
   }
   return out;
 }
 
 function dist(a: V3, b: V3): number {
-  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  return r3(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
 }
 
 function fmt(n: number): string {
@@ -186,7 +188,7 @@ export function buildBracket(p: BracketParams, f: Features = ALL_FEATURES): Brac
     const out: V3[] = [];
     for (let k = 0; k <= N_ARC; k++) {
       const phi = -Math.PI / 2 - (k / N_ARC) * (Math.PI / 2);
-      out.push([T + r + r * Math.cos(phi), y, T + r + r * Math.sin(phi)]);
+      out.push([r3(T + r + r * Math.cos(phi)), y, r3(T + r + r * Math.sin(phi))]);
     }
     return out;
   };
@@ -321,7 +323,7 @@ export function buildBracket(p: BracketParams, f: Features = ALL_FEATURES): Brac
     const bands: Array<{ poly: V3[]; normal: V3 }> = [];
     for (let k = 0; k < N_ARC; k++) {
       const phi = -Math.PI / 2 - ((k + 0.5) / N_ARC) * (Math.PI / 2);
-      bands.push({ poly: [front[k], front[k + 1], back[k + 1], back[k]], normal: [-Math.cos(phi), 0, -Math.sin(phi)] });
+      bands.push({ poly: [front[k], front[k + 1], back[k + 1], back[k]], normal: [-r4(Math.cos(phi)), 0, -r4(Math.sin(phi))] });
     }
     fDraft.push({
       key: "fillet",
@@ -599,7 +601,8 @@ export interface View {
   ox: number;
   oy: number;
 }
-const C30 = Math.cos(Math.PI / 6);
+/** cos 30 degrees, written as a literal so every engine uses the same double (Math.cos can differ in the last bit) */
+const C30 = 0.8660254037844386;
 
 function isoRaw(p: V3): Pt {
   return { x: (p[0] - p[1]) * C30, y: (p[0] + p[1]) * 0.5 - p[2] };
@@ -615,7 +618,8 @@ export function makeView(maxLength: number, width: number, height: number, pad =
   return { scale, ox: width / 2 - ((x0 + x1) / 2) * scale, oy: height / 2 - ((y0 + y1) / 2) * scale };
 }
 
+/** Screen position of a model point, rounded to 2 decimals so the markup is identical on server and client. */
 export function toScreen(v: View, p: V3): Pt {
   const r = isoRaw(p);
-  return { x: v.ox + r.x * v.scale, y: v.oy + r.y * v.scale };
+  return { x: r2(v.ox + r.x * v.scale), y: r2(v.oy + r.y * v.scale) };
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PlayPause, Segmented, Toggle, VizFrame } from "@/components/lesson";
 import { Arrow, SvgCanvas, vizColors } from "@/components/viz/shared";
 import { ActionButton, CurveArrow, cx, useRunClock } from "./ui";
+import { r3 } from "./num";
 import {
   DEFECTS,
   STAGES,
@@ -60,7 +61,7 @@ export function DesignPipeline() {
   const snap = snapshotAt(script, index);
   const focus = pinned ?? snap.active ?? (snap.finished ? STAGES.length - 1 : 0);
   const stage = STAGES[focus];
-  const pulse = 0.45 + 0.35 * Math.sin(clock.t * 6);
+  const pulse = r3(0.45 + 0.35 * Math.sin(clock.t * 6)); // an opacity, so 3 decimals
   const dash = -clock.t * 36;
 
   const restart = () => {

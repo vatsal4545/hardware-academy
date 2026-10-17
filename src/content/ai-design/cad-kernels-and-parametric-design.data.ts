@@ -99,10 +99,10 @@ const data: LessonData = {
     {
       q: "A binary STL file describes a 20 mm sphere. What does the file actually contain?",
       choices: [
-        "One spherical face with a radius of 10 mm",
-        "A CSG tree with a single sphere primitive",
-        "Thousands of triangles at 50 bytes each, and no radius",
-        "A signed distance function sampled on a grid",
+        "One spherical face, stored with an exact radius of 10 mm",
+        "A CSG tree holding a single sphere primitive and its radius",
+        "About 5,000 triangles at 50 bytes each, and no radius",
+        "A signed distance function sampled on a grid of voxels",
       ],
       answer: 2,
       explain:
@@ -122,7 +122,12 @@ const data: LessonData = {
     },
     {
       q: "Which kernel is open source and sits under FreeCAD, CadQuery and build123d?",
-      choices: ["Parasolid", "ACIS", "Granite", "OpenCascade"],
+      choices: [
+        "Parasolid (Siemens)",
+        "ACIS (Spatial)",
+        "Granite (PTC)",
+        "OpenCascade (OCCT)",
+      ],
       answer: 3,
       explain:
         "OpenCascade Technology (OCCT) is the open-source kernel; build123d and CadQuery reach it through the OCP Python bindings. Parasolid (Siemens) is in SolidWorks, NX, Solid Edge and Onshape, ACIS (Spatial) is licensed commercially, and Granite belongs to PTC Creo.",
@@ -130,10 +135,10 @@ const data: LessonData = {
     {
       q: "A parametric model fails at its fillet right after you enlarge a hole. What is the most likely cause?",
       choices: [
-        "The fillet comes after the hole in the tree, so the rolling ball now runs into the bigger hole",
-        "The STEP export dropped the fillet",
-        "The mesh resolution is too coarse",
-        "The sketch has too many degrees of freedom",
+        "The fillet follows the hole in the tree and its rolling ball now hits the bigger hole",
+        "The STEP export dropped the fillet feature, so the kernel has nothing left to rebuild",
+        "The mesh resolution is too coarse, so the fillet surface cannot be triangulated cleanly",
+        "The sketch gained degrees of freedom, so the solver can no longer place the new hole",
       ],
       answer: 0,
       explain:
@@ -142,10 +147,10 @@ const data: LessonData = {
     {
       q: "What is the topological naming problem?",
       choices: [
-        "Two parts in an assembly having the same name",
-        "Sketch dimensions being named inconsistently",
-        "Face and edge identifiers that can change when a model rebuilds, so a stored reference may attach to the wrong entity",
-        "STEP files using different names for units",
+        "Two parts in one assembly carrying the same name, so a mate attaches to the wrong part",
+        "Sketch dimensions named inconsistently, so a driven value overwrites the wrong parameter",
+        "Face and edge ids that change when a model rebuilds, so a feature can attach to the wrong entity",
+        "STEP files using different unit names, so a part arrives scaled by the wrong factor",
       ],
       answer: 2,
       explain:
@@ -154,10 +159,10 @@ const data: LessonData = {
     {
       q: "Which property makes code-CAD attractive for AI-assisted design?",
       choices: [
-        "Scripts run headless and failures return as text the model can read and fix",
-        "The model can see the part without any rendering or measurement",
-        "Boolean operations never fail in code",
-        "STEP files exported from code are always smaller",
+        "Scripts run headless and errors return as text the model can read and fix",
+        "The model can see the finished part without any rendering or measurement step",
+        "Boolean operations never fail when they are written as code instead of clicks",
+        "Exported STEP files are always smaller because code stores fewer entities",
       ],
       answer: 0,
       explain:
@@ -165,7 +170,12 @@ const data: LessonData = {
     },
     {
       q: "Your STEP file has no tolerance note and the shop works to ISO 2768-m. Roughly what will they hold on a 40 mm dimension?",
-      choices: ["±0.01 mm", "±0.05 mm", "±0.3 mm", "±1.0 mm"],
+      choices: [
+        "±0.01 mm",
+        "±0.05 mm",
+        "±0.30 mm",
+        "±1.00 mm",
+      ],
       answer: 2,
       explain:
         "ISO 2768-m allows ±0.2 mm from 6 to 30 mm and ±0.3 mm from 30 to 120 mm. A STEP file from an AI usually carries geometry but no tolerance intent, so shops fall back to their defaults. If a fit matters, specify the tolerance on the drawing or in AP242 PMI.",

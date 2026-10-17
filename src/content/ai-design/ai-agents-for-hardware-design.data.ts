@@ -99,10 +99,10 @@ const data: LessonData = {
     {
       q: "Why does the pipeline generate the P&ID and wiring before any 3D geometry?",
       choices: [
-        "3D tools cannot import schematics",
-        "Schematics are cheaper to print",
-        "The systems level fixes capacities and port positions with checkable physics, so geometry becomes packing and routing against hard requirements",
-        "DFM rules only apply to schematics",
+        "3D CAD tools cannot import a schematic at all, so the geometry stage has to wait until the very end",
+        "Schematics are cheaper to print and review, even though nothing downstream depends on them",
+        "Capacities and ports are fixed first by checkable physics, so geometry becomes packing and routing",
+        "DFM rules are defined on schematics and cannot be evaluated on a finished 3D model",
       ],
       answer: 2,
       explain:
@@ -111,10 +111,10 @@ const data: LessonData = {
     {
       q: "The simulation shows 8.1 kW of heat against a 10 kW requirement. Where should the loop return?",
       choices: [
-        "To component selection: choose a larger compressor and re-simulate",
-        "To the geometry stage: make the enclosure bigger",
-        "To the DFM rules: loosen them",
-        "Nowhere: ship it and fix it in the field",
+        "To component selection: pick a larger compressor, then re-simulate",
+        "To the geometry stage: make the enclosure bigger so the parts fit better",
+        "To the DFM rules: loosen the limits so the design counts as passing",
+        "Nowhere: ship it and correct the shortfall later with a firmware update",
       ],
       answer: 0,
       explain:
@@ -123,10 +123,10 @@ const data: LessonData = {
     {
       q: "Which check is a DFA check rather than a DFM check?",
       choices: [
-        "Bend radius is at least 2 × the tube OD",
-        "A socket and extension can reach every M6 screw with the other parts already in place",
-        "Wall thickness is at least 1.5 mm",
-        "A hole rim is at least one diameter from the plate edge",
+        "Every tube bend has a centreline radius of at least 2 × the tube outer diameter",
+        "A socket with extension can reach each M6 screw with the other parts in place",
+        "Every machined wall on the bracket is at least 1.5 mm thick after the fillet",
+        "Each fastener hole rim sits at least one hole diameter away from the plate edge",
       ],
       answer: 1,
       explain:
@@ -135,10 +135,10 @@ const data: LessonData = {
     {
       q: "Which task is an LLM agent most reliable at in this pipeline?",
       choices: [
-        "Choosing machining tolerances for a press fit",
-        "Judging what the shop's press brake can hold",
-        "Simulating physics that was never put in the model",
-        "Searching catalogs and keeping names, units and IDs consistent across schematic, BOM and 3D",
+        "Choosing machining tolerances for a press fit without seeing the shop's capability data",
+        "Judging which bend the shop's press brake can hold without asking the shop",
+        "Predicting vibration and acoustics for a design that was never simulated",
+        "Searching catalogs and keeping names, units and IDs consistent across all the files",
       ],
       answer: 3,
       explain:
@@ -147,10 +147,10 @@ const data: LessonData = {
     {
       q: "An AI design passes every rule check and the simulation. What is still missing before release?",
       choices: [
-        "Human review and physical test, because rules and simulation only cover what someone encoded or modelled",
-        "Nothing: two layers are enough",
-        "A larger language model",
-        "A prettier render",
+        "Human review and a physical test, since rules and simulation cover only what was encoded",
+        "Nothing further, because two independent layers of checking are always enough to release",
+        "A larger language model, since the remaining defects come from weak reasoning in the agent",
+        "A prettier render of the assembly, since reviewers sign off on how the design looks",
       ],
       answer: 0,
       explain:
@@ -159,10 +159,10 @@ const data: LessonData = {
     {
       q: "A report claims COP 6.8 at 7 °C outdoor air and 35 °C supply, where the Carnot limit is 11.0. What should you conclude?",
       choices: [
-        "Excellent: a record-setting unit",
-        "Too low: it should be close to 11",
-        "It is fine as long as the geometry passes DFM",
-        "Implausible: 6.8 is 62% of Carnot, above the 35 to 55% real units reach, so check the simulation inputs",
+        "A record-setting unit: 6.8 sits well inside the Carnot limit of 11.0, so it can be accepted",
+        "Too low: a good heat pump should reach at least 90% of the Carnot limit of 11.0, so reject it",
+        "Fine as long as the geometry passes DFM, because COP does not depend on the refrigerant cycle",
+        "Implausible: 62% of Carnot is above the 35 to 55% that real units reach, so recheck the inputs",
       ],
       answer: 3,
       explain:
@@ -171,10 +171,10 @@ const data: LessonData = {
     {
       q: "A simulation reports condenser 9.5 kW, evaporator 7.5 kW and compressor input 2.4 kW. Does the energy balance close within 3%?",
       choices: [
-        "Yes: the mismatch is about 4%, which is rounding error",
+        "Yes: the 0.4 kW gap is only about 4% of the heat, which is rounding error",
         "No: 7.5 + 2.4 = 9.9 kW against 9.5 kW is a 4.2% mismatch, over the 3% limit",
-        "No: the mismatch is about 12%",
-        "It cannot be judged without the COP",
+        "No: 7.5 + 2.4 = 9.9 kW against 9.5 kW is a 12% mismatch, far over the limit",
+        "It cannot be judged without the COP, because the balance depends on efficiency",
       ],
       answer: 1,
       explain:
