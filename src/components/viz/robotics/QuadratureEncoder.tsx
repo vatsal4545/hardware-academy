@@ -40,6 +40,8 @@ const B_LO = 146;
 
 const frac = (x: number) => x - Math.floor(x);
 const rad = (deg: number) => (deg * Math.PI) / 180;
+/** Trig results can differ in the last bits between JS engines; round trig-derived coordinates. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /** Channel levels for a shaft position in revolutions. A leads B when the shaft turns clockwise. */
 export function quadratureChannels(rev: number): { a: 0 | 1; b: 0 | 1 } {
@@ -136,8 +138,8 @@ export function QuadratureEncoder() {
   const psi = sim.rev * 360;
 
   const sensor = (phi: number, label: "A" | "B", on: boolean, color: string) => {
-    const x = CX + (R_OUT + 14) * Math.cos(rad(phi));
-    const y = CY + (R_OUT + 14) * Math.sin(rad(phi));
+    const x = r2(CX + (R_OUT + 14) * Math.cos(rad(phi)));
+    const y = r2(CY + (R_OUT + 14) * Math.sin(rad(phi)));
     return (
       <g>
         <rect
@@ -151,7 +153,7 @@ export function QuadratureEncoder() {
           strokeWidth={2}
           transform={`rotate(${phi + 90} ${x} ${y})`}
         />
-        <Label x={x + 18 * Math.cos(rad(phi))} y={y + 18 * Math.sin(rad(phi))} size={12} bold color={vizColors.text}>
+        <Label x={r2(x + 18 * Math.cos(rad(phi)))} y={r2(y + 18 * Math.sin(rad(phi)))} size={12} bold color={vizColors.text}>
           {label}
         </Label>
       </g>

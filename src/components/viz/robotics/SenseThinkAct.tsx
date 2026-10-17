@@ -99,7 +99,14 @@ const PHASES = [
 ] as const;
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
-const ringPoint = (deg: number, r = RING.r) => ({ x: RING.cx + r * Math.cos(rad(deg)), y: RING.cy + r * Math.sin(rad(deg)) });
+/** Trig results can differ in the last bits between JS engines, so trig-derived coordinates are rounded
+ *  to keep server and client markup identical. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
+const ringPoint = (deg: number, r = RING.r) => ({ x: r2(RING.cx + r * Math.cos(rad(deg))), y: r2(RING.cy + r * Math.sin(rad(deg))) });
+/** Loop-rate slider works in log10(Hz): 0.7 ≈ 5 Hz, 3 = 1 kHz. Literals, not Math.log10, so markup is identical everywhere. */
+const LOG_HZ_MIN = 0.7;
+const LOG_HZ_MAX = 3;
+const LOG_HZ_DEFAULT = 1.3;
 
 function formatMm(mm: number): string {
   return mm < 10 ? mm.toFixed(1) : mm.toFixed(0);
@@ -107,7 +114,7 @@ function formatMm(mm: number): string {
 
 export function SenseThinkAct() {
   const clock = useViz(true);
-  const [logHz, setLogHz] = useState(Math.log10(20));
+  const [logHz, setLogHz] = useState(LOG_HZ_DEFAULT);
   const [speed, setSpeed] = useState(0.5);
   const [phase, setPhase] = useState(0.3);
 
@@ -182,8 +189,8 @@ export function SenseThinkAct() {
           <Slider
             label="Loop rate"
             value={logHz}
-            min={Math.log10(5)}
-            max={3}
+            min={LOG_HZ_MIN}
+            max={LOG_HZ_MAX}
             step={0.01}
             onChange={(val) => {
               setLogHz(val);
@@ -322,7 +329,18 @@ export function SenseThinkAct() {
           const p = ringPoint(a);
           const tx = -Math.sin(rad(a));
           const ty = Math.cos(rad(a));
-          return <Arrow key={a} x1={p.x - 5 * tx} y1={p.y - 5 * ty} x2={p.x + 5 * tx} y2={p.y + 5 * ty} color={vizColors.muted} width={2} head={7} />;
+          return (
+            <Arrow
+              key={a}
+              x1={r2(p.x - 5 * tx)}
+              y1={r2(p.y - 5 * ty)}
+              x2={r2(p.x + 5 * tx)}
+              y2={r2(p.y + 5 * ty)}
+              color={vizColors.muted}
+              width={2}
+              head={7}
+            />
+          );
         })}
         <circle cx={token.x} cy={token.y} r={5} fill={vizColors.amber} />
         {PHASES.map((ph, i) => {

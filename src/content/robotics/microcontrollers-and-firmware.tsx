@@ -10,6 +10,9 @@ const LOOP_CODE = `#include <Arduino.h>
 constexpr uint32_t LOOP_US = 10000;         // 100 Hz control period
 constexpr uint32_t CMD_TIMEOUT_MS = 200;    // stop the motors if commands go stale
 
+// motorsBegin(), readEncoders(), setMotors() and friends are your drivers;
+// pidLeft and pidRight are the Pid controllers written in the next lesson.
+
 uint32_t nextTick = 0;
 uint32_t cycle = 0;
 uint32_t overruns = 0;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, makeScale, polyline, vizColors } from "@/components/viz/shared";
 import { simulatePid, type SimulatePidResult } from "@/lib/sim/pid";
@@ -70,6 +70,7 @@ export function PidTuner() {
   const [rate, setRate] = useState<Rate>("100");
   const [bump, setBump] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
+  const readoutId = useId();
 
   const hz = Number(rate);
   const step = runTuner(kp, ki, kd, hz, false).result;
@@ -193,6 +194,8 @@ export function PidTuner() {
       <SvgCanvas
         viewBox={`0 0 ${VB_W} 372`}
         title="Wheel speed and controller output over four seconds after a step in setpoint"
+        role="group"
+        aria-describedby={readoutId}
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
         onKeyDown={onKey}
@@ -295,6 +298,13 @@ export function PidTuner() {
           </g>
         )}
       </SvgCanvas>
+      <p id={readoutId} className="sr-only" aria-live="polite">
+        {hi === null
+          ? "Use the left and right arrow keys to move a cursor along the response and hear its values."
+          : `At ${shown.t[hi].toFixed(2)} s: wheel speed ${(shown.y[hi] * 100).toFixed(1)}% of top speed, controller output ${(
+              shown.u[hi] * 100
+            ).toFixed(0)}% duty.`}
+      </p>
     </VizFrame>
   );
 }

@@ -215,7 +215,11 @@ export function HBridge() {
         </div>
       }
     >
-      <SvgCanvas viewBox="0 0 720 330" title="H-bridge with four switches, a DC motor, current paths and the TB6612FNG truth table">
+      <SvgCanvas
+        viewBox="0 0 720 330"
+        title="H-bridge with four switches, a DC motor, current paths and the TB6612FNG truth table"
+        role="group"
+      >
         {/* rails */}
         <line x1={150} y1={VM_Y} x2={490} y2={VM_Y} stroke={vizColors.orange} strokeWidth={4} strokeLinecap="round" />
         <line x1={150} y1={GND_Y} x2={490} y2={GND_Y} stroke={vizColors.muted} strokeWidth={4} strokeLinecap="round" />

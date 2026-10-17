@@ -25,8 +25,15 @@ const SPLINE = { x: 150, y: 168 };
 const HORN = 82;
 const ARC_R = 104;
 const rad = (deg: number) => (deg * Math.PI) / 180;
+/** Trig results can differ in the last bits between JS engines; round trig-derived coordinates. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
 /** Servo angle 0° points left, 90° up, 180° right. */
 const dirOf = (servoDeg: number) => ({ x: -Math.cos(rad(servoDeg)), y: -Math.sin(rad(servoDeg)) });
+/** The point `r` from the spline centre at a servo angle, offset `side` units perpendicular to that direction. */
+const at = (servoDeg: number, r: number, side = 0) => {
+  const d = dirOf(servoDeg);
+  return { x: r2(SPLINE.x + r * d.x + side * d.y), y: r2(SPLINE.y + r * d.y - side * d.x) };
+};
 
 const W1 = { x0: 330, x1: 700, hi: 50, lo: 92 };
 const W2 = { x0: 330, x1: 700, hi: 168, lo: 214 };
@@ -48,9 +55,8 @@ export function ServoPwm() {
   }, moving);
   const shown = reduced ? target.angle : horn;
 
-  const d = dirOf(shown);
-  const tip = { x: SPLINE.x + HORN * d.x, y: SPLINE.y + HORN * d.y };
-  const tgt = dirOf(target.angle);
+  const tip = at(shown, HORN);
+  const marker = [at(target.angle, ARC_R - 10), at(target.angle, ARC_R + 2, 5), at(target.angle, ARC_R + 2, -5)];
   const duty = pulseMs / FRAME_MS;
   const ledc = Math.round(duty * 65536);
 
@@ -141,35 +147,29 @@ export function ServoPwm() {
           strokeWidth={2}
         />
         {[0, 45, 90, 135, 180].map((a) => {
-          const p = dirOf(a);
+          const inner = at(a, ARC_R - 6);
+          const outer = at(a, ARC_R + 6);
+          const label = { x: at(a, ARC_R + 20).x, y: at(a, ARC_R + 16).y };
           return (
             <g key={a}>
-              <line
-                x1={SPLINE.x + (ARC_R - 6) * p.x}
-                y1={SPLINE.y + (ARC_R - 6) * p.y}
-                x2={SPLINE.x + (ARC_R + 6) * p.x}
-                y2={SPLINE.y + (ARC_R + 6) * p.y}
-                stroke={vizColors.muted}
-                strokeWidth={1.5}
-              />
-              <Label x={SPLINE.x + (ARC_R + 20) * p.x} y={SPLINE.y + (ARC_R + 16) * p.y} size={10.5} color={vizColors.muted}>
+              <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke={vizColors.muted} strokeWidth={1.5} />
+              <Label x={label.x} y={label.y} size={10.5} color={vizColors.muted}>
                 {`${a}°`}
               </Label>
             </g>
           );
         })}
         <polygon
-          points={`${SPLINE.x + (ARC_R - 10) * tgt.x},${SPLINE.y + (ARC_R - 10) * tgt.y} ${SPLINE.x + (ARC_R + 2) * tgt.x + 5 * tgt.y},${
-            SPLINE.y + (ARC_R + 2) * tgt.y - 5 * tgt.x
-          } ${SPLINE.x + (ARC_R + 2) * tgt.x - 5 * tgt.y},${SPLINE.y + (ARC_R + 2) * tgt.y + 5 * tgt.x}`}
+          points={marker.map((m) => `${m.x},${m.y}`).join(" ")}
           fill={target.beyond ? vizColors.orange : vizColors.amber}
         />
 
         {/* horn */}
         <line x1={SPLINE.x} y1={SPLINE.y} x2={tip.x} y2={tip.y} stroke={vizColors.silk} strokeWidth={16} strokeLinecap="round" />
-        {[0.45, 0.65, 0.85].map((f) => (
-          <circle key={f} cx={SPLINE.x + HORN * f * d.x} cy={SPLINE.y + HORN * f * d.y} r={2.2} fill={vizColors.bg} />
-        ))}
+        {[0.45, 0.65, 0.85].map((f) => {
+          const hole = at(shown, HORN * f);
+          return <circle key={f} cx={hole.x} cy={hole.y} r={2.2} fill={vizColors.bg} />;
+        })}
         <circle cx={SPLINE.x} cy={SPLINE.y} r={12} fill={vizColors.silk} stroke={vizColors.muted} strokeWidth={2} />
         <circle cx={SPLINE.x} cy={SPLINE.y} r={4} fill={vizColors.muted} />
 

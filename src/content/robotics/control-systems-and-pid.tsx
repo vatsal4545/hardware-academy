@@ -15,6 +15,10 @@ struct Pid {
   float dFilt = 0.0f;
   bool primed = false;
 
+  // A real constructor: the default member initialisers above stop Pid being an aggregate
+  // before C++14, and the Arduino-ESP32 2.x core compiles as gnu++11.
+  Pid(float p, float i, float d) : kp(p), ki(i), kd(d) {}
+
   float update(float setpoint, float meas, float dt) {
     if (!primed) { prevMeas = meas; primed = true; }  // no derivative spike on the first call
     float error = setpoint - meas;
@@ -47,12 +51,12 @@ struct Pid {
 // The tuner works in fractions of top speed. On the robot, speeds are in mm/s,
 // so divide its gains by the top speed (about 230 mm/s for 100 rpm motors on 44 mm wheels).
 constexpr float TOP_SPEED = 230.0f;
-Pid leftWheel{2.0f / TOP_SPEED, 8.0f / TOP_SPEED, 0.0f};
-Pid rightWheel{2.0f / TOP_SPEED, 8.0f / TOP_SPEED, 0.0f};
+Pid pidLeft(2.0f / TOP_SPEED, 8.0f / TOP_SPEED, 0.0f);
+Pid pidRight(2.0f / TOP_SPEED, 8.0f / TOP_SPEED, 0.0f);
 
-// Called from the 100 Hz control step:
-//   setMotors(leftWheel.update(targetLeft, speedLeft(), 0.01f),
-//             rightWheel.update(targetRight, speedRight(), 0.01f));`;
+// These are the pidLeft / pidRight that controlStep() in the firmware lesson's 100 Hz loop calls:
+//   float left = pidLeft.update(targetLeft, speedLeft(), dt);
+//   float right = pidRight.update(targetRight, speedRight(), dt);`;
 
 function ClosedLoopDiagram() {
   const box = (x: number, y: number, w: number, h: number, title: string, sub: string, color: string) => (

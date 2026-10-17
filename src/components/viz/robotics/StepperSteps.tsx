@@ -34,6 +34,8 @@ const POLES = [
 
 const PLOT = { x0: 340, x1: 700, mid: 196, amp: 52 };
 const rad = (deg: number) => (deg * Math.PI) / 180;
+/** Trig results can differ in the last bits between JS engines; round everything derived from them. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
 
 export function StepperSteps() {
   const reduced = usePrefersReducedMotion();
@@ -70,7 +72,7 @@ export function StepperSteps() {
   const bar = (v: number, y: number, color: string, label: string) => (
     <g>
       <rect x={430} y={y - 7} width={180} height={14} rx={3} fill={vizColors.grid} />
-      <rect x={v >= 0 ? 520 : 520 + v * 90} y={y - 7} width={Math.abs(v) * 90} height={14} rx={3} fill={color} />
+      <rect x={v >= 0 ? 520 : r2(520 + v * 90)} y={y - 7} width={r2(Math.abs(v) * 90)} height={14} rx={3} fill={color} />
       <line x1={520} x2={520} y1={y - 10} y2={y + 10} stroke={vizColors.muted} />
       <Label x={420} y={y} size={12} anchor="end" bold>
         {label}
@@ -142,7 +144,7 @@ export function StepperSteps() {
             <g key={p.name} transform={`rotate(${p.deg} ${C.x} ${C.y})`}>
               <rect x={C.x + 52} y={C.y - 16} width={60} height={32} rx={4} fill={vizColors.bg} stroke={vizColors.muted} strokeWidth={1.5} />
               {[0, 1, 2, 3].map((w) => (
-                <rect key={w} x={C.x + 64 + w * 11} y={C.y - 19} width={7} height={38} rx={2} fill={color} opacity={0.15 + 0.85 * strength} />
+                <rect key={w} x={C.x + 64 + w * 11} y={C.y - 19} width={7} height={38} rx={2} fill={color} opacity={r2(0.15 + 0.85 * strength)} />
               ))}
               {/* pole face: the field points into an S face, which the rotor's N is pulled toward */}
               <rect
@@ -152,13 +154,13 @@ export function StepperSteps() {
                 height={40}
                 rx={2}
                 fill={cur > 0.05 ? vizColors.blue : cur < -0.05 ? vizColors.red : vizColors.muted}
-                opacity={0.4 + 0.6 * strength}
+                opacity={r2(0.4 + 0.6 * strength)}
               />
             </g>
           );
         })}
         {POLES.map((p) => (
-          <Label key={p.name} x={C.x + 140 * Math.cos(rad(p.deg))} y={C.y + 138 * Math.sin(rad(p.deg))} size={11} bold>
+          <Label key={p.name} x={r2(C.x + 140 * Math.cos(rad(p.deg)))} y={r2(C.y + 138 * Math.sin(rad(p.deg)))} size={11} bold>
             {p.name}
           </Label>
         ))}

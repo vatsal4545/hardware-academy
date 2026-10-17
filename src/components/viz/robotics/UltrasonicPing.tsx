@@ -20,6 +20,9 @@ const WAVE_PX_S = 300;
 const HOLD_S = 0.9;
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
+/** Trig results can differ in the last bits between JS engines; round trig-derived coordinates so
+ *  server and client markup match. */
+const r2 = (v: number) => Math.round(v * 100) / 100;
 
 export function speedOfSound(tempC: number): number {
   return 331.3 + 0.606 * tempC;
@@ -58,7 +61,7 @@ function arcPath(cx: number, cy: number, r: number, centerDeg: number, halfDeg: 
 function wedgePath(cx: number, cy: number, len: number, centerDeg: number, halfDeg: number): string {
   const a1 = rad(centerDeg - halfDeg);
   const a2 = rad(centerDeg + halfDeg);
-  return `M${cx} ${cy} L${(cx + len * Math.cos(a1)).toFixed(1)} ${(cy + len * Math.sin(a1)).toFixed(1)} L${(
+  return `M${cx.toFixed(1)} ${cy.toFixed(1)} L${(cx + len * Math.cos(a1)).toFixed(1)} ${(cy + len * Math.sin(a1)).toFixed(1)} L${(
     cx +
     len * Math.cos(a2)
   ).toFixed(1)} ${(cy + len * Math.sin(a2)).toFixed(1)} Z`;
@@ -86,7 +89,7 @@ export function UltrasonicPing() {
   const u = { x: -Math.sin(th), y: Math.cos(th) };
   const perpPx = res.perpCm * PX_PER_CM;
   // Mirror image of the sensor across the wall, and the reflected beam axis.
-  const S2 = { x: SX + 2 * perpPx * n.x, y: SY + 2 * perpPx * n.y };
+  const S2 = { x: r2(SX + 2 * perpPx * n.x), y: r2(SY + 2 * perpPx * n.y) };
   const reflectedDeg = 180 + 2 * wallDeg;
 
   // Half-plane on the sensor's side of the wall, used to clip waves and cones.
@@ -114,10 +117,11 @@ export function UltrasonicPing() {
   const stripX = (s: number) => STRIP_X0 + (Math.min(s, activeS) / activeS) * (STRIP_X1 - STRIP_X0);
   const echoRiseX = STRIP_X0 + 14;
   const echoFallX = res.received ? STRIP_X1 : null;
-  const cursorX = stripX(tau);
+  const cursorX = r2(stripX(tau));
 
-  const wallA = { x: P.x + WALL_HALF * u.x, y: P.y + WALL_HALF * u.y };
-  const wallB = { x: P.x - WALL_HALF * u.x, y: P.y - WALL_HALF * u.y };
+  const wallA = { x: r2(P.x + WALL_HALF * u.x), y: r2(P.y + WALL_HALF * u.y) };
+  const wallB = { x: r2(P.x - WALL_HALF * u.x), y: r2(P.y - WALL_HALF * u.y) };
+  const echoTip = { x: r2(P.x + 80 * Math.cos(rad(reflectedDeg))), y: r2(P.y + 80 * Math.sin(rad(reflectedDeg))) };
   const wallTop = wallA.y < wallB.y ? wallA : wallB;
   const errCm = res.received && res.firmwareCm !== null ? res.firmwareCm - res.perpCm : 0;
 
@@ -208,18 +212,10 @@ export function UltrasonicPing() {
         </Label>
         {!res.received && wallDeg > HALF_CONE_DEG && (
           <g>
-            <Arrow
-              x1={P.x}
-              y1={P.y}
-              x2={P.x + 80 * Math.cos(rad(reflectedDeg))}
-              y2={P.y + 80 * Math.sin(rad(reflectedDeg))}
-              color={vizColors.amber}
-              width={2}
-              dashed
-            />
+            <Arrow x1={P.x} y1={P.y} x2={echoTip.x} y2={echoTip.y} color={vizColors.amber} width={2} dashed />
             <Label
-              x={P.x + 80 * Math.cos(rad(reflectedDeg)) + 8}
-              y={P.y + 80 * Math.sin(rad(reflectedDeg))}
+              x={echoTip.x + 8}
+              y={echoTip.y}
               size={10.5}
               anchor="start"
               color={vizColors.text}

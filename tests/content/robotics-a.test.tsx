@@ -1,6 +1,6 @@
-import type { ComponentType } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import type { ComponentType, ReactElement } from "react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LessonData } from "@/lib/curriculum";
 import AnatomyOfARobot from "@/content/robotics/anatomy-of-a-robot";
 import anatomyData from "@/content/robotics/anatomy-of-a-robot.data";
@@ -12,12 +12,12 @@ import MicrocontrollersAndFirmware from "@/content/robotics/microcontrollers-and
 import firmwareData from "@/content/robotics/microcontrollers-and-firmware.data";
 import ControlSystemsAndPid from "@/content/robotics/control-systems-and-pid";
 import pidData from "@/content/robotics/control-systems-and-pid.data";
-import { stopOutcome } from "@/components/viz/robotics/SenseThinkAct";
-import { pingResult } from "@/components/viz/robotics/UltrasonicPing";
-import { quadratureChannels, quadratureCount } from "@/components/viz/robotics/QuadratureEncoder";
+import { SenseThinkAct, stopOutcome } from "@/components/viz/robotics/SenseThinkAct";
+import { UltrasonicPing, pingResult } from "@/components/viz/robotics/UltrasonicPing";
+import { QuadratureEncoder, quadratureChannels, quadratureCount } from "@/components/viz/robotics/QuadratureEncoder";
 import { HBridge, bridgeMode } from "@/components/viz/robotics/HBridge";
 import { ServoPwm, servoTarget } from "@/components/viz/robotics/ServoPwm";
-import { stepperCurrents } from "@/components/viz/robotics/StepperSteps";
+import { StepperSteps, stepperCurrents } from "@/components/viz/robotics/StepperSteps";
 import { McuPeripheralMap } from "@/components/viz/robotics/McuPeripheralMap";
 import { I2cTransaction, i2cSequence } from "@/components/viz/robotics/I2cTransaction";
 import { PidTuner, runTuner } from "@/components/viz/robotics/PidTuner";
@@ -194,5 +194,92 @@ describe("robotics-a visualizations", () => {
   it("the PID lesson links to the PID lab instead of importing it", () => {
     const { container } = render(<ControlSystemsAndPid />);
     expect(container.querySelector('a[href="/labs/pid"]')).not.toBeNull();
+  });
+});
+
+describe("robotics-a accessibility", () => {
+  it("exposes the H-bridge switches as buttons inside a group, not an image", () => {
+    render(<HBridge />);
+    const bridge = screen.getByRole("group", { name: /H-bridge with four switches/i });
+    expect(within(bridge).getAllByRole("button", { name: /^Q[1-4],/ })).toHaveLength(4);
+  });
+
+  it("opens the ESP32 detail panel from an HTML select as well as the diagram", () => {
+    render(<McuPeripheralMap />);
+    expect(screen.getByRole("group", { name: /block diagram of the ESP32/i })).toBeTruthy();
+    fireEvent.change(screen.getByRole("combobox", { name: /peripheral/i }), { target: { value: "uart" } });
+    expect(screen.getByText(/debug console and telemetry at 115200 baud/i)).toBeTruthy();
+  });
+
+  it("announces the PID crosshair values through a described-by live region", () => {
+    render(<PidTuner />);
+    const plot = screen.getByRole("group", { name: /wheel speed and controller output/i });
+    fireEvent.keyDown(plot, { key: "ArrowRight" });
+    const readout = document.getElementById(plot.getAttribute("aria-describedby") ?? "");
+    expect(readout?.getAttribute("aria-live")).toBe("polite");
+    expect(readout?.textContent).toMatch(/^At 0\.05 s: wheel speed \d+\.\d% of top speed/);
+  });
+});
+
+/** Renders an element and returns its markup with useId-generated ids taken out. */
+function markup(el: ReactElement): string {
+  const { container, unmount } = render(el);
+  const html = container.innerHTML
+    .replace(/\s(?:id|for|aria-describedby|aria-labelledby|aria-controls)="[^"]*"/g, "")
+    .replace(/url\(#[^)]*\)/g, "url(#)");
+  unmount();
+  return html;
+}
+
+/** Nudges Math.sin/cos/tan/atan2 by one part in 1e14, the way another JS engine's last bits might differ. */
+function perturbTrig(): () => void {
+  const real = { sin: Math.sin, cos: Math.cos, tan: Math.tan, atan2: Math.atan2 };
+  const k = 1 + 1e-14;
+  const spies = [
+    vi.spyOn(Math, "sin").mockImplementation((x) => real.sin(x) * k),
+    vi.spyOn(Math, "cos").mockImplementation((x) => real.cos(x) * k),
+    vi.spyOn(Math, "tan").mockImplementation((x) => real.tan(x) * k),
+    vi.spyOn(Math, "atan2").mockImplementation((y, x) => real.atan2(y, x) * k),
+  ];
+  return () => spies.forEach((spy) => spy.mockRestore());
+}
+
+describe("robotics-a markup does not depend on the last bits of trig results", () => {
+  const cases: Array<[string, ReactElement]> = [
+    ["SenseThinkAct", <SenseThinkAct key="a" />],
+    ["UltrasonicPing", <UltrasonicPing key="b" />],
+    ["QuadratureEncoder", <QuadratureEncoder key="c" />],
+    ["HBridge", <HBridge key="d" />],
+    ["ServoPwm", <ServoPwm key="e" />],
+    ["StepperSteps", <StepperSteps key="f" />],
+    ["McuPeripheralMap", <McuPeripheralMap key="g" />],
+    ["I2cTransaction", <I2cTransaction key="h" />],
+    ["PidTuner", <PidTuner key="i" />],
+    ...lessons.map(([slug, Lesson]): [string, ReactElement] => [`lesson ${slug}`, <Lesson key={slug} />]),
+  ];
+
+  it.each(cases)("%s renders identical markup when trig results shift slightly", (_name, el) => {
+    const plain = markup(el);
+    const restore = perturbTrig();
+    try {
+      expect(markup(el)).toBe(plain);
+    } finally {
+      restore();
+    }
+  });
+
+  it("the check catches an unrounded trig-derived coordinate", () => {
+    const Unrounded = () => (
+      <svg>
+        <line x1={100 + 50 * Math.cos(1)} y1={0} x2={0} y2={0} />
+      </svg>
+    );
+    const plain = markup(<Unrounded />);
+    const restore = perturbTrig();
+    try {
+      expect(markup(<Unrounded />)).not.toBe(plain);
+    } finally {
+      restore();
+    }
   });
 });

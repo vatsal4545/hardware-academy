@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useId, useState, type KeyboardEvent } from "react";
 import { Segmented, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, vizColors } from "@/components/viz/shared";
 
@@ -156,6 +156,7 @@ const byId = (id: string) => ESP32_PERIPHERALS.find((p) => p.id === id) as Perip
 export function McuPeripheralMap() {
   const [selected, setSelected] = useState("pcnt");
   const [filter, setFilter] = useState<"all" | "robot">("all");
+  const selectId = useId();
   const sel = byId(selected);
 
   const onKey = (id: string) => (e: KeyboardEvent<SVGGElement>) => {
@@ -170,18 +171,41 @@ export function McuPeripheralMap() {
       title="ESP32 peripheral map"
       description="Click a block to see what it does, how the course robot uses it, and the trap to avoid. Green dots mark peripherals the robot uses."
       controls={
-        <Segmented
-          label="Highlight"
-          options={[
-            { value: "all", label: "All peripherals" },
-            { value: "robot", label: "Used by the robot" },
-          ]}
-          value={filter}
-          onChange={setFilter}
-        />
+        <>
+          <div className="text-sm">
+            <label htmlFor={selectId} className="mb-1 block text-muted">
+              Peripheral
+            </label>
+            <select
+              id={selectId}
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+              className="w-full rounded-md border border-border bg-bg px-2 py-1.5 text-text focus-visible:outline-2 focus-visible:outline-cyan-400"
+            >
+              {ESP32_PERIPHERALS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {`${p.name} (${p.sub})${p.robot ? ", used by the robot" : ""}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Segmented
+            label="Highlight"
+            options={[
+              { value: "all", label: "All peripherals" },
+              { value: "robot", label: "Used by the robot" },
+            ]}
+            value={filter}
+            onChange={setFilter}
+          />
+        </>
       }
     >
-      <SvgCanvas viewBox="0 0 720 370" title="Clickable block diagram of the ESP32's cores, memory, radio and peripherals">
+      <SvgCanvas
+        viewBox="0 0 720 370"
+        title="Clickable block diagram of the ESP32's cores, memory, radio and peripherals"
+        role="group"
+      >
         <rect x={204} y={22} width={312} height={336} rx={14} fill={vizColors.bg} stroke={vizColors.muted} strokeWidth={2} />
         <Label x={360} y={44} size={13} bold>
           ESP32 (WROOM-32 module)
