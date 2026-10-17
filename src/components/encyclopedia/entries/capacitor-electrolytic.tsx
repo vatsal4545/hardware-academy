@@ -78,7 +78,7 @@ export const entry: ComponentEntry = {
   ],
   keySpecs: [
     { label: "Capacitance", value: "1 µF to 100 000 µF" },
-    { label: "Voltage rating", value: "6.3 V to 450 V; use at 80% of rating or less" },
+    { label: "Voltage rating", value: "6.3 V to 450 V; run at 80% of the rating or less (about 50% on rails with spikes)" },
     { label: "Tolerance", value: "±20% typical" },
     { label: "ESR", value: "0.05-5 Ω at 100 kHz (polymer types 5-30 mΩ)" },
     { label: "Ripple current", value: "0.3-5 A rms depending on size" },
@@ -91,7 +91,7 @@ export const entry: ComponentEntry = {
     "Leakage and charge storage: leakage is about 0.01·C·V µA, so a large part can drain a standby battery and can also hold a dangerous charge long after power is removed.",
   ],
   interviewTip:
-    "Interviewer asks: \"How do you choose the bulk capacitor on a motor driver's supply?\" A strong answer: estimate the ripple current and the allowed ripple voltage (ΔV = I·Δt / C), take a voltage rating with 50% margin for transients (a 25 V part on a 12 V rail), check the ripple-current and ESR ratings at the switching frequency, and add a 100 nF ceramic in parallel because the electrolytic's ESL makes it ineffective above a few hundred kHz. Mention the 105 °C life and placing it close to the bridge.",
+    "Interviewer asks: \"How do you choose the bulk capacitor on a motor driver's supply?\" A strong answer: estimate the ripple current and the allowed ripple voltage (ΔV = I·Δt / C), take a voltage rating about twice the rail to allow for transients (a 25 V part on a 12 V rail), check the ripple-current and ESR ratings at the switching frequency, and add a 100 nF ceramic in parallel because the electrolytic's ESL makes it ineffective above a few hundred kHz. Mention the 105 °C life and placing it close to the bridge.",
   relatedLesson: "passive-components",
   Illustration: ElectrolyticCapacitorIllustration,
 };

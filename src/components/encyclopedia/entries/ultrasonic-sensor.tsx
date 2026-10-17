@@ -97,7 +97,7 @@ export const entry: ComponentEntry = {
   howItWorks: [
     "The HC-SR04 carries two piezo transducers, one to transmit and one to receive. A 10 µs high pulse on TRIG makes the module fire a burst of eight 40 kHz cycles. The ECHO pin then goes high and stays high until the echo returns, so the width of the ECHO pulse equals the round-trip time of flight.",
     "Distance is d = (t × v) / 2, with the speed of sound v = 331.3 + 0.606 × T(°C) m/s, about 343 m/s at 20 °C. A 5.8 ms echo means 0.0058 × 343 / 2 = 0.995 m, and each centimetre of range adds about 58 µs of echo.",
-    "Range is about 2 cm to 400 cm with roughly 3 mm resolution in a cone of about 15°, so the sensor reports the nearest strong reflector in the cone rather than a precise point. Measurements must be at least 60 ms apart so earlier echoes die out, which limits the update rate to about 16 Hz.",
+    "Range is about 2 cm to 400 cm with roughly 3 mm resolution in a cone about 30° wide (most reliable within 15° of the axis), so the sensor reports the nearest strong reflector in the cone rather than a precise point. Measurements must be at least 60 ms apart so earlier echoes die out, which limits the update rate to about 16 Hz.",
     "The module needs 5 V and about 15 mA, and ECHO outputs 5 V, so with a 3.3 V microcontroller divide it with 1 kΩ and 2 kΩ or use a level shifter. Waterproof (JSN-SR04T) and 3.3 V (HC-SR04P) variants exist, and some boards offer I2C or UART output.",
   ],
   whereUsed: [
@@ -110,7 +110,7 @@ export const entry: ComponentEntry = {
   keySpecs: [
     { label: "Range", value: "2-400 cm (best accuracy at 2-200 cm)" },
     { label: "Resolution", value: "About 3 mm; ±3 mm to ±1 cm accuracy if temperature is compensated" },
-    { label: "Beam angle", value: "About 15° cone (±15° effective at 30° detection angle)" },
+    { label: "Beam angle", value: "30° measuring cone, most reliable within ±15° of the axis" },
     { label: "Operating frequency", value: "40 kHz" },
     { label: "Supply", value: "5 V, 15 mA" },
     { label: "Trigger", value: "10 µs pulse; at least 60 ms between measurements" },

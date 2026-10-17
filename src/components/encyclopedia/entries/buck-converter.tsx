@@ -59,7 +59,7 @@ function BuckIllustration({ animate }: { animate?: boolean }) {
       <Can cx={68} cy={96} r={14} />
       <rect x={92} y={50} width={36} height={8} fill={part.metal} />
       <rect x={92} y={58} width={36} height={40} rx={2} fill={part.epoxy} stroke={part.epoxyHi} />
-      <Mark x={110} y={78} size={7.5} color="#ffffff">
+      <Mark x={110} y={90} size={7.5} color="#ffffff">
         LM2596
       </Mark>
       <rect x={96} y={110} width={26} height={12} rx={1.5} fill={part.epoxy} stroke={part.epoxyHi} />

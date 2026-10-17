@@ -63,7 +63,7 @@ export const entry: ComponentEntry = {
   howItWorks: [
     "A reflective IR sensor (TCRT5000, QRE1113) puts an IR LED (940 nm) and a phototransistor side by side, both aimed at the floor 2-10 mm away. A white surface reflects most of the IR back to the phototransistor, which then conducts, while a black line absorbs the IR and little light returns.",
     "On a typical TCRT5000 module the LED runs through about 150 Ω (roughly 20 mA) and the phototransistor is pulled to the supply through 10 kΩ. The node between them feeds either a comparator (an LM393 with a trimmer sets the threshold, giving a digital output) or the MCU's ADC for an analog value. Over white the output is low, and over black it is high.",
-    "The best distance for a TCRT5000 is about 2.5 mm (usable 1-8 mm) and its response peaks at 940 nm. Sunlight and some lamps contain a lot of IR, so modulate the LED at 38 kHz, or read once with the LED off and once on and subtract, to reject ambient light.",
+    "The best distance for a TCRT5000 is about 2.5 mm (usable 1-8 mm) and its response peaks at 940 nm. Sunlight and some lamps contain a lot of IR, so read once with the LED off and once on and subtract, or modulate the LED at a few kilohertz (a 38 kHz carrier is too fast for a phototransistor with 10-20 µs rise and fall times), to reject ambient light.",
     "For line following, use an array of 5-8 sensors spaced 8-10 mm apart and compute the line position as a weighted average, which then feeds a PID steering loop. Two sensors straddling a 3 cm line are enough for a simple left-right follower.",
   ],
   whereUsed: [

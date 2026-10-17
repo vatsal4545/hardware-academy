@@ -32,6 +32,7 @@ export function EncyclopediaBrowser() {
   const [category, setCategory] = useState<ComponentCategory | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const searchId = useId();
   const idBase = useId();
 
@@ -58,6 +59,8 @@ export function EncyclopediaBrowser() {
   function clearFilters() {
     setQuery("");
     setCategory("all");
+    // The empty state (and its button) is about to disappear, so keep keyboard focus somewhere sensible.
+    searchRef.current?.focus();
   }
 
   return (
@@ -69,6 +72,7 @@ export function EncyclopediaBrowser() {
           </label>
           <input
             id={searchId}
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -173,7 +177,7 @@ function EntryCard({ entry, idBase, onOpen }: { entry: ComponentEntry; idBase: s
       onBlur={() => setFocused(false)}
       className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-surface text-left transition-colors hover:border-white/25 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
     >
-      <span aria-hidden="true" className="block border-b border-border bg-bg">
+      <span aria-hidden="true" className="pointer-events-none block border-b border-border bg-bg">
         <entry.Illustration animate={hovered || focused} />
       </span>
       <span className="flex flex-1 flex-col gap-1 p-4">

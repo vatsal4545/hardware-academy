@@ -65,7 +65,7 @@ function LidarIllustration({ animate }: { animate?: boolean }) {
         2D lidar, top view
       </Note>
       <Mark x={300} y={20} anchor="end" size={10}>
-        d = c × t / 2
+        sample = angle + distance
       </Mark>
       <Note x={20} y={192} anchor="start" size={10}>
         RPLIDAR A1: 12 m range
@@ -84,7 +84,7 @@ export const entry: ComponentEntry = {
   oneLiner: "Measures distance with laser light; a spinning or solid-state scanner turns single ranges into a 2D or 3D map around the robot.",
   howItWorks: [
     "Time-of-flight lidar fires a short laser pulse (905 or 1550 nm) and times the reflection: distance = c·t/2, so 10 m is a 66.7 ns round trip and 1 cm of resolution needs about 67 ps of timing. Single-point modules such as the VL53L0X use a 940 nm VCSEL and a SPAD array with a time-to-digital converter, and read up to 2 m over I2C at about 30 Hz for a few dollars.",
-    "Low-cost spinning scanners such as the RPLIDAR A1 use laser triangulation instead: a laser spot lands at a position on a small camera chip that depends on range, so the distance follows from triangle geometry. It reaches 12 m at 8000 samples per second and about 8000 samples/s (roughly 1450 points per scan), but resolution is about 1% of range and sunlight can blind it.",
+    "Low-cost spinning scanners such as the RPLIDAR A1 use laser triangulation instead: a laser spot lands at a position on a small camera chip that depends on range, so the distance follows from triangle geometry. It reaches 12 m at 8000 samples per second and about 5.5 turns per second (roughly 1450 points per scan), but resolution is about 1% of range and sunlight can blind it.",
     "A motor spins the emitter and receiver, and each sample is an (angle, distance) pair, giving a polar scan of one plane at sensor height. 3D lidars stack 16-128 laser and detector pairs (a Velodyne VLP-16 makes 300 000 points per second) or use solid-state scanning such as MEMS mirrors, optical phased arrays and flash illumination.",
     "The scans feed SLAM and obstacle-avoidance software. Each scan is aligned with the previous one by scan matching (ICP) to estimate motion, and the points are accumulated into an occupancy grid or a point-cloud map that a planner can use.",
   ],

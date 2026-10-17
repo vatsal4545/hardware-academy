@@ -84,7 +84,7 @@ export const entry: ComponentEntry = {
   howItWorks: [
     "A Li-ion cell is a rolled sandwich (a jelly roll) of an anode (graphite on copper foil), a porous polyolefin separator and a cathode (NMC, NCA or LFP on aluminium foil), soaked in a lithium-salt electrolyte (LiPF6 in organic carbonates). Charging pushes lithium ions from the cathode through the separator into the graphite, and discharging lets them flow back while electrons do work in the external circuit.",
     "Voltage tells you the state of charge. An NMC cell is 4.20 V full, about 3.6-3.7 V nominal and 2.5-3.0 V empty. An 18650 (18 × 65 mm, about 47 g) stores roughly 3.5 Ah × 3.6 V = 12.6 Wh, which is about 260 Wh/kg at cell level. A Tesla Model S 85 kWh pack used 7104 such cells in a 96-series, 74-parallel arrangement.",
-    "Charging is constant current then constant voltage (CC-CV): about 0.5-1C up to 4.20 V ± 0.05 V, then hold 4.20 V while the current tapers to about C/20 and stop. Charging above about 4.3 V plates lithium metal and makes the cell unsafe, and discharging below 2.5 V dissolves the copper current collector.",
+    "Charging is constant current then constant voltage (CC-CV): about 0.5-1C up to 4.20 V ± 0.05 V, then hold 4.20 V while the current tapers to about C/20 and stop. Charging above about 4.3 V plates lithium metal and makes the cell unsafe. The normal discharge cut-off is about 2.5 V (many packs stop at 2.8-3.0 V), and forcing a cell far below that, toward 1.5-2 V, can dissolve the copper current collector.",
     "Power capability is set by C-rate and internal resistance. A 3.5 Ah high-energy cell (NCR18650GA) gives 10 A continuous (about 3C), while a high-power cell (Samsung 25R, 2.5 Ah) gives 20 A. Internal resistance of 20-50 mΩ turns current into heat, which is 3 W per cell at 10 A and 30 mΩ.",
     "Newer formats are the 21700 (21 × 70 mm, 4-5 Ah, used in the Model 3 and Y) and the tabless 4680 (46 × 80 mm), plus prismatic and pouch cells (BYD Blade) that cut parts count. LFP chemistry gives up energy density (160-200 Wh/kg) for longer cycle life (3000 cycles and more), lower cost and better thermal stability.",
   ],
@@ -105,7 +105,7 @@ export const entry: ComponentEntry = {
   ],
   failureModes: [
     "Thermal runaway: an internal short (dendrite, crushed cell, damaged separator), overcharge or overheating (the separator melts around 130 °C) triggers exothermic reactions that vent hot gas and flame above 600 °C and spread to neighbouring cells. Packs use cell spacing, fusing and vent paths.",
-    "Over-charge and over-discharge damage: below 2.5 V copper dissolves and above 4.3 V lithium plates. Both permanently cut capacity and can cause a short later, which is why the BMS enforces limits.",
+    "Over-charge and over-discharge damage: charging above about 4.3 V plates lithium, and deep discharge toward 1.5-2 V dissolves the copper collector (2.5 V is the normal cut-off). Both permanently cut capacity and can cause a short later, which is why the BMS enforces limits.",
     "Capacity fade and calendar ageing: about 20% loss after 500-1000 cycles, faster above 40 °C and when stored at 100% charge, and charging below 0 °C plates lithium.",
     "Imbalance in packs: cells of different capacity or resistance drift apart in series and the weakest cell is over-discharged first, so the pack needs balancing.",
   ],

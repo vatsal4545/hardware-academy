@@ -84,7 +84,7 @@ function InverterIllustration({ animate }: { animate?: boolean }) {
         400-800 V DC in
       </Mark>
       <Note x={262} y={185} size={9.5}>
-        8-20 kHz PWM
+        8-16 kHz PWM (IGBT)
       </Note>
     </PartCanvas>
   );
@@ -96,7 +96,7 @@ export const entry: ComponentEntry = {
   category: "ev",
   oneLiner: "Six power switches and a controller turn the battery's DC into three-phase AC of variable voltage and frequency, setting the motor's torque and speed.",
   howItWorks: [
-    "The traction inverter takes DC from the pack (400 V or 800 V) and builds three-phase AC with six switches in three half-bridges, one phase leg each. Each leg's high-side and low-side switch is PWM-modulated (8-20 kHz for IGBTs, 15-50 kHz for SiC), and the motor's inductance averages the pulses so that sinusoidal currents flow. Output frequency sets speed and current amplitude sets torque.",
+    "The traction inverter takes DC from the pack (400 V or 800 V) and builds three-phase AC with six switches in three half-bridges, one phase leg each. Each leg's high-side and low-side switch is PWM-modulated (8-16 kHz for IGBTs, 15-50 kHz for SiC), and the motor's inductance averages the pulses so that sinusoidal currents flow. Output frequency sets speed and current amplitude sets torque.",
     "A DC-link capacitor bank (film capacitors, 200-1000 µF) sits between the pack and the bridge to supply the pulsed current. Ripple current can reach 100-300 A rms in a 150 kW unit, and the bank also absorbs inductive spikes and regenerative braking energy. The pack connects through contactors with a precharge circuit so that no surge hits the empty capacitor.",
     "Field-oriented control (FOC) measures phase currents (two or three current sensors) and rotor angle (a resolver or encoder), transforms the currents to the rotating d-q frame (Clarke and Park), regulates them with PI controllers and transforms back to PWM duty cycles. Iq makes torque, and a negative Id weakens the field to go above base speed.",
     "Isolated gate drivers (digital isolators rated 5 kV reinforced) switch each device with about +15 V and −4 V, with desaturation protection that trips in under 2 µs and an active Miller clamp. NTC sensors on the power module let the controller derate power as it heats. Peak power for a passenger car is typically 100-300 kW.",

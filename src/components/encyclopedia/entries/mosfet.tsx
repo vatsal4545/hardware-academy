@@ -48,13 +48,13 @@ function MosfetIllustration({ animate }: { animate?: boolean }) {
         logic-level n-channel
       </Note>
       <Mark x={20} y={80} anchor="start" size={10.5}>
-        Rds(on) 22 mΩ
+        Rds(on) 25 mΩ
       </Mark>
       <Mark x={20} y={98} anchor="start" size={10.5}>
-        Qg 48 nC
+        at VGS = 5 V
       </Mark>
       <Mark x={20} y={116} anchor="start" size={10.5}>
-        fully on at 5 V
+        Qg 48 nC
       </Mark>
       <Note x={254} y={40} anchor="start" size={10}>
         tab = drain
@@ -70,7 +70,7 @@ export const entry: ComponentEntry = {
   oneLiner: "A voltage-controlled switch: a gate voltage opens a conductive channel from drain to source while drawing almost no gate current.",
   howItWorks: [
     "A MOSFET has a gate, a drain and a source. The gate sits on a thin oxide insulator (a few nanometres in logic chips, much thicker in power parts), so it draws no DC current and behaves as a capacitor. In an n-channel enhancement device, raising VGS above the threshold Vth (1-3 V) attracts electrons to the surface and forms a channel that conducts between drain and source.",
-    "Rds(on) is the channel's on-resistance: 22 mΩ at VGS = 5 V for the IRLZ44N, and a few milliohms for modern 60 V trench parts. Conduction loss is I²·Rds(on), so 10 A through 22 mΩ dissipates 2.2 W, which is why a TO-220 in free air runs hot without a heatsink.",
+    "Rds(on) is the channel's on-resistance: 22 mΩ at VGS = 10 V for the IRLZ44N (25 mΩ at 5 V and 35 mΩ at 4 V), and a few milliohms for modern 60 V trench parts. Conduction loss is I²·Rds(on), so 10 A through 25 mΩ dissipates 2.5 W, which is why a TO-220 in free air runs hot without a heatsink.",
     "'Logic-level' MOSFETs such as the IRLZ44N are fully on at 4.5-5 V, but a standard part like the IRF540N needs 10 V. Drive that part from a 3.3 V microcontroller pin and it is only partly on and gets hot, the classic 'it works but it is hot' failure.",
     "Gate capacitance (Ciss, 1-5 nF) and total gate charge Qg (48 nC maximum for the IRLZ44N) decide switching speed: a driver that can source 1 A moves 50 nC in about 50 ns. A 10-100 Ω gate resistor damps ringing between the gate capacitance and trace inductance. The body diode conducts when the drain goes below the source, which carries freewheeling current in bridges.",
   ],
@@ -83,7 +83,7 @@ export const entry: ComponentEntry = {
   ],
   keySpecs: [
     { label: "VDS and ID (max)", value: "55 V and 47 A (IRLZ44N); 30 V and 5.7 A (SOT-23 AO3400)" },
-    { label: "On-resistance Rds(on)", value: "22 mΩ at VGS = 5 V, ID = 25 A (IRLZ44N)" },
+    { label: "On-resistance Rds(on)", value: "25 mΩ at VGS = 5 V and ID = 25 A; 22 mΩ at 10 V, 35 mΩ at 4 V (IRLZ44N)" },
     { label: "Threshold Vgs(th)", value: "1-2 V (logic level); 2-4 V (standard)" },
     { label: "Gate charge Qg", value: "48 nC maximum (IRLZ44N); 5-100 nC typical range" },
     { label: "Gate voltage limit", value: "±16 V (IRLZ44N); ±20 V on many parts" },

@@ -25,7 +25,7 @@ function McuIllustration({ animate }: { animate?: boolean }) {
       const key = pinKey(side, i);
       return (
         <rect key={key} x={x} y={y} width={horizontal ? 12 : 3.4} height={horizontal ? 3.4 : 12} rx={0.8} fill={part.metal}>
-          {ACTIVE.has(key) && <Anim on={on} name="fill" values={`${part.metal};${vizColors.cyan};${part.metal}`} keyTimes="0;0.15;0.45" dur={2.4} begin={-(i % 6) * 0.35} />}
+          {ACTIVE.has(key) && <Anim on={on} name="fill" values={`${part.metal};${vizColors.cyan};${part.metal};${part.metal}`} keyTimes="0;0.15;0.45;1" dur={2.4} begin={-(i % 6) * 0.35} />}
         </rect>
       );
     });
@@ -100,7 +100,7 @@ export const entry: ComponentEntry = {
   keySpecs: [
     { label: "Core and clock", value: "ATmega328P AVR 16 MHz; STM32F103 Cortex-M3 72 MHz; ESP32 dual 240 MHz" },
     { label: "Memory", value: "ATmega328P 32 KB / 2 KB; STM32F103 64-128 KB / 20 KB; ESP32 4 MB external / 520 KB" },
-    { label: "Supply", value: "1.8-3.6 V (STM32); 2.7-5.5 V (ATmega328P)" },
+    { label: "Supply", value: "2.0-3.6 V (STM32F103); 2.7-5.5 V (ATmega328P, but 16 MHz needs about 3.8 V or more)" },
     { label: "GPIO drive", value: "8-25 mA per pin, with a total package limit" },
     { label: "Peripherals", value: "12-bit ADC, 4-16 timers, 2-3 each of UART, SPI and I2C; USB or CAN on some" },
     { label: "Packages", value: "DIP-28, LQFP-48/64/100, QFN-32, ESP32-WROOM module" },

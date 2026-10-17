@@ -72,12 +72,12 @@ export const entry: ComponentEntry = {
   ],
   failureModes: [
     "Overheating: the film burns and the body chars, and the part usually fails open. The node it served then floats and causes a fault that is hard to trace. Calculate worst-case dissipation, not typical.",
-    "Tolerance stacking and drift: two ±5% resistors in a divider give about ±10% output error, and thick-film parts drift with heat and humidity. Use 1% or better for references and feedback dividers.",
+    "Tolerance stacking and drift: two ±5% resistors in a 1:1 divider give up to ±5% output error, approaching ±10% for large step-down ratios, and thick-film parts drift with heat and humidity. Use 1% or better for references and feedback dividers.",
     "A hot spot on the board: a 0603 resistor carrying 0.3 W discolours the laminate and unsolders neighbouring parts. Check the rating at the real temperature and give it copper to spread heat.",
     "Pulse damage: a thin chip resistor can vaporise on a short spike (for example inrush into a snubber) that its average power rating allows. Use pulse-rated or wirewound parts there.",
   ],
   interviewTip:
-    "Interviewer asks: \"You have an LED on a 5 V supply that drops 2 V at 10 mA. What resistor and wattage do you pick?\" A good answer shows the steps in order: (5 − 2) / 0.010 = 300 Ω, round to the nearest standard value (330 Ω gives about 9 mA), then check power I²R = 0.009² × 330 ≈ 27 mW, which a 0603 rated 0.1 W handles with margin. Mention tolerance and that you derate.",
+    "Interviewer asks: \"You have an LED on a 5 V supply that drops 2 V at 10 mA. What resistor and wattage do you pick?\" A good answer shows the steps in order: (5 − 2) / 0.010 = 300 Ω, round to the nearest common E12 value (330 Ω gives about 9 mA), then check power I²R = 0.009² × 330 ≈ 27 mW, which a 0603 rated 0.1 W handles with margin. Mention tolerance and that you derate.",
   relatedLesson: "passive-components",
   Illustration: ResistorIllustration,
 };

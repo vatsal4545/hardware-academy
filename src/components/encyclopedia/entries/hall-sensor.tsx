@@ -15,8 +15,8 @@ function HallIllustration({ animate }: { animate?: boolean }) {
       <Mark x={SX + 24} y={SY} size={10.5} color="#ffffff">
         A3144
       </Mark>
-      <path d={`M${SX - 70} ${SY} H${SX - 2}`} stroke={vizColors.cyan} strokeWidth={2.4} strokeDasharray="5 4" opacity={on ? 0.15 : 0.7}>
-        <Anim on={on} name="opacity" values="0.1;0.1;0.95;0.95;0.1" keyTimes="0;0.25;0.45;0.62;0.8" dur={4} />
+      <path d={`M${SX - 70} ${SY} H${SX - 2}`} stroke={vizColors.cyan} strokeWidth={2.4} strokeDasharray="5 4" opacity={on ? 0.1 : 0.7}>
+        <Anim on={on} name="opacity" values="0.1;0.1;0.95;0.95;0.1;0.1" keyTimes="0;0.25;0.45;0.62;0.8;1" dur={4} />
       </path>
       <g transform={on ? undefined : "translate(34 0)"}>
         <g>
@@ -34,7 +34,7 @@ function HallIllustration({ animate }: { animate?: boolean }) {
         </g>
       </g>
       <circle cx={262} cy={40} r={9} fill="#1f2937" stroke={vizColors.muted}>
-        <Anim on={on} name="fill" values="#1f2937;#1f2937;#34d399;#34d399;#1f2937" keyTimes="0;0.3;0.42;0.62;0.72" dur={4} />
+        <Anim on={on} name="fill" values="#1f2937;#1f2937;#34d399;#34d399;#1f2937;#1f2937" keyTimes="0;0.3;0.42;0.62;0.72;1" dur={4} />
       </circle>
       <Label x={262} y={60} size={10} color={vizColors.muted}>
         OUT (active low)

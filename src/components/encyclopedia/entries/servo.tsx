@@ -86,7 +86,7 @@ export const entry: ComponentEntry = {
     "Continuous-rotation servos replace the potentiometer with fixed resistors, so the pulse width sets speed and direction (1.5 ms is stop) instead of position. Digital servos update their loop at about 300 Hz against 50 Hz for analog ones and hold stiffer. Smart bus servos (Dynamixel, Feetech STS3215) add daisy-chained serial control and telemetry such as position, load and temperature.",
   ],
   whereUsed: [
-    "Robot-arm joints and grippers: SG90 or MG90S for light loads, MG996R-class servos for 1-2 kg·cm-scale arms.",
+    "Robot-arm joints and grippers: SG90 or MG90S (about 2 kg·cm) for light grippers and small joints, MG996R-class servos (about 10 kg·cm) for larger joints.",
     "Pan-tilt camera mounts, and ultrasonic sensors swept through 0-180°.",
     "Steering and control surfaces in RC cars and planes.",
     "Animatronics and legged-robot joints, such as the twelve servos of a quadruped.",

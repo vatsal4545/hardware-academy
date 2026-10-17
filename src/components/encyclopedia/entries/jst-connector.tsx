@@ -69,7 +69,7 @@ export const entry: ComponentEntry = {
     "Families are defined by pitch. XH is 2.5 mm (3 A, 250 V, 22-30 AWG, the standard for LiPo balance leads), PH is 2.0 mm (2 A), GH is 1.25 mm (1 A) and SH is 1.0 mm (1 A, used for the Qwiic and STEMMA QT I2C connectors). Small LiPo batteries usually carry a 2-pin PH connector.",
     "A good crimp is made with the right tool (a ratcheting crimper such as the IWISS SN-28B) and has two stages: the conductor barrel grips the copper in a gas-tight cold weld, and the insulation barrel grips the jacket as strain relief. A poor crimp, or a soldered joint without strain relief, breaks where the wire meets the contact.",
     "JST is a mechanical standard, not an electrical one. Different vendors wire a 2-pin PH battery connector with opposite polarity, so a plug that fits physically can reverse power and ground and destroy a board. Always check pin 1 and the battery's pinout with a meter before first connection.",
-    "Alternatives include Molex KK (2.54 mm), Dupont 0.1 inch headers (cheap, no latch, about 1 A), Molex Micro-Fit (3.0 mm, 8.5 A), XT30, XT60 and XT90 power connectors (15, 30 and 90 A) and Anderson Powerpole.",
+    "Alternatives include Molex KK (2.54 mm), Dupont 0.1 inch headers (cheap, no latch, about 1 A), Molex Micro-Fit (3.0 mm, 8.5 A), XT30, XT60 and XT90 power connectors (about 15, 30 and 40 A continuous; the XT90's 90 A figure is a burst rating) and Anderson Powerpole.",
   ],
   whereUsed: [
     "LiPo and Li-ion battery connections and balance leads, using JST-XH for 2S-6S balance leads and PH for small packs.",

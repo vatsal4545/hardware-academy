@@ -1,3 +1,5 @@
+"use client";
+
 import { useId, type ReactNode } from "react";
 import { Label, SvgCanvas, usePrefersReducedMotion, vizColors } from "@/components/viz/shared";
 

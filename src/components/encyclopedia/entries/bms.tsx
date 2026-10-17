@@ -36,11 +36,11 @@ function BmsIllustration({ animate }: { animate?: boolean }) {
       </Mark>
       {[0, 1, 2, 3].map((i) => (
         <g key={i}>
-          <Epoxy x={112 + i * 22} y={118} w={18} h={22} r={2} />
-          <rect x={115 + i * 22} y={136} width={12} height={3} fill={part.metal} />
+          <Epoxy x={106 + i * 19} y={118} w={16} h={22} r={2} />
+          <rect x={108 + i * 19} y={136} width={12} height={3} fill={part.metal} />
         </g>
       ))}
-      <Mark x={150} y={110} size={7} color="#bff0d6">
+      <Mark x={142} y={110} size={7} color="#bff0d6">
         MOSFETs
       </Mark>
       {[
@@ -111,7 +111,7 @@ export const entry: ComponentEntry = {
     "EV packs of 96-216 series cells at 400-800 V: monitoring every cell group, balancing, and controlling contactors and thermal management.",
     "E-bike and scooter packs (10S-20S, 30-80 A) with a protection board.",
     "Home storage and solar systems (LFP 4S-16S, 51.2 V) and UPS packs.",
-    "Laptops, phones and tools: a one- or two-cell protection IC such as a DW01 with an 8205 dual MOSFET.",
+    "Phones, power banks and small Li-ion gadgets: a single-cell protection circuit such as a DW01 with an 8205 dual MOSFET.",
     "Robots and drones: a 2S or 3S BMS board to protect the pack and balance it while charging.",
   ],
   keySpecs: [
