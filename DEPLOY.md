@@ -28,7 +28,7 @@ npx vercel link --yes     # once per project; creates .vercel/ (git-ignored)
 npx vercel --prod --yes   # builds on Vercel and deploys to production
 ```
 
-The CLI prints the production URL. Running `npx vercel` without `--prod` creates a preview deployment instead.
+Production URL: https://hardware-academy.vercel.app (deployed 2026-10-17 with `npx vercel --prod --yes`; the project is linked in `.vercel/project.json`).
 Preview deployments on a Vercel team are protected by Vercel Authentication by default (they redirect to a Vercel
 login), so share the production URL, or turn protection off under Project → Settings → Deployment Protection.
 

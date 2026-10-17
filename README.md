@@ -1,5 +1,7 @@
 # Hardware Academy
 
+Live site: https://hardware-academy.vercel.app (deployed from this repo with `npx vercel --prod --yes`).
+
 A 14-day, hands-on learning site: semiconductors, PCB design, robotics (with a buildable robot and a browser
 simulator), EV powertrains (motors, inverters, batteries, the Tesla lineage, charging) and AI-assisted hardware design
 (CAD kernels, design agents, a Claude MCP CAD tool).
