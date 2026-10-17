@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, Toggle, VizFrame } from "@/components/lesson";
 import { Arrow, Label, SvgCanvas, useAnimationFrame, useViz, vizColors } from "@/components/viz/shared";
-import { Q, Readout, ReadoutGrid, clamp, eng, mulberry32, sci } from "./semisA-shared";
+import { Q, Readout, ReadoutGrid, clamp, eng, mulberry32, r2, sci } from "./semisA-shared";
 
 export type DopingMode = "intrinsic" | "n" | "p";
 
@@ -137,8 +137,9 @@ export function DopingLattice() {
   const placed = carriers.map((c, i) => {
     const w = WANDER[i % WANDER.length];
     const drift = c.kind === "e" ? -ve * driftTime : vh * driftTime;
-    const x = wrap(c.bx + drift + 14 * Math.sin(w.w1 * t + w.p1) + 6 * Math.sin(w.w2 * t + w.p2));
-    const y = clamp(c.by + 10 * Math.sin(w.w3 * t + w.p3) + 5 * Math.sin(w.w4 * t + w.p4), 34, 296);
+    // thermal wander uses Math.sin: round before the value reaches markup
+    const x = r2(wrap(c.bx + drift + 14 * Math.sin(w.w1 * t + w.p1) + 6 * Math.sin(w.w2 * t + w.p2)));
+    const y = r2(clamp(c.by + 10 * Math.sin(w.w3 * t + w.p3) + 5 * Math.sin(w.w4 * t + w.p4), 34, 296));
     return { ...c, x, y, key: i };
   });
 

@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { PlayPause, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { Readout, ReadoutGrid, clamp, eng } from "./semisA-shared";
+import { Readout, ReadoutGrid, clamp, eng, r2, r3 } from "./semisA-shared";
 
 /** Threshold voltage, V. */
 export const VTH = 1.5;
@@ -88,12 +88,12 @@ export function MosfetCrossSection() {
     bottom.push([x, SURF + thickness(uAt(frac))]);
   }
   const channelPath = `${polyline([...top, ...bottom.slice().reverse()])} Z`;
-  const stops = [0, 0.25, 0.5, 0.75, 1].map((f) => ({ f, o: 0.25 + (0.65 * uAt(f)) / 3.5 }));
+  const stops = [0, 0.25, 0.5, 0.75, 1].map((f) => ({ f, o: r3(0.25 + (0.65 * uAt(f)) / 3.5) }));
 
   // depletion boundaries: under the gate (grows until threshold, then pins) and around source and drain wells
-  const gateDep = 6 + 12 * clamp(vgs / VTH, 0, 1);
-  const drainDep = 5 + 5 * Math.sqrt(0.7 + vds);
-  const sourceDep = 5 + 5 * Math.sqrt(0.7);
+  const gateDep = r2(6 + 12 * clamp(vgs / VTH, 0, 1));
+  const drainDep = r2(5 + 5 * Math.sqrt(0.7 + vds));
+  const sourceDep = r2(5 + 5 * Math.sqrt(0.7));
 
   // moving electrons: count follows channel charge, speed follows current
   const nMove = on ? clamp(Math.round(3 + 2.5 * vov), 0, 12) : 0;
@@ -102,11 +102,11 @@ export function MosfetCrossSection() {
     const x = CH_X0 + ((((t * speed + (i * CH_L) / nMove) % CH_L) + CH_L) % CH_L);
     const frac = (x - CH_X0) / lEff;
     const y = frac <= 1 ? SURF + thickness(uAt(frac)) / 2 : SURF + 2.5;
-    return { x, y, key: i };
+    return { x: r2(x), y: r2(y), key: i };
   });
 
   const opX = xOfVds(vds);
-  const opY = yOfId(id);
+  const opY = r2(yOfId(id));
 
   return (
     <VizFrame
@@ -184,8 +184,8 @@ export function MosfetCrossSection() {
         )}
         {region === "saturation" && (
           <g>
-            <line x1={CH_X0 + lEff} y1={SURF - 2} x2={CH_X0 + lEff} y2={SURF + 14} stroke={vizColors.amber} strokeWidth={1.5} />
-            <Label x={CH_X0 + lEff - 4} y={SURF + 24} anchor="end" size={9} color={vizColors.amber}>
+            <line x1={r2(CH_X0 + lEff)} y1={SURF - 2} x2={r2(CH_X0 + lEff)} y2={SURF + 14} stroke={vizColors.amber} strokeWidth={1.5} />
+            <Label x={r2(CH_X0 + lEff - 4)} y={SURF + 24} anchor="end" size={9} color={vizColors.amber}>
               pinch-off
             </Label>
           </g>
@@ -252,7 +252,7 @@ export function MosfetCrossSection() {
           <path key={c.vgs} d={c.d} fill="none" stroke={vizColors.muted} strokeOpacity={0.35} strokeWidth={1} />
         ))}
         {[3, 4, 5].map((v) => (
-          <Label key={`lbl${v}`} x={P_X1 + 3} y={yOfId(drainCurrent(v, 5))} anchor="start" size={9} color={vizColors.muted}>
+          <Label key={`lbl${v}`} x={P_X1 + 3} y={r2(yOfId(drainCurrent(v, 5)))} anchor="start" size={9} color={vizColors.muted}>
             {`${v} V`}
           </Label>
         ))}

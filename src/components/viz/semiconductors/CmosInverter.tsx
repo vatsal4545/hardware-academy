@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, Toggle, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { Readout, ReadoutGrid, clamp } from "./semisA-shared";
+import { Readout, ReadoutGrid, clamp, r2, r3 } from "./semisA-shared";
 
 export type GateKind = "inv" | "nand";
 
@@ -181,7 +181,7 @@ export function CmosInverter() {
         const f = playing ? since / 1.1 - i * 0.05 : 0.55 - i * 0.05;
         if (f < 0 || f > 1) return null;
         const [x, y] = pointAt(path, f);
-        return { x, y, key: i, opacity: playing ? clamp(1.3 - since, 0, 1) : 0.9 };
+        return { x: r2(x), y: r2(y), key: i, opacity: playing ? r3(clamp(1.3 - since, 0, 1)) : 0.9 };
       }).filter((c): c is { x: number; y: number; key: number; opacity: number } => c !== null)
     : [];
 
@@ -201,7 +201,7 @@ export function CmosInverter() {
   else network = "both NMOS on; both PMOS off";
 
   const shown = history;
-  const barW = (clamp(power, 0, P_MAX) / P_MAX) * 280;
+  const barW = r2((clamp(power, 0, P_MAX) / P_MAX) * 280);
 
   return (
     <VizFrame

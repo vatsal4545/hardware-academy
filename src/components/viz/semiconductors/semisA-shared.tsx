@@ -14,6 +14,20 @@ export function clamp(x: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, x));
 }
 
+/**
+ * Round to 2 decimals before a value reaches SVG markup. Results of Math.sin/exp/sqrt/log/hypot (and non-integer
+ * `**`) can differ in the last bits between the server and the browser, and unrounded values would cause
+ * hydration mismatches.
+ */
+export function r2(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+/** Round to 3 decimals, for opacities that derive from transcendental functions. */
+export function r3(v: number): number {
+  return Math.round(v * 1000) / 1000;
+}
+
 export function lerp(a: number, b: number, f: number): number {
   return a + (b - a) * f;
 }

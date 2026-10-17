@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, useViz, vizColors } from "@/components/viz/shared";
-import { K_B, Q, Readout, ReadoutGrid, clamp, ease, lerp, mulberry32, sci, seededOrder } from "./semisA-shared";
+import { K_B, Q, Readout, ReadoutGrid, clamp, ease, lerp, mulberry32, r2, sci, seededOrder } from "./semisA-shared";
 
 export type BandMaterialId = "si" | "ge" | "gaas" | "sic";
 
@@ -67,7 +67,7 @@ const BAR_TOP = 46;
 const BAR_BOTTOM = 300;
 const LOG_MIN = -16;
 const LOG_MAX = 6;
-const barY = (log: number) => BAR_BOTTOM - ((clamp(log, LOG_MIN, LOG_MAX) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * (BAR_BOTTOM - BAR_TOP);
+const barY = (log: number) => r2(BAR_BOTTOM - ((clamp(log, LOG_MIN, LOG_MAX) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * (BAR_BOTTOM - BAR_TOP));
 const REFERENCES = [
   { name: "Copper", log: Math.log10(6e5) },
   { name: "Seawater", log: Math.log10(5e-2) },
@@ -116,7 +116,7 @@ export function BandDiagram() {
   const sigma = intrinsicConductivity(m, kelvin);
   const nVis = visibleElectrons(ni);
   const kT = K_B * kelvin;
-  const ec = EV_Y - m.eg * PX_PER_EV; // bottom edge of the conduction band
+  const ec = r2(EV_Y - m.eg * PX_PER_EV); // bottom edge of the conduction band
   const active = new Set(ORDER.slice(0, nVis));
   const jiggle = (kelvin / 600) * 1.6;
 
@@ -138,12 +138,12 @@ export function BandDiagram() {
       return { key: i, ex: lerp(cbx, p.x, f), ey: lerp(cby, p.y, f), hole: true, rising: false, sx: p.x, sy: p.y };
     }
     return { key: i, ex: home.x, ey: home.y, hole: false, rising: false, sx: p.x, sy: p.y };
-  });
+  }).map((c) => ({ ...c, ex: r2(c.ex), ey: r2(c.ey), sx: r2(c.sx), sy: r2(c.sy) }));
 
   const logSigma = sigma > 0 ? Math.log10(sigma) : -Infinity;
   const sigmaY = barY(logSigma);
   const belowScale = !(logSigma > LOG_MIN);
-  const kTpx = Math.max(1, kT * PX_PER_EV);
+  const kTpx = r2(Math.max(1, kT * PX_PER_EV));
 
   return (
     <VizFrame
@@ -217,7 +217,7 @@ export function BandDiagram() {
         </Label>
 
         {/* kT drawn to the same energy scale */}
-        <rect x={X1 + 10} y={EV_Y + BAND_H - kTpx} width={8} height={kTpx} fill={vizColors.amber} />
+        <rect x={X1 + 10} y={r2(EV_Y + BAND_H - kTpx)} width={8} height={kTpx} fill={vizColors.amber} />
         <Label x={X1 + 22} y={EV_Y + BAND_H - 6} anchor="start" size={10} color={vizColors.amber}>
           kT, same scale
         </Label>
@@ -249,7 +249,7 @@ export function BandDiagram() {
           S/cm, log scale
         </Label>
         <rect x={BAR_X} y={BAR_TOP} width={16} height={BAR_BOTTOM - BAR_TOP} fill={vizColors.grid} rx={3} />
-        {!belowScale && <rect x={BAR_X} y={sigmaY} width={16} height={BAR_BOTTOM - sigmaY} fill={vizColors.amber} rx={3} />}
+        {!belowScale && <rect x={BAR_X} y={sigmaY} width={16} height={r2(BAR_BOTTOM - sigmaY)} fill={vizColors.amber} rx={3} />}
         {REFERENCES.map((ref) => (
           <g key={ref.name}>
             <line x1={BAR_X - 4} y1={barY(ref.log)} x2={BAR_X + 20} y2={barY(ref.log)} stroke={vizColors.muted} strokeWidth={1} />

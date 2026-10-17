@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayPause, Segmented, Slider, VizFrame } from "@/components/lesson";
 import { Label, SvgCanvas, polyline, useViz, vizColors } from "@/components/viz/shared";
-import { Q, Readout, ReadoutGrid, clamp, eng, lerp, mulberry32 } from "./semisA-shared";
+import { Q, Readout, ReadoutGrid, clamp, eng, lerp, mulberry32, r2, r3 } from "./semisA-shared";
 
 export type DiodeKind = "si" | "schottky";
 
@@ -149,8 +149,9 @@ export function PNJunction() {
   const schottky = kind === "schottky";
 
   // depletion edges in the cross-section
-  const xL = schottky ? XJ : XJ - (w / 2) * PX_PER_UM;
-  const xR = schottky ? XJ + w * PX_PER_UM : XJ + (w / 2) * PX_PER_UM;
+  // W comes from sqrt() of a log-derived V_bi, so round every position before it reaches markup
+  const xL = r2(schottky ? XJ : XJ - (w / 2) * PX_PER_UM);
+  const xR = r2(schottky ? XJ + w * PX_PER_UM : XJ + (w / 2) * PX_PER_UM);
 
   // majority carriers outside the depletion region
   const holes: Array<{ x: number; y: number; key: string }> = [];
@@ -159,10 +160,10 @@ export function PNJunction() {
     for (let k = 0; k < 9; k++) {
       const j = JITTER[(r * 9 + k) % JITTER.length];
       const wob = 1.6 * Math.sin(j.w * t + j.ph);
-      const hx = CS_X0 + 14 + 22 * k + j.dx + wob;
-      if (!schottky && hx < xL - 6) holes.push({ x: hx, y: y + j.dy, key: `h${r}-${k}` });
-      const ex = XJ + 12 + 22 * k + j.dx - wob;
-      if (ex > xR + 6 && ex < CS_X1 - 6) electrons.push({ x: ex, y: y + j.dy, key: `e${r}-${k}` });
+      const hx = r2(CS_X0 + 14 + 22 * k + j.dx + wob);
+      if (!schottky && hx < xL - 6) holes.push({ x: hx, y: r2(y + j.dy), key: `h${r}-${k}` });
+      const ex = r2(XJ + 12 + 22 * k + j.dx - wob);
+      if (ex > xR + 6 && ex < CS_X1 - 6) electrons.push({ x: ex, y: r2(y + j.dy), key: `e${r}-${k}` });
     }
   });
 
@@ -186,21 +187,21 @@ export function PNJunction() {
     const fade = f > 0.7 ? 1 - (f - 0.7) / 0.3 : 1;
     const eStart = Math.min(xR + 70, CS_X1 - 10);
     const eEnd = Math.max(xL - 70, CS_X0 + 10);
-    crossing.push({ x: lerp(eStart, eEnd, f), y: lane, kind: "e", opacity: fade, key: `ce${k}` });
+    crossing.push({ x: r2(lerp(eStart, eEnd, f)), y: lane, kind: "e", opacity: r3(fade), key: `ce${k}` });
     if (!schottky) {
       const hStart = Math.max(xL - 70, CS_X0 + 10);
       const hEnd = Math.min(xR + 70, CS_X1 - 10);
-      crossing.push({ x: lerp(hStart, hEnd, f), y: lane + 9, kind: "h", opacity: fade, key: `ch${k}` });
+      crossing.push({ x: r2(lerp(hStart, hEnd, f)), y: lane + 9, kind: "h", opacity: r3(fade), key: `ch${k}` });
     }
   }
   // a Schottky leaks visibly in reverse: electrons from the metal over the fixed barrier
   if (schottky && current < -1e-7) {
     const f = (t / 4) % 1;
-    crossing.push({ x: lerp(XJ - 30, Math.min(xR + 60, CS_X1 - 10), f), y: 96, kind: "e", opacity: 0.6, key: "leak" });
+    crossing.push({ x: r2(lerp(XJ - 30, Math.min(xR + 60, CS_X1 - 10), f)), y: 96, kind: "e", opacity: 0.6, key: "leak" });
   }
 
   // band diagram: Ec(x) from the depletion approximation (parabolic bending)
-  const b = Math.max(barrier, 0.02) * S;
+  const b = r2(Math.max(barrier, 0.02) * S);
   const ecAt = (x: number): number => {
     if (schottky) {
       if (x < XJ) return NaN;
@@ -219,12 +220,12 @@ export function PNJunction() {
   const bandXs = Array.from({ length: 81 }, (_, k) => CS_X0 + (k * (CS_X1 - CS_X0)) / 80).filter((x) => !schottky || x >= XJ);
   const ecPath = polyline(bandXs.map((x) => [x, ecAt(x)]));
   const evPath = polyline(bandXs.map((x) => [x, ecAt(x) + EG_PX]));
-  const efMetalY = EC_N - b + 0.6 * S; // metal Fermi level sits φ_B = 0.6 eV below the barrier top
+  const efMetalY = r2(EC_N - b + 0.6 * S); // metal Fermi level sits φ_B = 0.6 eV below the barrier top
 
   // operating point on the I-V plot
   const mx = xOfV(bias);
   const offScale = current > I_FWD_MAX;
-  const my = offScale ? YO - FWD_H : yOfI(current);
+  const my = r2(offScale ? YO - FWD_H : yOfI(current));
 
   return (
     <VizFrame
@@ -266,7 +267,7 @@ export function PNJunction() {
           <rect x={CS_X0} y={CS_Y0} width={XJ - CS_X0} height={CS_Y1 - CS_Y0} fill={vizColors.hole} fillOpacity={0.1} />
         )}
         <rect x={XJ} y={CS_Y0} width={CS_X1 - XJ} height={CS_Y1 - CS_Y0} fill={vizColors.electron} fillOpacity={0.08} />
-        <rect x={xL} y={CS_Y0} width={xR - xL} height={CS_Y1 - CS_Y0} fill={vizColors.bg} fillOpacity={0.75} />
+        <rect x={xL} y={CS_Y0} width={r2(xR - xL)} height={CS_Y1 - CS_Y0} fill={vizColors.bg} fillOpacity={0.75} />
         <line x1={xL} y1={CS_Y0} x2={xL} y2={CS_Y1} stroke={vizColors.muted} strokeDasharray="3 3" />
         <line x1={xR} y1={CS_Y0} x2={xR} y2={CS_Y1} stroke={vizColors.muted} strokeDasharray="3 3" />
         <rect x={CS_X0} y={CS_Y0} width={CS_X1 - CS_X0} height={CS_Y1 - CS_Y0} fill="none" stroke={vizColors.muted} strokeOpacity={0.6} />
@@ -286,7 +287,7 @@ export function PNJunction() {
         <Label x={(XJ + CS_X1) / 2 + 20} y={CS_Y0 - 12} size={11} color={vizColors.electron}>
           n-type, 5 × 10¹⁵ cm⁻³ (cathode)
         </Label>
-        <Label x={(xL + xR) / 2} y={CS_Y1 + 12} size={10} color={vizColors.muted}>
+        <Label x={r2((xL + xR) / 2)} y={CS_Y1 + 12} size={10} color={vizColors.muted}>
           W
         </Label>
 
@@ -315,7 +316,7 @@ export function PNJunction() {
         </Label>
         {schottky && (
           <g>
-            <rect x={CS_X0} y={efMetalY} width={XJ - CS_X0} height={Math.max(0, 318 - efMetalY)} fill={vizColors.copper} fillOpacity={0.18} />
+            <rect x={CS_X0} y={efMetalY} width={XJ - CS_X0} height={r2(Math.max(0, 318 - efMetalY))} fill={vizColors.copper} fillOpacity={0.18} />
             <line x1={CS_X0} y1={efMetalY} x2={XJ} y2={efMetalY} stroke={vizColors.copper} strokeWidth={1.5} />
             <Label x={CS_X0 + 6} y={efMetalY + 10} anchor="start" size={10} color={vizColors.copper}>
               metal, filled to E_F
