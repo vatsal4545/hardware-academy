@@ -1,0 +1,359 @@
+import type { TrackId } from "./curriculum";
+
+export type ReferenceKind = "book" | "paper" | "standard" | "doc" | "report";
+
+export interface Reference {
+  id: string;
+  kind: ReferenceKind;
+  title: string;
+  authors: string;
+  year: number;
+  /** publisher, or journal with volume and pages */
+  venue: string;
+  doi?: string;
+  url?: string;
+  /** plain-language note: what this is and why it matters */
+  note: string;
+  /** free to read online */
+  free?: boolean;
+}
+
+export interface LessonReference {
+  id: string;
+  /** what to read for this lesson, in plain words */
+  read: string;
+}
+
+const list: Reference[] = [
+  // Semiconductors: books
+  { id: "streetman", kind: "book", title: "Solid State Electronic Devices", authors: "Ben G. Streetman and Sanjay K. Banerjee", year: 2015, venue: "Pearson, 7th edition", note: "The standard first textbook on how silicon devices work: bands, doping, junctions, transistors. Clear and not too mathematical." },
+  { id: "neamen", kind: "book", title: "Semiconductor Physics and Devices: Basic Principles", authors: "Donald A. Neamen", year: 2012, venue: "McGraw-Hill, 4th edition", note: "A second textbook with more worked examples; good when Streetman's explanation does not click." },
+  { id: "sze", kind: "book", title: "Physics of Semiconductor Devices", authors: "S. M. Sze and Kwok K. Ng", year: 2007, venue: "Wiley, 3rd edition", note: "The reference book device engineers keep on the desk. Use it to look things up, not to read cover to cover." },
+  { id: "sedra-smith", kind: "book", title: "Microelectronic Circuits", authors: "Adel S. Sedra and Kenneth C. Smith", year: 2020, venue: "Oxford University Press, 8th edition", note: "The classic circuits course: diodes, MOSFETs, amplifiers and digital CMOS. Its problem sets are exactly what interviews draw from." },
+  { id: "weste-harris", kind: "book", title: "CMOS VLSI Design: A Circuits and Systems Perspective", authors: "Neil H. E. Weste and David Money Harris", year: 2011, venue: "Addison-Wesley, 4th edition", note: "How gates become chips: CMOS logic, delay, power, memory and the design flow." },
+  { id: "rabaey", kind: "book", title: "Digital Integrated Circuits: A Design Perspective", authors: "Jan M. Rabaey, Anantha Chandrakasan and Borivoje Nikolić", year: 2003, venue: "Prentice Hall, 2nd edition", note: "The other standard digital-IC text; strong on dynamic power and the inverter." },
+  { id: "plummer", kind: "book", title: "Silicon VLSI Technology: Fundamentals, Practice and Modeling", authors: "James D. Plummer, Michael D. Deal and Peter B. Griffin", year: 2000, venue: "Prentice Hall", note: "The fabrication textbook: oxidation, lithography, etch, implant, deposition, with the physics behind each step." },
+  { id: "campbell", kind: "book", title: "Fabrication Engineering at the Micro- and Nanoscale", authors: "Stephen A. Campbell", year: 2013, venue: "Oxford University Press, 4th edition", note: "A more practical fab text that also covers packaging basics." },
+  { id: "tummala", kind: "book", title: "Fundamentals of Microsystems Packaging", authors: "Rao R. Tummala", year: 2001, venue: "McGraw-Hill", note: "The packaging textbook: wire bond, flip chip, substrates, thermal paths and reliability." },
+  { id: "baliga-book", kind: "book", title: "Fundamentals of Power Semiconductor Devices", authors: "B. Jayant Baliga", year: 2008, venue: "Springer", note: "By the inventor of the IGBT. Explains blocking voltage, drift regions and why SiC changes the numbers." },
+  { id: "chip-war", kind: "book", title: "Chip War: The Fight for the World's Most Critical Technology", authors: "Chris Miller", year: 2022, venue: "Scribner", note: "The readable history of the industry: foundries, EUV, export controls. Great interview small-talk material." },
+  // Semiconductors: papers
+  { id: "bardeen1948", kind: "paper", title: "The Transistor, A Semi-Conductor Triode", authors: "John Bardeen and Walter H. Brattain", year: 1948, venue: "Physical Review 74(2), 230-231", doi: "10.1103/PhysRev.74.230", note: "The one-page announcement of the first transistor." },
+  { id: "shockley1949", kind: "paper", title: "The Theory of p-n Junctions in Semiconductors and p-n Junction Transistors", authors: "William Shockley", year: 1949, venue: "Bell System Technical Journal 28(3), 435-489", doi: "10.1002/j.1538-7305.1949.tb03645.x", note: "Where the diode equation and the depletion-region picture come from." },
+  { id: "kahng1960", kind: "paper", title: "Silicon-Silicon Dioxide Field Induced Surface Devices", authors: "Dawon Kahng and Mohamed M. Atalla", year: 1960, venue: "IRE-AIEE Solid-State Device Research Conference, Pittsburgh", note: "The first MOSFET. Cited constantly; the conference talk itself is short." },
+  { id: "wanlass1963", kind: "paper", title: "Nanowatt Logic Using Field-Effect Metal-Oxide Semiconductor Triodes", authors: "Frank M. Wanlass and Chih-Tang Sah", year: 1963, venue: "IEEE International Solid-State Circuits Conference, Digest of Technical Papers", doi: "10.1109/ISSCC.1963.1157450", note: "CMOS is invented: complementary pairs that draw almost no static current." },
+  { id: "moore1965", kind: "paper", title: "Cramming More Components onto Integrated Circuits", authors: "Gordon E. Moore", year: 1965, venue: "Electronics 38(8), 114-117", url: "https://www.cs.utexas.edu/~fussell/courses/cs352h/papers/moore.pdf", free: true, note: "Four pages that became Moore's law. Read the original before quoting it." },
+  { id: "dennard1974", kind: "paper", title: "Design of Ion-Implanted MOSFET's with Very Small Physical Dimensions", authors: "Robert H. Dennard, Fritz H. Gaensslen, Hwa-Nien Yu, V. Leo Rideout, Ernest Bassous and Andre R. LeBlanc", year: 1974, venue: "IEEE Journal of Solid-State Circuits 9(5), 256-268", doi: "10.1109/JSSC.1974.1050511", note: "Dennard scaling: why shrinking transistors used to give free speed and power, and why that stopped." },
+  { id: "hisamoto2000", kind: "paper", title: "FinFET: A Self-Aligned Double-Gate MOSFET Scalable to 20 nm", authors: "Digh Hisamoto et al.", year: 2000, venue: "IEEE Transactions on Electron Devices 47(12), 2320-2325", doi: "10.1109/16.887014", note: "The FinFET paper from Berkeley; the structure every phone chip used from 2011 to the 3 nm era." },
+  { id: "baliga1982", kind: "paper", title: "Semiconductors for High-Voltage, Vertical Channel Field-Effect Transistors", authors: "B. Jayant Baliga", year: 1982, venue: "Journal of Applied Physics 53(3), 1759-1764", doi: "10.1063/1.331646", note: "Introduces the Baliga figure of merit, the reason SiC and GaN beat silicon in power devices." },
+  // PCB: books and standards
+  { id: "horowitz-hill", kind: "book", title: "The Art of Electronics", authors: "Paul Horowitz and Winfield Hill", year: 2015, venue: "Cambridge University Press, 3rd edition", note: "The practical electronics bible: components, regulators, op-amps, microcontrollers, and an appendix on drawing schematics." },
+  { id: "zumbahlen", kind: "book", title: "Linear Circuit Design Handbook", authors: "Hank Zumbahlen (editor), Analog Devices", year: 2008, venue: "Newnes", note: "Free from Analog Devices. The chapters on passive components, grounding and PCB layout are short and correct." },
+  { id: "ott", kind: "book", title: "Electromagnetic Compatibility Engineering", authors: "Henry W. Ott", year: 2009, venue: "Wiley", note: "The grounding, return-path and EMI book. If a board makes noise or picks up noise, the answer is in here." },
+  { id: "bogatin", kind: "book", title: "Signal and Power Integrity: Simplified", authors: "Eric Bogatin", year: 2018, venue: "Prentice Hall, 3rd edition", note: "Impedance, transmission lines, crosstalk and decoupling explained with pictures rather than Maxwell's equations." },
+  { id: "johnson-graham", kind: "book", title: "High-Speed Digital Design: A Handbook of Black Magic", authors: "Howard Johnson and Martin Graham", year: 1993, venue: "Prentice Hall", note: "Old but still the clearest on rise time, ringing and termination." },
+  { id: "archambeault", kind: "book", title: "PCB Design for Real-World EMI Control", authors: "Bruce Archambeault", year: 2002, venue: "Springer", note: "Measured, not theoretical: what actually reduces emissions on real boards." },
+  { id: "montrose", kind: "book", title: "Printed Circuit Board Design Techniques for EMC Compliance", authors: "Mark I. Montrose", year: 2000, venue: "IEEE Press, 2nd edition", note: "A layout-rules handbook for passing EMC tests." },
+  { id: "coombs", kind: "book", title: "Printed Circuits Handbook", authors: "Clyde F. Coombs Jr. and Happy T. Holden (editors)", year: 2016, venue: "McGraw-Hill, 7th edition", note: "How boards are actually fabricated and assembled, written by the industry. Dip into the chapters you need." },
+  { id: "robertson", kind: "book", title: "Printed Circuit Board Designer's Reference: Basics", authors: "Christopher T. Robertson", year: 2004, venue: "Prentice Hall", note: "A short practical reference on layers, stack-ups and design rules." },
+  { id: "ipc-2221", kind: "standard", title: "IPC-2221B: Generic Standard on Printed Board Design", authors: "IPC", year: 2012, venue: "IPC", url: "https://www.ipc.org/", note: "The base design standard: clearances, trace width charts, hole sizes. The trace-width formula in this course comes from it." },
+  { id: "ipc-2152", kind: "standard", title: "IPC-2152: Standard for Determining Current Carrying Capacity in Printed Board Design", authors: "IPC", year: 2009, venue: "IPC", url: "https://www.ipc.org/", note: "Newer and more accurate current-capacity data than the IPC-2221 charts; use it when a trace really matters." },
+  { id: "ipc-7351", kind: "standard", title: "IPC-7351B: Generic Requirements for Surface Mount Design and Land Pattern Standard", authors: "IPC", year: 2010, venue: "IPC", url: "https://www.ipc.org/", note: "Footprint (land pattern) geometry for SMT parts." },
+  { id: "ipc-a-610", kind: "standard", title: "IPC-A-610H: Acceptability of Electronic Assemblies", authors: "IPC", year: 2020, venue: "IPC", url: "https://www.ipc.org/", note: "What a good solder joint looks like; the inspection standard assemblers work to." },
+  { id: "kicad-docs", kind: "doc", title: "KiCad Documentation", authors: "The KiCad Team", year: 2025, venue: "docs.kicad.org", url: "https://docs.kicad.org/", free: true, note: "The official manual for the free tool used in this course." },
+  { id: "altium-getting-started", kind: "doc", title: "Getting Started with PCB Design", authors: "David Haboud, Altium", year: 2016, venue: "Altium tutorial, 29 pages", url: "https://www.altium.com/", free: true, note: "A short walkthrough of the whole flow in Altium Designer: project, schematic, nets, rules, routing, 3D view, fabrication files. The same steps as this course's KiCad lesson, in the other major tool." },
+  { id: "pcad-guide", kind: "doc", title: "P-CAD 2002 PCB User's Guide", authors: "Altium Limited", year: 2002, venue: "Altium, 620 pages", note: "The manual for Altium's older P-CAD tool. Dated software, but chapter 3 (layers, placement, selection, properties) and the tutorial in chapter 4 explain layout concepts that every tool still uses." },
+  // Robotics: books
+  { id: "siegwart", kind: "book", title: "Introduction to Autonomous Mobile Robots", authors: "Roland Siegwart, Illah R. Nourbakhsh and Davide Scaramuzza", year: 2011, venue: "MIT Press, 2nd edition", note: "The mobile-robot textbook: locomotion, kinematics, sensors, localization, planning. Matches this course's robot closely." },
+  { id: "craig", kind: "book", title: "Introduction to Robotics: Mechanics and Control", authors: "John J. Craig", year: 2018, venue: "Pearson, 4th edition", note: "The classic manipulator text: frames, forward and inverse kinematics, dynamics, control." },
+  { id: "lynch-park", kind: "book", title: "Modern Robotics: Mechanics, Planning, and Control", authors: "Kevin M. Lynch and Frank C. Park", year: 2017, venue: "Cambridge University Press", url: "https://hades.mech.northwestern.edu/index.php/Modern_Robotics", free: true, note: "Free online with videos. The modern way to teach kinematics." },
+  { id: "thrun", kind: "book", title: "Probabilistic Robotics", authors: "Sebastian Thrun, Wolfram Burgard and Dieter Fox", year: 2005, venue: "MIT Press", note: "Sensor noise, Kalman and particle filters, localization and SLAM. The book behind every autonomy stack." },
+  { id: "correll", kind: "book", title: "Introduction to Autonomous Robots: Mechanisms, Sensors, Actuators, and Algorithms", authors: "Nikolaus Correll, Bradley Hayes, Christoffer Heckman and Alessandro Roncone", year: 2022, venue: "MIT Press", url: "https://github.com/Introduction-to-Autonomous-Robots/Introduction-to-Autonomous-Robots", free: true, note: "A free, modern, hands-on robotics text with simulation exercises." },
+  { id: "franklin", kind: "book", title: "Feedback Control of Dynamic Systems", authors: "Gene F. Franklin, J. David Powell and Abbas Emami-Naeini", year: 2019, venue: "Pearson, 8th edition", note: "The standard controls course: PID, root locus, frequency response, digital control." },
+  { id: "astrom-murray", kind: "book", title: "Feedback Systems: An Introduction for Scientists and Engineers", authors: "Karl J. Åström and Richard M. Murray", year: 2021, venue: "Princeton University Press, 2nd edition", url: "https://fbswiki.org/", free: true, note: "Free online. Clear chapters on PID and on why loops go unstable." },
+  { id: "astrom-hagglund", kind: "book", title: "PID Controllers: Theory, Design, and Tuning", authors: "Karl J. Åström and Tore Hägglund", year: 1995, venue: "ISA, 2nd edition", note: "Everything practical about PID: anti-windup, derivative filtering, tuning rules." },
+  { id: "white", kind: "book", title: "Making Embedded Systems: Design Patterns for Great Software", authors: "Elecia White", year: 2024, venue: "O'Reilly, 2nd edition", note: "How professional firmware is structured: drivers, state machines, timing, debugging." },
+  // Robotics: papers
+  { id: "ziegler-nichols1942", kind: "paper", title: "Optimum Settings for Automatic Controllers", authors: "J. G. Ziegler and N. B. Nichols", year: 1942, venue: "Transactions of the ASME 64, 759-768", note: "The original tuning rules, still used as a starting point." },
+  { id: "kalman1960", kind: "paper", title: "A New Approach to Linear Filtering and Prediction Problems", authors: "R. E. Kalman", year: 1960, venue: "Journal of Basic Engineering 82(1), 35-45", doi: "10.1115/1.3662552", note: "The Kalman filter. Dense, but the idea of blending a prediction with a noisy measurement starts here." },
+  { id: "brooks1986", kind: "paper", title: "A Robust Layered Control System for a Mobile Robot", authors: "Rodney A. Brooks", year: 1986, venue: "IEEE Journal of Robotics and Automation 2(1), 14-23", doi: "10.1109/JRA.1986.1087032", note: "The subsumption architecture: simple behaviours layered to make a robust robot." },
+  { id: "braitenberg1984", kind: "book", title: "Vehicles: Experiments in Synthetic Psychology", authors: "Valentino Braitenberg", year: 1984, venue: "MIT Press", note: "Tiny thought-experiment robots whose wiring makes them seem to fear or love light. The origin of reactive obstacle avoidance." },
+  { id: "lumelsky1987", kind: "paper", title: "Path-Planning Strategies for a Point Mobile Automaton Moving Amidst Unknown Obstacles of Arbitrary Shape", authors: "Vladimir J. Lumelsky and Alexander A. Stepanov", year: 1987, venue: "Algorithmica 2, 403-430", doi: "10.1007/BF01840369", note: "The Bug algorithms: provably complete navigation with only a contact sensor and a compass." },
+  { id: "hart1968", kind: "paper", title: "A Formal Basis for the Heuristic Determination of Minimum Cost Paths", authors: "Peter E. Hart, Nils J. Nilsson and Bertram Raphael", year: 1968, venue: "IEEE Transactions on Systems Science and Cybernetics 4(2), 100-107", doi: "10.1109/TSSC.1968.300136", note: "The A* paper: the best-first search behind most grid path planners." },
+  { id: "elfes1989", kind: "paper", title: "Using Occupancy Grids for Mobile Robot Perception and Navigation", authors: "Alberto Elfes", year: 1989, venue: "Computer 22(6), 46-57", doi: "10.1109/2.30720", note: "Occupancy grids: the map representation most robots still use." },
+  { id: "durrant-whyte2006", kind: "paper", title: "Simultaneous Localization and Mapping: Part I", authors: "Hugh Durrant-Whyte and Tim Bailey", year: 2006, venue: "IEEE Robotics and Automation Magazine 13(2), 99-110", doi: "10.1109/MRA.2006.1638022", note: "The standard SLAM tutorial; part II covers the state of the art of its time." },
+  { id: "borenstein1996", kind: "paper", title: "Measurement and Correction of Systematic Odometry Errors in Mobile Robots", authors: "Johann Borenstein and Liqiang Feng", year: 1996, venue: "IEEE Transactions on Robotics and Automation 12(6), 869-880", doi: "10.1109/70.544770", note: "The UMBmark calibration method used in the kinematics lesson." },
+  { id: "tobin2017", kind: "paper", title: "Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World", authors: "Josh Tobin, Rachel Fong, Alex Ray, Jonas Schneider, Wojciech Zaremba and Pieter Abbeel", year: 2017, venue: "IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)", doi: "10.1109/IROS.2017.8202133", note: "Why randomizing the simulator helps controllers survive the real world." },
+  { id: "quigley2009", kind: "paper", title: "ROS: An Open-Source Robot Operating System", authors: "Morgan Quigley et al.", year: 2009, venue: "ICRA Workshop on Open Source Software", url: "https://www.ros.org/", free: true, note: "The paper that introduced ROS and its nodes-and-topics design." },
+  { id: "macenski2022", kind: "paper", title: "Robot Operating System 2: Design, Architecture, and Uses in the Wild", authors: "Steven Macenski, Tully Foote, Brian Gerkey, Chris Lalancette and William Woodall", year: 2022, venue: "Science Robotics 7(66)", doi: "10.1126/scirobotics.abm6074", note: "Why ROS 2 exists, what DDS and QoS buy, and who uses it." },
+  // EV: books, papers, standards
+  { id: "hughes-drury", kind: "book", title: "Electric Motors and Drives: Fundamentals, Types and Applications", authors: "Austin Hughes and Bill Drury", year: 2019, venue: "Newnes, 5th edition", note: "The friendliest motors book: induction, permanent-magnet and the drives that run them, with almost no heavy maths." },
+  { id: "mohan", kind: "book", title: "Power Electronics: Converters, Applications, and Design", authors: "Ned Mohan, Tore M. Undeland and William P. Robbins", year: 2003, venue: "Wiley, 3rd edition", note: "The standard power-electronics text: buck converters, inverters, PWM, switching losses." },
+  { id: "krishnan", kind: "book", title: "Permanent Magnet Synchronous and Brushless DC Motor Drives", authors: "R. Krishnan", year: 2010, venue: "CRC Press", note: "Field-oriented control and the dq model, in depth." },
+  { id: "hendershot-miller", kind: "book", title: "Design of Brushless Permanent-Magnet Machines", authors: "J. R. Hendershot and T. J. E. Miller", year: 2010, venue: "Motor Design Books", note: "How PM motors are actually designed: magnets, windings, cooling, losses." },
+  { id: "larminie-lowry", kind: "book", title: "Electric Vehicle Technology Explained", authors: "James Larminie and John Lowry", year: 2012, venue: "Wiley, 2nd edition", note: "The whole vehicle: batteries, motors, power electronics, charging, in one readable book." },
+  { id: "plett1", kind: "book", title: "Battery Management Systems, Volume I: Battery Modeling", authors: "Gregory L. Plett", year: 2015, venue: "Artech House", note: "How a BMS models a cell. Volume II covers state-of-charge estimation. Plett's free course videos follow the books." },
+  { id: "linden", kind: "book", title: "Linden's Handbook of Batteries", authors: "Thomas B. Reddy (editor)", year: 2011, venue: "McGraw-Hill, 4th edition", note: "The battery reference: chemistries, cell construction, performance data." },
+  { id: "blaschke1972", kind: "paper", title: "The Principle of Field Orientation as Applied to the New Transvector Closed-Loop Control System for Rotating-Field Machines", authors: "Felix Blaschke", year: 1972, venue: "Siemens Review 34, 217-220", note: "Field-oriented control is born: control an AC motor like a DC motor by rotating the frame." },
+  { id: "goodenough2013", kind: "paper", title: "The Li-Ion Rechargeable Battery: A Perspective", authors: "John B. Goodenough and Kyu-Sung Park", year: 2013, venue: "Journal of the American Chemical Society 135(4), 1167-1176", doi: "10.1021/ja3091438", note: "A Nobel laureate's own overview of how lithium-ion cells work and where they are going." },
+  { id: "mizushima1980", kind: "paper", title: "LixCoO2 (0 < x ≤ 1): A New Cathode Material for Batteries of High Energy Density", authors: "K. Mizushima, P. C. Jones, P. J. Wiseman and J. B. Goodenough", year: 1980, venue: "Materials Research Bulletin 15(6), 783-789", doi: "10.1016/0025-5408(80)90012-4", note: "The lithium cobalt oxide cathode that made lithium-ion possible." },
+  { id: "padhi1997", kind: "paper", title: "Phospho-olivines as Positive-Electrode Materials for Rechargeable Lithium Batteries", authors: "A. K. Padhi, K. S. Nanjundaswamy and J. B. Goodenough", year: 1997, venue: "Journal of The Electrochemical Society 144(4), 1188-1194", doi: "10.1149/1.1837571", note: "The LFP cathode paper; LFP is now in most standard-range EVs." },
+  { id: "burress2011", kind: "report", title: "Evaluation of the 2010 Toyota Prius Hybrid Synergy Drive System", authors: "Tim A. Burress et al., Oak Ridge National Laboratory", year: 2011, venue: "ORNL/TM-2010/253", url: "https://info.ornl.gov/sites/publications/files/Pub26762.pdf", free: true, note: "A government lab tears down a production motor and inverter and publishes every measurement. The model for how to benchmark a drive unit." },
+  { id: "sae-j1772", kind: "standard", title: "SAE J1772: Electric Vehicle and Plug-in Hybrid Electric Vehicle Conductive Charge Coupler", authors: "SAE International", year: 2017, venue: "SAE", url: "https://www.sae.org/standards/content/j1772_201710/", note: "The AC charging connector and the pilot signal used in the charging lesson." },
+  { id: "sae-j3400", kind: "standard", title: "SAE J3400: NACS Electric Vehicle Coupler", authors: "SAE International", year: 2024, venue: "SAE", url: "https://www.sae.org/standards/content/j3400_202409/", note: "The North American Charging Standard (Tesla's connector) as an open standard." },
+  { id: "iso-15118", kind: "standard", title: "ISO 15118-20: Road Vehicles, Vehicle to Grid Communication Interface, 2nd Generation Network Layer and Application Layer Requirements", authors: "ISO", year: 2022, venue: "ISO", url: "https://www.iso.org/standard/77845.html", note: "Plug and charge, bidirectional charging and the car-to-charger protocol." },
+  { id: "ocpp", kind: "standard", title: "Open Charge Point Protocol 2.0.1", authors: "Open Charge Alliance", year: 2020, venue: "Open Charge Alliance", url: "https://openchargealliance.org/protocols/open-charge-point-protocol/", free: true, note: "How chargers talk to the back office: sessions, meter values, load management, firmware." },
+  { id: "iec-61851", kind: "standard", title: "IEC 61851-1: Electric Vehicle Conductive Charging System, Part 1: General Requirements", authors: "IEC", year: 2017, venue: "IEC", url: "https://webstore.iec.ch/", note: "The international charging-system safety and modes standard." },
+  { id: "nec-625", kind: "standard", title: "NFPA 70, National Electrical Code, Article 625: Electric Vehicle Power Transfer System", authors: "NFPA", year: 2023, venue: "NFPA", url: "https://www.nfpa.org/codes-and-standards/nfpa-70-standard-development/70", note: "The US electrical code article for charging installations: circuit sizing, disconnects, ventilation." },
+  { id: "ada-2010", kind: "standard", title: "2010 ADA Standards for Accessible Design", authors: "US Department of Justice", year: 2010, venue: "US DOJ", url: "https://www.ada.gov/law-and-regs/design-standards/2010-stds/", free: true, note: "Federal accessibility rules; EV charging guidance builds on them." },
+  { id: "cbc-11b", kind: "standard", title: "California Building Code, Chapter 11B: Accessibility to Public Buildings (Section 11B-812, Electric Vehicle Charging Stations)", authors: "California Building Standards Commission", year: 2022, venue: "CBC", url: "https://www.dgs.ca.gov/BSC/Codes", note: "The California rules for accessible EV charging spaces; confirm numbers against the edition your site uses." },
+  // AI-assisted design
+  { id: "requicha1980", kind: "paper", title: "Representations for Rigid Solids: Theory, Methods, and Systems", authors: "Aristides A. G. Requicha", year: 1980, venue: "ACM Computing Surveys 12(4), 437-464", doi: "10.1145/356827.356833", note: "The survey that defined solid modelling: B-rep, CSG and what makes a representation valid." },
+  { id: "mantyla1988", kind: "book", title: "An Introduction to Solid Modeling", authors: "Martti Mäntylä", year: 1988, venue: "Computer Science Press", note: "The classic B-rep kernel book, with the Euler operators every kernel implements." },
+  { id: "shah-mantyla", kind: "book", title: "Parametric and Feature-Based CAD/CAM: Concepts, Techniques, and Applications", authors: "Jami J. Shah and Martti Mäntylä", year: 1995, venue: "Wiley", note: "How feature trees and parametric history work, and why they break." },
+  { id: "kripac1997", kind: "paper", title: "A Mechanism for Persistently Naming Topological Entities in History-Based Parametric Solid Models", authors: "Jiri Kripac", year: 1997, venue: "Computer-Aided Design 29(2), 113-122", doi: "10.1016/S0010-4485(96)00040-1", note: "The topological naming problem and one way to solve it." },
+  { id: "boothroyd", kind: "book", title: "Product Design for Manufacture and Assembly", authors: "Geoffrey Boothroyd, Peter Dewhurst and Winston A. Knight", year: 2011, venue: "CRC Press, 3rd edition", note: "DFM and DFA as a method: the checks an AI design agent should encode." },
+  { id: "willis2021", kind: "paper", title: "Fusion 360 Gallery: A Dataset and Environment for Programmatic CAD Construction from Human Design Sequences", authors: "Karl D. D. Willis et al.", year: 2021, venue: "ACM Transactions on Graphics 40(4)", doi: "10.1145/3450626.3459818", note: "Real human CAD sequences as training data; shows what 'CAD as a program' looks like at scale." },
+  { id: "wu2021", kind: "paper", title: "DeepCAD: A Deep Generative Network for Computer-Aided Design Models", authors: "Rundi Wu, Chang Xiao and Changxi Zheng", year: 2021, venue: "IEEE/CVF International Conference on Computer Vision (ICCV)", doi: "10.1109/ICCV48922.2021.00670", note: "Generating CAD as sketch-and-extrude sequences rather than meshes." },
+  { id: "makatura2023", kind: "paper", title: "How Can Large Language Models Help Humans in Design and Manufacturing?", authors: "Liane Makatura et al.", year: 2023, venue: "arXiv 2307.14377", url: "https://arxiv.org/abs/2307.14377", free: true, note: "An honest study of GPT-4 doing CAD, DFM and manufacturing tasks: what worked and what failed." },
+  { id: "yao2023", kind: "paper", title: "ReAct: Synergizing Reasoning and Acting in Language Models", authors: "Shunyu Yao et al.", year: 2023, venue: "International Conference on Learning Representations (ICLR)", url: "https://arxiv.org/abs/2210.03629", free: true, note: "The reason-then-act loop that tool-using agents follow." },
+  { id: "schick2023", kind: "paper", title: "Toolformer: Language Models Can Teach Themselves to Use Tools", authors: "Timo Schick et al.", year: 2023, venue: "Advances in Neural Information Processing Systems (NeurIPS)", url: "https://arxiv.org/abs/2302.04761", free: true, note: "Models calling tools, which is what an MCP server exposes." },
+  { id: "mcp-spec", kind: "doc", title: "Model Context Protocol Specification", authors: "Anthropic and the MCP community", year: 2025, venue: "modelcontextprotocol.io", url: "https://modelcontextprotocol.io/specification/", free: true, note: "The protocol used in the Claude CAD tool lesson: tools, resources, transports." },
+  { id: "occt-docs", kind: "doc", title: "Open CASCADE Technology Documentation", authors: "Open Cascade SAS", year: 2025, venue: "dev.opencascade.org", url: "https://dev.opencascade.org/doc/overview/html/", free: true, note: "The open B-rep kernel under FreeCAD, CadQuery and build123d." },
+  { id: "build123d-docs", kind: "doc", title: "build123d Documentation", authors: "build123d contributors", year: 2025, venue: "build123d.readthedocs.io", url: "https://build123d.readthedocs.io/", free: true, note: "The code-CAD library used in the MCP lesson." },
+];
+
+export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
+
+export const lessonReferences: Record<string, LessonReference[]> = {
+  "atoms-to-bands": [
+    { id: "streetman", read: "Chapters 1-3: crystal structure, energy bands and carrier concentration." },
+    { id: "neamen", read: "The chapter on energy bands, for a second explanation with worked numbers." },
+    { id: "sze", read: "The appendix tables for the band gaps and intrinsic carrier densities quoted in the lesson." },
+  ],
+  "doping-and-carriers": [
+    { id: "streetman", read: "The chapter on carriers: doping, mobility, drift and diffusion." },
+    { id: "neamen", read: "Worked examples on resistivity from doping level." },
+    { id: "sze", read: "The mobility-versus-doping curves the viz is modelled on." },
+  ],
+  "pn-junction-and-diodes": [
+    { id: "shockley1949", read: "Sections 1-3 for the depletion region and the diode equation in the original words." },
+    { id: "streetman", read: "The p-n junction chapter: built-in potential, depletion width, breakdown." },
+    { id: "sedra-smith", read: "The diodes chapter and its problems; LED and Schottky examples." },
+  ],
+  "transistors-bjt-mosfet": [
+    { id: "bardeen1948", read: "One page: the first transistor announcement." },
+    { id: "kahng1960", read: "The first MOSFET; cite it when asked who invented the device." },
+    { id: "sedra-smith", read: "The MOSFET chapter: threshold, the three regions, the switch model." },
+    { id: "sze", read: "Power MOSFET structure and the body diode." },
+  ],
+  "cmos-logic-and-chips": [
+    { id: "wanlass1963", read: "Two pages: why complementary pairs draw almost no static current." },
+    { id: "dennard1974", read: "The scaling rules and the table of what shrinks with what." },
+    { id: "hisamoto2000", read: "The FinFET structure, before gate-all-around replaced it." },
+    { id: "weste-harris", read: "Chapters on the CMOS inverter, delay and power, and SRAM/DRAM." },
+    { id: "rabaey", read: "The dynamic-power derivation behind P = αCV²f." },
+  ],
+  "wafer-fabrication": [
+    { id: "plummer", read: "One chapter per unit process: oxidation, lithography, etch, implant, deposition." },
+    { id: "campbell", read: "The lithography and etch chapters, which are more practical." },
+    { id: "moore1965", read: "Four pages; notice it is about cost per component, not speed." },
+  ],
+  "packaging-and-testing": [
+    { id: "tummala", read: "Wire bond versus flip chip, substrates and thermal resistance." },
+    { id: "campbell", read: "The packaging chapter for a compact overview." },
+  ],
+  "power-semiconductors": [
+    { id: "baliga-book", read: "The chapters on breakdown voltage and drift-region design." },
+    { id: "baliga1982", read: "The figure of merit that explains the SiC and GaN advantage in one equation." },
+    { id: "mohan", read: "The chapter on power switches and their losses." },
+  ],
+  "semiconductor-industry-and-roles": [
+    { id: "chip-war", read: "The whole book; it reads like a thriller and gives you the industry map." },
+    { id: "moore1965", read: "Read the original before quoting Moore's law in an interview." },
+  ],
+  "circuit-fundamentals": [
+    { id: "horowitz-hill", read: "Chapter 1: voltage, current, dividers, RC circuits, with the authors' practical warnings." },
+    { id: "sedra-smith", read: "The introductory chapter for the formal versions of the same ideas." },
+  ],
+  "passive-components": [
+    { id: "horowitz-hill", read: "Chapter 1 and the components appendix: capacitor types, inductors, how to read ratings." },
+    { id: "zumbahlen", read: "The passive-components chapter, including DC-bias effects in ceramics." },
+    { id: "coombs", read: "The surface-mount components chapter for package sizes." },
+  ],
+  "active-components": [
+    { id: "horowitz-hill", read: "The voltage-regulator and op-amp chapters." },
+    { id: "zumbahlen", read: "The op-amp basics chapter." },
+    { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
+  ],
+  "schematic-capture": [
+    { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
+    { id: "altium-getting-started", read: "Pages 4-13: schematic, placing parts, nets and net labels, compiling the schematic." },
+    { id: "kicad-docs", read: "The Eeschema (schematic editor) manual." },
+  ],
+  "pcb-layout-and-stackup": [
+    { id: "ipc-2221", read: "The conductor-width charts and clearance tables used by the calculator." },
+    { id: "ipc-2152", read: "Read the introduction to see why its data supersedes the old charts." },
+    { id: "ipc-7351", read: "Land-pattern geometry for footprints." },
+    { id: "robertson", read: "The stack-up and design-rule chapters." },
+    { id: "pcad-guide", read: "Chapter 3 (layers, placement, selection, properties) for layout concepts in an older tool." },
+    { id: "altium-getting-started", read: "Pages 14-27: transferring to the PCB, placement, design rules, routing, 3D view." },
+  ],
+  "power-and-signal-integrity": [
+    { id: "ott", read: "The chapters on grounding, return currents and decoupling." },
+    { id: "bogatin", read: "Chapters on impedance, transmission lines and crosstalk." },
+    { id: "johnson-graham", read: "The chapters on rise time, ringing and termination." },
+    { id: "archambeault", read: "The measured results on plane splits and loop area." },
+    { id: "montrose", read: "The layout-rules checklist." },
+  ],
+  "dfm-and-manufacturing": [
+    { id: "coombs", read: "The fabrication and assembly chapters: imaging, etching, lamination, reflow." },
+    { id: "ipc-a-610", read: "The solder-joint acceptability criteria." },
+    { id: "ipc-7351", read: "Why pad geometry decides tombstoning." },
+  ],
+  "bring-up-and-debugging": [
+    { id: "horowitz-hill", read: "The chapter on instruments and measurement, and the probing advice." },
+    { id: "ott", read: "The chapter on measurement and troubleshooting of noise." },
+  ],
+  "kicad-project-walkthrough": [
+    { id: "kicad-docs", read: "The Getting Started tutorial and the PCB editor manual." },
+    { id: "altium-getting-started", read: "The same project flow in Altium Designer, step by step with screenshots." },
+    { id: "pcad-guide", read: "Chapter 4, the tutorial design session, for a second worked layout." },
+    { id: "ipc-2221", read: "The rules you type into the design-rule editor." },
+  ],
+  "anatomy-of-a-robot": [
+    { id: "siegwart", read: "Chapter 1 and the locomotion chapter." },
+    { id: "correll", read: "The introduction and the chapter on robot architectures." },
+    { id: "brooks1986", read: "The subsumption architecture: layering simple behaviours." },
+  ],
+  "sensors": [
+    { id: "siegwart", read: "The perception chapter: sensor classification, ultrasonic, encoders, IMUs." },
+    { id: "thrun", read: "Chapter 6 on measurement models and sensor noise." },
+    { id: "kalman1960", read: "Read the abstract and the idea of blending prediction with measurement." },
+  ],
+  "actuators-and-drivers": [
+    { id: "hughes-drury", read: "Chapters on brushed DC, stepper and brushless motors." },
+    { id: "siegwart", read: "The locomotion chapter on wheel configurations." },
+    { id: "horowitz-hill", read: "The section on driving motors and H-bridges." },
+  ],
+  "microcontrollers-and-firmware": [
+    { id: "white", read: "The chapters on drivers, state machines and timing." },
+    { id: "horowitz-hill", read: "The microcontroller chapter: peripherals and buses." },
+  ],
+  "control-systems-and-pid": [
+    { id: "ziegler-nichols1942", read: "The original tuning rules." },
+    { id: "astrom-hagglund", read: "Anti-windup and derivative filtering." },
+    { id: "franklin", read: "The PID and digital-control chapters." },
+    { id: "astrom-murray", read: "The PID chapter, free online." },
+  ],
+  "kinematics-and-motion": [
+    { id: "siegwart", read: "The kinematics chapter: differential drive and odometry." },
+    { id: "borenstein1996", read: "The UMBmark method used in the lesson." },
+    { id: "craig", read: "Chapters on forward and inverse kinematics." },
+    { id: "lynch-park", read: "The free videos on kinematics." },
+  ],
+  "perception-and-navigation": [
+    { id: "braitenberg1984", read: "Vehicles 1-3: reactive behaviours from wiring alone." },
+    { id: "lumelsky1987", read: "The Bug algorithms." },
+    { id: "hart1968", read: "A*, in the original." },
+    { id: "elfes1989", read: "Occupancy grids." },
+    { id: "durrant-whyte2006", read: "The SLAM tutorial, part I." },
+  ],
+  "build-your-smart-robot": [
+    { id: "siegwart", read: "The locomotion and sensors chapters, to understand each part you are wiring." },
+    { id: "white", read: "The firmware-structure chapters before you extend the sketch." },
+    { id: "horowitz-hill", read: "Power supplies and motor driving." },
+  ],
+  "simulate-before-you-build": [
+    { id: "tobin2017", read: "Why randomizing the simulator makes controllers transfer." },
+    { id: "correll", read: "The simulation exercises." },
+    { id: "thrun", read: "The motion and measurement model chapters, which are what a simulator implements." },
+  ],
+  "ros2-and-the-robotics-stack": [
+    { id: "quigley2009", read: "The original ROS design." },
+    { id: "macenski2022", read: "Why ROS 2 changed the architecture and who runs it in production." },
+  ],
+  "ev-powertrain-architecture": [
+    { id: "larminie-lowry", read: "The chapters on vehicle architecture and energy flow." },
+    { id: "mohan", read: "The inverter and DC-DC chapters." },
+    { id: "burress2011", read: "A full teardown of a production drive unit, with measurements." },
+  ],
+  "three-phase-motors": [
+    { id: "hughes-drury", read: "The induction-motor and permanent-magnet chapters." },
+    { id: "krishnan", read: "The PM synchronous machine model." },
+    { id: "hendershot-miller", read: "How PM motors are designed and cooled." },
+    { id: "blaschke1972", read: "The origin of the dq frame idea." },
+  ],
+  "inverters-pwm-and-foc": [
+    { id: "mohan", read: "The PWM inverter chapter." },
+    { id: "blaschke1972", read: "Field orientation, in the original." },
+    { id: "krishnan", read: "Field-oriented control in depth." },
+    { id: "baliga-book", read: "Why SiC switches allow higher frequency." },
+  ],
+  "batteries-and-bms": [
+    { id: "plett1", read: "The cell modelling chapters; Volume II for state-of-charge estimation." },
+    { id: "linden", read: "The lithium-ion chapters." },
+    { id: "goodenough2013", read: "The perspective paper for the chemistry in plain terms." },
+    { id: "mizushima1980", read: "The LiCoO2 paper." },
+    { id: "padhi1997", read: "The LFP paper." },
+  ],
+  "tesla-roadster-and-motor-evolution": [
+    { id: "hughes-drury", read: "Induction versus PM machines, to judge Tesla's choices." },
+    { id: "hendershot-miller", read: "Rotor construction and magnet retention." },
+    { id: "burress2011", read: "How a lab benchmarks a drive unit, the way teardown reports judge Tesla's." },
+    { id: "larminie-lowry", read: "The vehicle-level context." },
+  ],
+  "ev-charging-systems": [
+    { id: "sae-j1772", read: "The AC connector and the pilot signal." },
+    { id: "sae-j3400", read: "The NACS connector standard." },
+    { id: "iso-15118", read: "Plug and charge and bidirectional charging." },
+    { id: "ocpp", read: "Charger-to-back-office messages and load management." },
+    { id: "iec-61851", read: "Charging modes and safety." },
+    { id: "nec-625", read: "US installation rules." },
+    { id: "ada-2010", read: "Federal accessibility baseline." },
+    { id: "cbc-11b", read: "California accessible EV space requirements; verify against your adopted edition." },
+  ],
+  "cad-kernels-and-parametric-design": [
+    { id: "requicha1980", read: "The survey of solid representations." },
+    { id: "mantyla1988", read: "B-rep and the Euler operators." },
+    { id: "shah-mantyla", read: "Feature trees and parametric history." },
+    { id: "kripac1997", read: "The topological naming problem." },
+    { id: "occt-docs", read: "The modelling-data and algorithms overview." },
+    { id: "build123d-docs", read: "The tutorial, then the API reference." },
+  ],
+  "ai-agents-for-hardware-design": [
+    { id: "makatura2023", read: "The whole paper: an honest audit of an LLM doing design and manufacturing tasks." },
+    { id: "willis2021", read: "What CAD-as-a-program data looks like." },
+    { id: "wu2021", read: "Generative CAD as sketch-and-extrude sequences." },
+    { id: "boothroyd", read: "The DFM and DFA methods an agent should check against." },
+    { id: "yao2023", read: "The reason-and-act loop agents use." },
+  ],
+  "build-a-claude-cad-tool": [
+    { id: "mcp-spec", read: "Tools and resources; then the Python SDK docs it links to." },
+    { id: "schick2023", read: "Why tool use is taught, not assumed." },
+    { id: "yao2023", read: "The agent loop you are building around the tools." },
+    { id: "build123d-docs", read: "The API used by the server listing." },
+  ],
+};
+
+/** The books to start with on each track, in order. */
+export const trackStartHere: Record<TrackId, string[]> = {
+  semiconductors: ["streetman", "sedra-smith", "chip-war"],
+  pcb: ["horowitz-hill", "ott", "bogatin", "coombs"],
+  robotics: ["siegwart", "lynch-park", "franklin", "thrun"],
+  ev: ["hughes-drury", "mohan", "plett1", "larminie-lowry"],
+  "ai-design": ["shah-mantyla", "boothroyd", "mcp-spec"],
+};
+
+export function referencesFor(slug: string): Array<LessonReference & { ref: Reference }> {
+  return (lessonReferences[slug] ?? []).map((lr) => ({ ...lr, ref: references[lr.id] })).filter((x) => x.ref);
+}
+
+export function referenceLink(ref: Reference): string | undefined {
+  if (ref.doi) return `https://doi.org/${ref.doi}`;
+  return ref.url;
+}
+
+export function formatCitation(ref: Reference): string {
+  return `${ref.authors} (${ref.year}). ${ref.title}. ${ref.venue}.`;
+}
