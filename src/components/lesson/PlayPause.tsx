@@ -15,7 +15,8 @@ export function PlayPause({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" variant="secondary" onClick={onToggle} aria-pressed={playing}>
+      {/* The label states the action, so no aria-pressed: a toggle must not signal its state twice. */}
+      <Button size="sm" variant="secondary" onClick={onToggle}>
         {playing ? "Pause" : "Play"}
       </Button>
       {onStep && (
