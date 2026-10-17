@@ -1,28 +1,8 @@
 import type { TrackId } from "./curriculum";
+import type { LessonReference, Reference } from "./references-format";
 
-export type ReferenceKind = "book" | "paper" | "standard" | "doc" | "report";
-
-export interface Reference {
-  id: string;
-  kind: ReferenceKind;
-  title: string;
-  authors: string;
-  year: number;
-  /** publisher, or journal with volume and pages */
-  venue: string;
-  doi?: string;
-  url?: string;
-  /** plain-language note: what this is and why it matters */
-  note: string;
-  /** free to read online */
-  free?: boolean;
-}
-
-export interface LessonReference {
-  id: string;
-  /** what to read for this lesson, in plain words */
-  read: string;
-}
+export type { LessonReference, Reference, ReferenceKind } from "./references-format";
+export { formatCitation, referenceLink } from "./references-format";
 
 const list: Reference[] = [
   // Semiconductors: books
@@ -44,11 +24,11 @@ const list: Reference[] = [
   { id: "wanlass1963", kind: "paper", title: "Nanowatt Logic Using Field-Effect Metal-Oxide Semiconductor Triodes", authors: "Frank M. Wanlass and Chih-Tang Sah", year: 1963, venue: "IEEE International Solid-State Circuits Conference, Digest of Technical Papers", doi: "10.1109/ISSCC.1963.1157450", note: "CMOS is invented: complementary pairs that draw almost no static current." },
   { id: "moore1965", kind: "paper", title: "Cramming More Components onto Integrated Circuits", authors: "Gordon E. Moore", year: 1965, venue: "Electronics 38(8), 114-117", url: "https://www.cs.utexas.edu/~fussell/courses/cs352h/papers/moore.pdf", free: true, note: "Four pages that became Moore's law. Read the original before quoting it." },
   { id: "dennard1974", kind: "paper", title: "Design of Ion-Implanted MOSFET's with Very Small Physical Dimensions", authors: "Robert H. Dennard, Fritz H. Gaensslen, Hwa-Nien Yu, V. Leo Rideout, Ernest Bassous and Andre R. LeBlanc", year: 1974, venue: "IEEE Journal of Solid-State Circuits 9(5), 256-268", doi: "10.1109/JSSC.1974.1050511", note: "Dennard scaling: why shrinking transistors used to give free speed and power, and why that stopped." },
-  { id: "hisamoto2000", kind: "paper", title: "FinFET: A Self-Aligned Double-Gate MOSFET Scalable to 20 nm", authors: "Digh Hisamoto et al.", year: 2000, venue: "IEEE Transactions on Electron Devices 47(12), 2320-2325", doi: "10.1109/16.887014", note: "The FinFET paper from Berkeley; the structure every phone chip used from 2011 to the 3 nm era." },
+  { id: "hisamoto2000", kind: "paper", title: "FinFET: A Self-Aligned Double-Gate MOSFET Scalable to 20 nm", authors: "Digh Hisamoto et al.", year: 2000, venue: "IEEE Transactions on Electron Devices 47(12), 2320-2325", doi: "10.1109/16.887014", note: "The FinFET paper from Berkeley; the structure Intel shipped first in 2012 (22 nm tri-gate) and every phone chip has used since 2015, up to the 3 nm era." },
   { id: "baliga1982", kind: "paper", title: "Semiconductors for High-Voltage, Vertical Channel Field-Effect Transistors", authors: "B. Jayant Baliga", year: 1982, venue: "Journal of Applied Physics 53(3), 1759-1764", doi: "10.1063/1.331646", note: "Introduces the Baliga figure of merit, the reason SiC and GaN beat silicon in power devices." },
   // PCB: books and standards
   { id: "horowitz-hill", kind: "book", title: "The Art of Electronics", authors: "Paul Horowitz and Winfield Hill", year: 2015, venue: "Cambridge University Press, 3rd edition", note: "The practical electronics bible: components, regulators, op-amps, microcontrollers, and an appendix on drawing schematics." },
-  { id: "zumbahlen", kind: "book", title: "Linear Circuit Design Handbook", authors: "Hank Zumbahlen (editor), Analog Devices", year: 2008, venue: "Newnes", note: "Free from Analog Devices. The chapters on passive components, grounding and PCB layout are short and correct." },
+  { id: "zumbahlen", kind: "book", title: "Linear Circuit Design Handbook", authors: "Hank Zumbahlen (editor), Analog Devices", year: 2008, venue: "Newnes", url: "https://www.analog.com/en/resources/technical-books/linear-circuit-design-handbook.html", free: true, note: "Free from Analog Devices. The chapters on passive components, grounding and PCB layout are short and correct." },
   { id: "ott", kind: "book", title: "Electromagnetic Compatibility Engineering", authors: "Henry W. Ott", year: 2009, venue: "Wiley", note: "The grounding, return-path and EMI book. If a board makes noise or picks up noise, the answer is in here." },
   { id: "bogatin", kind: "book", title: "Signal and Power Integrity: Simplified", authors: "Eric Bogatin", year: 2018, venue: "Prentice Hall, 3rd edition", note: "Impedance, transmission lines, crosstalk and decoupling explained with pictures rather than Maxwell's equations." },
   { id: "johnson-graham", kind: "book", title: "High-Speed Digital Design: A Handbook of Black Magic", authors: "Howard Johnson and Martin Graham", year: 1993, venue: "Prentice Hall", note: "Old but still the clearest on rise time, ringing and termination." },
@@ -347,13 +327,4 @@ export const trackStartHere: Record<TrackId, string[]> = {
 
 export function referencesFor(slug: string): Array<LessonReference & { ref: Reference }> {
   return (lessonReferences[slug] ?? []).map((lr) => ({ ...lr, ref: references[lr.id] })).filter((x) => x.ref);
-}
-
-export function referenceLink(ref: Reference): string | undefined {
-  if (ref.doi) return `https://doi.org/${ref.doi}`;
-  return ref.url;
-}
-
-export function formatCitation(ref: Reference): string {
-  return `${ref.authors} (${ref.year}). ${ref.title}. ${ref.venue}.`;
 }

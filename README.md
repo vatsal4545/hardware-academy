@@ -23,18 +23,18 @@ npm run dev          # http://localhost:3000
 npm run build        # production build (type-checks too)
 npm test             # vitest run
 npm run lint         # eslint
-npm run gen:registry # regenerate src/content/registry.ts and bodies.ts from the curriculum; creates stubs for new lessons
+npm run gen:registry # regenerate registry.ts, bodies.ts and the static track and lesson routes under src/app/learn; creates stubs for new lessons
 ```
 
 ## Structure
 
 ```
-src/app                 routes: /, /plan, /learn/[track]/[slug], /labs/*, /components, /scenarios, /interview, /careers
+src/app                 routes: /, /plan, /learn/<track> and /learn/<track>/<slug> (generated, one file per track and lesson), /labs/*, /components, /scenarios, /interview, /references, /careers
 src/lib/curriculum.ts   tracks, lessons, days (single source of truth)
 src/lib/sim             pure simulation logic: robot, PID, kinematics, IPC-2221 trace width
 src/lib/progress.tsx    localStorage-backed progress store
 src/content/<track>     one <slug>.tsx (lesson body) and <slug>.data.ts (quiz, interview, scenario, key terms) per lesson
-src/content/registry.ts generated maps from slug to data and body component (server only)
+src/content/registry.ts generated map from slug to lesson data (server pages and tests only)
 src/content/bodies.ts    generated map from slug to a body loader (used by the hydration test)
 src/components/lesson   lesson building blocks (Section, Prose, Figure, VizFrame, Slider, Quiz, ScenarioCard, ...)
 src/components/viz      visualizations per track, plus shared SVG helpers and animation hooks

@@ -78,6 +78,3 @@ export const lessonData: Record<string, LessonData> = {
   "ai-agents-for-hardware-design": d_ai_agents_for_hardware_design,
   "build-a-claude-cad-tool": d_build_a_claude_cad_tool,
 };
-
-export { lessonBodies } from "./bodies";
-export type { LessonBodyLoader } from "./bodies";

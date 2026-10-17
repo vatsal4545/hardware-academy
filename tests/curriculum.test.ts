@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { tracks, lessons, days, lessonBySlug, lessonsFor, neighbors, trackById } from "@/lib/curriculum";
 import { labs } from "@/lib/labs";
-import { lessonData, lessonBodies } from "@/content/registry";
+import { lessonData } from "@/content/registry";
+import { lessonBodies } from "@/content/bodies";
 
 describe("curriculum", () => {
   it("has 37 lessons with unique slugs", () => {

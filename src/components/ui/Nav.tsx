@@ -39,7 +39,7 @@ export function Nav() {
         <Link href="/" className="font-semibold tracking-tight">
           Hardware <span className="text-muted">Academy</span>
         </Link>
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
           {links.map(([href, label]) => (
             <Link key={href} href={href} className={linkClass(href)}>
               {label}
@@ -55,7 +55,7 @@ export function Nav() {
           </span>
           <button
             type="button"
-            className="rounded-md border border-border px-3 py-1.5 text-sm md:hidden"
+            className="rounded-md border border-border px-3 py-1.5 text-sm lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((o) => !o)}
@@ -65,7 +65,7 @@ export function Nav() {
         </div>
       </Container>
       {open && (
-        <nav id="mobile-nav" aria-label="Primary mobile" className="flex flex-col border-t border-border bg-bg px-4 py-2 md:hidden">
+        <nav id="mobile-nav" aria-label="Primary mobile" className="flex flex-col border-t border-border bg-bg px-4 py-2 lg:hidden">
           {links.map(([href, label]) => (
             <Link key={href} href={href} className={linkClass(href)} onClick={() => setOpen(false)}>
               {label}

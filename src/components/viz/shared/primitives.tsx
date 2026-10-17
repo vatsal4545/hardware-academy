@@ -24,11 +24,15 @@ export function Arrow({ x1, y1, x2, y2, color = vizColors.text, width = 2, head 
   const by2 = r2(y2 - head * Math.sin(angle + spread));
   const shaftX = r2(x2 - head * 0.6 * Math.cos(angle));
   const shaftY = r2(y2 - head * 0.6 * Math.sin(angle));
+  const ax1 = r2(x1);
+  const ay1 = r2(y1);
+  const ax2 = r2(x2);
+  const ay2 = r2(y2);
   return (
     <g>
       <line
-        x1={x1}
-        y1={y1}
+        x1={ax1}
+        y1={ay1}
         x2={shaftX}
         y2={shaftY}
         stroke={color}
@@ -36,7 +40,7 @@ export function Arrow({ x1, y1, x2, y2, color = vizColors.text, width = 2, head 
         strokeLinecap="round"
         strokeDasharray={dashed ? "6 5" : undefined}
       />
-      <polygon points={`${x2},${y2} ${bx1},${by1} ${bx2},${by2}`} fill={color} />
+      <polygon points={`${ax2},${ay2} ${bx1},${by1} ${bx2},${by2}`} fill={color} />
     </g>
   );
 }

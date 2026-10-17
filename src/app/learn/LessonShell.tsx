@@ -10,7 +10,7 @@ import { TrackPill } from "@/components/ui/TrackPill";
 import { ButtonLink } from "@/components/ui/Button";
 import { InterviewQuestions, KeyTermsRail, MarkComplete, Quiz, ScenarioCard, Section } from "@/components/lesson";
 import { ReferenceList } from "@/components/lesson/ReferenceList";
-import { referencesFor } from "@/lib/references";
+import type { LessonReference, Reference } from "@/lib/references";
 import { cn } from "@/lib/cn";
 
 function LessonNav({ meta }: { meta: LessonMeta }) {
@@ -46,12 +46,14 @@ export function LessonShell({
   data,
   prev,
   next,
+  references,
   children,
 }: {
   meta: LessonMeta;
   data: LessonData;
   prev?: LessonMeta;
   next?: LessonMeta;
+  references: Array<LessonReference & { ref: Reference }>;
   children: ReactNode;
 }) {
   const track = trackById(meta.track);
@@ -110,7 +112,7 @@ export function LessonShell({
             <Quiz slug={meta.slug} questions={data.quiz} />
           </Section>
           <Section id="references" title="References and further reading">
-            <ReferenceList items={referencesFor(meta.slug)} />
+            <ReferenceList items={references} />
           </Section>
 
           <div className="flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">

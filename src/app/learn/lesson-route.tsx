@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import { lessonBySlug, neighbors, type LessonData } from "@/lib/curriculum";
+import { referencesFor } from "@/lib/references";
 import { LessonShell } from "./LessonShell";
 
 export function lessonMetadata(slug: string): Metadata {
@@ -14,7 +15,7 @@ export function LessonRoute({ slug, data, Body }: { slug: string; data: LessonDa
   if (!meta) throw new Error(`Unknown lesson: ${slug}`);
   const nav = neighbors(slug);
   return (
-    <LessonShell meta={meta} data={data} prev={nav.prev} next={nav.next}>
+    <LessonShell meta={meta} data={data} prev={nav.prev} next={nav.next} references={referencesFor(slug)}>
       <Body />
     </LessonShell>
   );

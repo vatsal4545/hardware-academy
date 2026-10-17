@@ -1,5 +1,5 @@
-import type { LessonReference, Reference } from "@/lib/references";
-import { formatCitation, referenceLink } from "@/lib/references";
+import type { LessonReference, Reference } from "@/lib/references-format";
+import { formatCitation, referenceLink } from "@/lib/references-format";
 
 const kindLabel: Record<Reference["kind"], string> = {
   book: "Book",
