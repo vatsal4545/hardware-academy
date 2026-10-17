@@ -46,9 +46,9 @@ const data: LessonData = {
   scenario: {
     title: "Inverter trips on overcurrent, but only at launch",
     context:
-      "A prototype rear-drive EV passes its highway testing, but on full-throttle launches from standstill the inverter trips with a phase-overcurrent fault about one launch in three, and the car coasts to a stop. The controller measures phases A and B with open-loop Hall-effect sensors and computes C as −(A + B). A third sensor on phase C feeds only a fast hardware comparator set to 650 A. The launch current limit is 620 A peak.",
+      "A prototype rear-drive EV passes its highway testing, but on full-throttle launches from standstill the inverter trips with a phase-overcurrent fault about one launch in three, and the car coasts to a stop. The controller measures phases A and B with open-loop Hall-effect sensors and computes C as −(A + B). A third sensor on phase C feeds only a fast hardware comparator set to 650 A. The inverter's current limit is 620 A peak, and the 400 V pack can deliver at most 150 kW.",
     symptoms: [
-      "Trips happen only in the first second of a hard launch, below about 10 km/h, and never at highway speed, even at full power.",
+      "Trips happen only in the first second of a hard launch, below about 10 km/h, and never at highway speed, even at the full 150 kW.",
       "Logged Id and Iq track their references cleanly right up to the trip.",
       "At crawl speed the car shudders once per electrical revolution.",
       "With the motor at standstill and zero torque commanded, the A and B readings sit at zero while the phase-C sensor reads about 40 A, so the three readings no longer sum to zero.",
@@ -56,14 +56,14 @@ const data: LessonData = {
     hints: [
       "The control loop and the hardware comparator use different sensors. Which currents does each one actually see?",
       "A DC offset on one phase current looks like what in the rotating d-q frame, and at what frequency?",
-      "Why would the error matter at launch but not at 120 km/h, even at full power?",
+      "At launch, what sets the phase current: the 620 A inverter limit or the 150 kW pack limit? Which one sets it at 120 km/h?",
     ],
     rootCause:
-      "Phase A's open-loop Hall sensor had a +40 A zero offset: an overcurrent event in an earlier bench test left remanent magnetism in its ferrite core, and the firmware only calibrated sensor zeros at the end of the production line. In the d-q frame a DC offset on one phase shows up as a ripple at the electrical frequency. At launch that frequency is only a few hertz, far inside the current loop's bandwidth, so the PI controllers 'correct' the apparent ripple by driving a real 40 A DC bias into the motor: phase A runs 40 A low and phase C 40 A high. With 620 A commanded for full launch torque, phase C really carried about 660 A, above the 650 A comparator on the third sensor. At highway speed full power needs only about half the launch torque, so the phase current stays far below the trip level even with the bias, and the faster ripple is only partly corrected by the loop.",
+      "Phase A's open-loop Hall sensor had a +40 A zero offset: an overcurrent event in an earlier bench test left remanent magnetism in its ferrite core, and the firmware only calibrated sensor zeros at the end of the production line. In the d-q frame a DC offset on one phase shows up as a ripple at the electrical frequency. At launch that frequency is only a few hertz, far inside the current loop's bandwidth, so the PI controllers 'correct' the apparent ripple by driving a real 40 A DC bias into the motor: phase A runs 40 A low and phase C 40 A high. Near standstill the motor draws little power, so the 620 A inverter limit, not the pack, sets the current: with 620 A commanded, phase C really carried about 660 A, above the 650 A comparator on the third sensor. At 120 km/h the pack's 150 kW limit, not the 620 A inverter limit, sets the current: with the phase voltage near its 230 V peak ceiling on a 400 V bus and a power factor around 0.9, that is about 480 A peak (150 kW / (1.5 × 230 V × 0.9)), so even with the full 40 A bias phase C peaks near 520 A, well under the trip level.",
     fix:
       "Replace the sensor and recalibrate every sensor zero at each wake-up, with PWM off and the motor at standstill, rejecting the result if any offset exceeds a few amps. Use the third sensor for a plausibility check: if iA + iB + iC differs from zero by more than about 10 A, flag a sensor fault and derate. Track offsets online by averaging the currents over whole electrical cycles at low speed, and specify sensors with low magnetic offset after overload, such as closed-loop or coreless types.",
     lesson:
-      "Field-oriented control trusts its current sensors completely. A small offset becomes a real DC current at low speed, so sensor calibration and plausibility checks are part of the protection design, not an afterthought.",
+      "Field-oriented control trusts its current sensors completely. A small offset becomes a real DC current in the motor, and wherever the current already sits at its limit, as it does at launch, that is enough to trip the protection, so sensor calibration and plausibility checks are part of the protection design, not an afterthought.",
   },
   interview: [
     {

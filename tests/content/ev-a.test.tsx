@@ -280,3 +280,20 @@ describe("reduced motion", () => {
     }
   });
 });
+
+describe("inverters-pwm-and-foc scenario", () => {
+  it("explains the highway case with the pack power limit, not with torque", () => {
+    const s = inverterData.scenario;
+    // Above base speed the drive is voltage-limited: P = 1.5 · V̂ph · Îph · pf, so 150 kW at ~230 V peak and pf ~0.9
+    const iPeak = 150_000 / (1.5 * 230 * 0.9);
+    expect(iPeak).toBeGreaterThan(470);
+    expect(iPeak).toBeLessThan(490);
+    expect(iPeak + 40).toBeLessThan(650);
+    expect(s.context).toContain("150 kW");
+    expect(s.rootCause).toContain("150 kW");
+    expect(s.rootCause).toContain("480 A");
+    expect(s.rootCause).toContain("520 A");
+    expect(s.rootCause).not.toMatch(/torque/);
+    expect(s.hints.join(" ")).toContain("150 kW");
+  });
+});

@@ -209,7 +209,10 @@ export default function Lesson() {
           <h3>Knowing the rotor angle</h3>
           <p>
             Park needs θ to within a degree or two electrical. Most traction motors carry a resolver, a brushless rotary
-            transformer that outputs sin θ and cos θ and survives heat, oil and vibration. Sensorless observers estimate θ
+            transformer that outputs sin θ and cos θ and survives heat, oil and vibration. An encoder, optical or
+            magnetic, is the alternative: it reports the angle digitally with fine resolution and is the norm in industrial
+            servo drives, but optical discs tolerate oil and heat poorly, so traction motors mostly use resolvers or, in some
+            newer drive units, inductive position sensors. Sensorless observers estimate θ
             from back-EMF above a few percent of rated speed and use high-frequency injection near standstill, where there
             is no back-EMF to measure.
           </p>
