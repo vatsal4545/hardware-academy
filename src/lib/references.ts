@@ -101,6 +101,7 @@ const list: Reference[] = [
   { id: "mcp-spec", kind: "doc", title: "Model Context Protocol Specification", authors: "Anthropic and the MCP community", year: 2025, venue: "modelcontextprotocol.io", url: "https://modelcontextprotocol.io/specification/", free: true, note: "The protocol used in the Claude CAD tool lesson: tools, resources, transports." },
   { id: "occt-docs", kind: "doc", title: "Open CASCADE Technology Documentation", authors: "Open Cascade SAS", year: 2025, venue: "dev.opencascade.org", url: "https://dev.opencascade.org/doc/overview/html/", free: true, note: "The open B-rep kernel under FreeCAD, CadQuery and build123d." },
   { id: "build123d-docs", kind: "doc", title: "build123d Documentation", authors: "build123d contributors", year: 2025, venue: "build123d.readthedocs.io", url: "https://build123d.readthedocs.io/", free: true, note: "The code-CAD library used in the MCP lesson." },
+  { id: "mcp-python-sdk", kind: "doc", title: "MCP Python SDK: v2 migration guide", authors: "Model Context Protocol maintainers", year: 2026, venue: "py.sdk.modelcontextprotocol.io", url: "https://py.sdk.modelcontextprotocol.io/v2/migration/", free: true, note: "What changed in SDK 2.0: FastMCP became MCPServer, timeouts moved to seconds, and only ToolError text reaches the model. The lesson listing targets 2.x." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -309,6 +310,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "yao2023", read: "The reason-and-act loop agents use." },
   ],
   "build-a-claude-cad-tool": [
+    { id: "mcp-python-sdk", read: "The migration guide, before you adapt the listing to a 1.x install or a later major version." },
     { id: "mcp-spec", read: "Tools and resources; then the Python SDK docs it links to." },
     { id: "schick2023", read: "Why tool use is taught, not assumed." },
     { id: "yao2023", read: "The agent loop you are building around the tools." },

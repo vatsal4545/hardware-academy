@@ -19,8 +19,8 @@ const data: LessonData = {
       def: "The name, description and JSON Schema of a tool's arguments. The model reads it to decide what to call, so limits written into the schema (such as minimum: 1.5) are visible before any call.",
     },
     {
-      term: "FastMCP",
-      def: "The high-level server API in the Python mcp package. Decorating a typed function with @mcp.tool() generates its schema from the type hints and its description from the docstring.",
+      term: "MCPServer",
+      def: "The high-level server class in the Python mcp package (called FastMCP before SDK 2.0). Decorating a typed function with @mcp.tool() generates its schema from the type hints and its description from the docstring, and a declared return type adds an output schema.",
     },
     {
       term: "claude_desktop_config.json",
@@ -133,7 +133,7 @@ const data: LessonData = {
         "A prompt competes with the user's request, so the model can trade the rule away. A schema limit is visible before the call and validated by the server, and a check that measures the geometry cannot be argued with. Gating export on the check makes verification mandatory.",
     },
     {
-      q: "In the Python SDK's FastMCP, what happens when a tool function raises ValueError(\"hole_inset must keep the whole hole inside the plate\")?",
+      q: "In the Python SDK (mcp 2.x), what happens when a tool function raises ToolError(\"hole_inset must keep the whole hole inside the plate\")?",
       choices: [
         "The server process exits, and Claude Desktop restarts it automatically before the next call",
         "It becomes an isError result carrying the message, which the model can read and act on",
@@ -142,7 +142,7 @@ const data: LessonData = {
       ],
       answer: 1,
       explain:
-        "FastMCP wraps the exception and the low-level server returns a normal response with isError set to true and the message as text. That is why error messages in tools should say what to change: they are the model's next prompt.",
+        "MCPServer wraps the exception and the low-level server returns a normal response with isError set to true and the message as text. That is why error messages in tools should say what to change: they are the model's next prompt. A plain ValueError gets the same isError flag but, since SDK 2.0, only the generic text 'Error executing tool'; the details stay in the server log.",
     },
     {
       q: "Which JSON-RPC method does a client call to find out which tools a server offers?",
