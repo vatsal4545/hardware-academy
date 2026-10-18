@@ -297,7 +297,7 @@ export const PART_ROLES: Record<string, PartRole> = {
     station: "fet",
     readings: (m) => [
       { label: "Current through it", value: formatSI(m.fet.iPack, "A") },
-      { label: "Drop  V = I · R", value: formatSI(m.fet.vFet, "V") },
+      { label: "Drop  V = I · R", value: `${(m.fet.vFet * 1e3).toFixed(2)} mV` },
       { label: "Heat  P = I² · R", value: formatSI(m.fet.pFet, "W") },
     ],
   },

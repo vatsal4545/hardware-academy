@@ -94,8 +94,8 @@ function Coil({ forward, strength }: { forward: boolean; strength: number }) {
       {/* the field inside the coil, along the axis, toward north */}
       <line x1={forward ? 98 : 202} y1={AX} x2={forward ? 196 : 104} y2={AX} stroke={FIELD} strokeWidth={4} strokeLinecap="round" opacity={op} />
       <polygon points={forward ? `${206},${AX} ${194},${AX - 7} ${194},${AX + 7}` : `${94},${AX} ${106},${AX - 7} ${106},${AX + 7}`} fill={FIELD} opacity={op} />
-      <Label x={forward ? 232 : 68} y={AX} size={18} bold color={vizColors.red}>N</Label>
-      <Label x={forward ? 68 : 232} y={AX} size={18} bold color={vizColors.blue}>S</Label>
+      <Label x={forward ? 262 : 38} y={AX} size={18} bold color={vizColors.red}>N</Label>
+      <Label x={forward ? 38 : 262} y={AX} size={18} bold color={vizColors.blue}>S</Label>
 
       {/* turns: the back half thin, the front half thick copper with the current arrow */}
       {TURNS.map((tx) => (
@@ -122,12 +122,12 @@ function Coil({ forward, strength }: { forward: boolean; strength: number }) {
       {forward ? (
         <>
           <Label x={58} y={26} anchor="start" size={12} bold color={vizColors.amber}>fingers: current</Label>
-          <Label x={296} y={126} anchor="end" size={12} bold color={FIELD}>thumb: field (north)</Label>
+          <Label x={296} y={142} anchor="end" size={12} bold color={FIELD}>thumb: field (north)</Label>
         </>
       ) : (
         <>
           <Label x={262} y={170} anchor="end" size={12} bold color={vizColors.amber}>fingers: current</Label>
-          <Label x={4} y={64} anchor="start" size={12} bold color={FIELD}>thumb: field (north)</Label>
+          <Label x={4} y={48} anchor="start" size={12} bold color={FIELD}>thumb: field (north)</Label>
         </>
       )}
     </>

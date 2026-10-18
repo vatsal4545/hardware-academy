@@ -2,6 +2,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { BoardTopView, flowPathsFor } from "@/components/viz/pcb/BoardInAction.view";
 import { StationPanel } from "@/components/viz/pcb/BoardInAction.panels";
+import { BOARD_SPEED_CAP, BoardInAction } from "@/components/viz/pcb/BoardInAction";
+import type { ReactElement } from "react";
+import type { RenderResult } from "@testing-library/react";
 import { dotCount } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { RightHandRule, RightHandRuleFigure } from "@/components/viz/pcb/RightHandRule";
 import { parts, partBox, nets, connectorPins } from "@/components/viz/pcb/SchematicToLayoutBoard";
@@ -264,5 +267,109 @@ describe("StationPanel", () => {
     expect(onChange3).toHaveBeenCalledWith({ forward: false });
     fireEvent.change(screen.getByRole("slider", { name: /PWM duty/ }), { target: { value: "25" } });
     expect(onChange3).toHaveBeenCalledWith({ duty: 0.25 });
+  });
+});
+
+describe("BoardInAction", () => {
+  afterEach(cleanup);
+
+  it("starts at station 1 and walks all eight with Next", () => {
+    render(<BoardInAction />);
+    expect(screen.getByText("Step 1 / 8")).toBeTruthy();
+    for (let k = 2; k <= 8; k++) {
+      fireEvent.click(screen.getByRole("button", { name: /^Next$/ }));
+      expect(screen.getByText(`Step ${k} / 8`)).toBeTruthy();
+    }
+    expect((screen.getByRole("button", { name: /^Next$/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("the left-motor slider changes the pack current, and the change survives moving to the KCL station", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.change(screen.getByRole("slider", { name: /Left motor current/ }), { target: { value: "1.5" } });
+    expect(readout(container, "Pack current")).toBe("2.155 A");
+    fireEvent.click(screen.getByRole("button", { name: /Go to step 2/ }));
+    expect(readout(container, "Into the node (pack)")).toBe("2.155 A");
+    expect(container.querySelectorAll('[data-part][data-lit="true"]')).toHaveLength(5);
+  });
+
+  it("probe mode: clicking a part shows its role and offers its station; Escape and Close clear it", () => {
+    const { container } = render(<BoardInAction />);
+    expect(container.querySelector("[data-probe-card]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Inspect R3/ }));
+    const card = container.querySelector("[data-probe-card]")!;
+    expect(card.textContent).toContain("sets the LED current");
+    expect(readout(card as HTMLElement, "Current  (3.3 − Vf) / R")).toBe("1.3 mA");
+    fireEvent.click(screen.getByRole("button", { name: /Go to station 4/ }));
+    expect(screen.getByText("Step 4 / 8")).toBeTruthy();
+    fireEvent.keyDown(container.querySelector("[data-probe-card]")!, { key: "Escape" });
+    expect(container.querySelector("[data-probe-card]")).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: /Inspect U3/ }), { key: " " });
+    expect(container.querySelector("[data-probe-card]")?.textContent).toContain("AMS1117-3.3 linear regulator");
+    fireEvent.click(screen.getByRole("button", { name: /^Close$/ }));
+    expect(container.querySelector("[data-probe-card]")).toBeNull();
+  });
+
+  it("the probe readings follow the sliders", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(screen.getByRole("button", { name: /Inspect Q1/ }));
+    expect(readout(container.querySelector("[data-probe-card]") as HTMLElement, "Drop  V = I · R")).toBe("57.75 mV");
+    fireEvent.change(screen.getByRole("slider", { name: /Right motor current/ }), { target: { value: "1.5" } });
+    expect(readout(container.querySelector("[data-probe-card]") as HTMLElement, "Drop  V = I · R")).toBe("107.75 mV");
+  });
+
+  it("the frame-safe cap keeps one 60 Hz frame under half a dot spacing on every flow", () => {
+    const lengths = STATIONS.flatMap((s) => flowPathsFor(s, true).map((p) => p.length));
+    for (const length of lengths) {
+      const spacing = length / dotCount(length, FLOW_DOT_SPACING_PX);
+      expect(BOARD_SPEED_CAP / 60).toBeLessThan(spacing / 2);
+    }
+  });
+});
+
+// Same approach as tests/content/pcb-a.test.tsx: render a state with and without the transcendental functions nudged
+// by one part in 10^14 and require identical markup.
+const NUDGE_FUNCS = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "exp", "log", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
+
+function withNudgedMath<T>(fn: () => T): T {
+  const saved: Array<[string, (...args: number[]) => number]> = [];
+  for (const name of NUDGE_FUNCS) {
+    const original = Math[name] as (...args: number[]) => number;
+    saved.push([name, original]);
+    (Math as unknown as Record<string, unknown>)[name] = (...args: number[]) => {
+      const v = original(...args);
+      return v === 0 || !Number.isFinite(v) ? v : v * (1 + 1e-14);
+    };
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [name, original] of saved) (Math as unknown as Record<string, unknown>)[name] = original;
+  }
+}
+
+function markupAfter(ui: ReactElement, drive: (utils: RenderResult) => void): string {
+  const utils = render(ui);
+  drive(utils);
+  // useId values differ between two client renders in one test (they never differ between server and client), and the
+  // keep-out hatch refers to its pattern id through fill="url(#id)", so both forms are neutralised.
+  const html = utils.container.innerHTML.replace(/\b(id|for|aria-labelledby|aria-describedby)="[^"]*"/g, '$1=""').replace(/url\(#[^)]*\)/g, "url(#)");
+  cleanup();
+  return html;
+}
+
+describe("BoardInAction hydration stability", () => {
+  const go = (n: number) => fireEvent.click(screen.getByRole("button", { name: new RegExp(`Go to step ${n}`) }));
+  const drive: Array<[string, (utils: RenderResult) => void]> = [
+    ["default", () => {}],
+    ["station 5 without C9", () => (go(5), fireEvent.click(screen.getByRole("switch")))],
+    ["station 8 reversed at 1.5 A", ({ container }) => (go(8), fireEvent.click(screen.getByRole("radio", { name: "Reverse" })), fireEvent.change(container.querySelector('input[type="range"]')!, { target: { value: "25" } }))],
+    ["station 6 with 10 µF", () => (go(6), fireEvent.click(screen.getByRole("radio", { name: "10 µF" })))],
+    ["station 3 at 8.4 V with R3 probed", ({ container }) => (go(3), fireEvent.change(container.querySelectorAll('input[type="range"]')[1], { target: { value: "8.4" } }), fireEvent.click(screen.getByRole("button", { name: /Inspect R3/ })))],
+  ];
+  it.each(drive)("%s renders identical markup when sin, cos, exp, log, sqrt, pow and hypot differ in the last bits", (_name, d) => {
+    const plain = markupAfter(<BoardInAction />, d);
+    const nudged = withNudgedMath(() => markupAfter(<BoardInAction />, d));
+    expect(plain.length).toBeGreaterThan(5000);
+    expect(nudged).toBe(plain);
   });
 });
