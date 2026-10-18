@@ -143,9 +143,11 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
               {lit && <rect x={-w / 2 - 5} y={-h / 2 - 5} width={w + 10} height={h + 10} rx={7} fill={vizColors.amber} opacity={0.32} />}
               {isSelected && <rect x={-w / 2 - 7} y={-h / 2 - 7} width={w + 14} height={h + 14} rx={8} fill="none" stroke={vizColors.cyan} strokeWidth={2.5} />}
               <PartFootprint part={p} showRef={big} />
+              {/* small parts show their ref only while lit or selected (the value is in the panel and the probe card); a
+                  vertical part is labelled beside it so the label does not land on the part above */}
               {!big && (lit || isSelected) && (
-                <Label x={0} y={-h / 2 - 9} size={10} bold color={vizColors.silk}>
-                  {`${p.ref} ${p.label}`}
+                <Label x={p.h > p.w ? w / 2 + 5 : 0} y={p.h > p.w ? 0 : -h / 2 - 8} anchor={p.h > p.w ? "start" : "middle"} size={10} bold color={vizColors.silk}>
+                  {p.ref}
                 </Label>
               )}
             </g>

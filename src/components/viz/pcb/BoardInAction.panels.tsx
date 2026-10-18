@@ -358,7 +358,7 @@ function dividerPanel(m: BoardModel, i: BoardInputs): PanelParts {
         <GroundSymbol x={260} y={150} />
         <circle cx={300} cy={60} r={5} fill={vizColors.bg} stroke={vizColors.cyan} strokeWidth={2} />
         <Label x={300} y={78} size={9} color={ok ? vizColors.green : vizColors.red}>{ok ? "ok" : "too stiff"}</Label>
-        <Label x={160} y={192} size={10} color={vizColors.muted}>rule: under 10 kΩ, or a capacitor at the pin to hand over the sample charge</Label>
+        <Label x={160} y={192} size={10} color={vizColors.muted}>rule: under 10 kΩ, or a capacitor at the pin for the sample charge</Label>
       </Panel>
     ),
     stats: (
@@ -422,7 +422,7 @@ function enPanel(m: BoardModel, i: BoardInputs): PanelParts {
         <Label x={L - 4} y={T} anchor="end" size={8} mono color={vizColors.muted}>3.3</Label>
         <Label x={L - 4} y={B} anchor="end" size={8} mono color={vizColors.muted}>0</Label>
         <Label x={243} y={32} size={10} color={vizColors.muted}>{`τ = R · C = ${formatSI(s.tau, "s")}`}</Label>
-        <Label x={160} y={192} size={10} color={vizColors.muted}>63% at 1τ, 75% at 1.39τ, 99% at 5τ; SW2 empties C8 to reset the chip</Label>
+        <Label x={160} y={192} size={10} color={vizColors.muted}>63% at 1τ, 75% at 1.39τ, 99% at 5τ; SW2 empties C8 to reset</Label>
       </Panel>
     ),
     stats: (
@@ -452,7 +452,7 @@ function decouplingPanel(m: BoardModel, i: BoardInputs): PanelParts {
         <Label x={43} y={122} size={9} color={vizColors.muted}>GND pin</Label>
         <CapacitorSymbol cx={xc} cy={100} vertical size={22} gap={7} />
         <Label x={xc + 14} y={94} anchor="start" size={10} mono>C7 100 nF</Label>
-        <Label x={70 + run / 2} y={56} size={10} mono color={vizColors.amber}>{`${i.decouplingMm} mm each way ≈ ${formatSI(s.loopH, "H")}`}</Label>
+        <Label x={76} y={56} anchor="start" size={10} mono color={vizColors.amber}>{`${i.decouplingMm} mm each way ≈ ${formatSI(s.loopH, "H")}`}</Label>
         <Label x={70 + run / 2} y={100} size={9} color={vizColors.muted}>loop area</Label>
         <Arrow x1={60} y1={160} x2={60} y2={178} color={vizColors.red} width={2} head={7} />
         <Label x={72} y={168} anchor="start" size={10} mono color={vizColors.red}>50 mA step in 2 ns</Label>
