@@ -191,8 +191,8 @@ export default function Lesson() {
             A <strong>net class</strong> groups nets that share layout rules: Power at 0.5 mm, Motor at 1.5 mm, Signal at 0.2 mm. Assign
             the classes in the schematic and the router and design-rule check apply the right widths without per-net fiddling. Every IC
             datasheet has a typical application circuit. Copy it, then read the footnotes, because that is where it says the AMS1117 wants a
-            22 µF tantalum output capacitor or that the ESP32&apos;s EN pin wants a 10 kΩ pull-up with a 1 µF capacitor. Write down every
-            deviation and why.
+            22 µF solid tantalum output capacitor to stay stable (its datasheet, under Stability) or that the ESP32&apos;s EN pin wants a 10 kΩ
+            pull-up with a 1 µF capacitor (Espressif&apos;s hardware design guidelines, schematic checklist). Write down every deviation and why.
           </p>
 
           <h3>Unused and special pins</h3>
@@ -279,10 +279,10 @@ export default function Lesson() {
                 "J1       1    battery in, 2 pin             JST-XH, 2.5 mm   B2B-XH-A",
                 "J2, J3   2    motor out, 2 pin              JST-PH, 2.0 mm   B2B-PH-K-S",
                 "U1       1    ESP32 module, 4 MB flash      module           ESP32-WROOM-32E-N4",
-                "U2       1    LDO 3.3 V, 800 mA             SOT-223          AMS1117-3.3",
+                "U2       1    LDO 3.3 V, 1 A                SOT-223          AMS1117-3.3",
                 "U3       1    dual H-bridge, 1.2 A/channel  SSOP-24          TB6612FNG",
                 "C1       1    10 µF, 16 V, X7R              1206             choose and record",
-                "C2       1    22 µF, tantalum or polymer    case B           choose and record",
+                "C2       1    22 µF, solid tantalum         case B           choose and record",
                 "C3       1    10 µF, 10 V, X7R              0805             choose and record",
                 "C4, C7   2    100 nF, 16 V, X7R             0402             GRM155R71C104KA88D",
                 "C5       1    100 µF, 16 V, polymer         6.3 mm SMD       choose and record",

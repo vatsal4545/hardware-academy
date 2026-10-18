@@ -8,7 +8,7 @@ const data: LessonData = {
     },
     {
       term: "Dropout voltage",
-      def: "The minimum Vin − Vout at which an LDO still regulates: about 1.1 to 1.3 V for an AMS1117 at 800 mA, 100 to 300 mV for modern PMOS LDOs. Below it, the output simply follows the input down.",
+      def: "The minimum Vin − Vout at which an LDO still regulates: 1.1 V typical and 1.3 V maximum for an AMS1117 at 0.8 A (its datasheet specifies dropout up to 0.8 A and says it rises above that), 100 to 300 mV for modern PMOS LDOs. Below it, the output simply follows the input down.",
     },
     {
       term: "Buck converter",

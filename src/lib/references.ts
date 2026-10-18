@@ -102,6 +102,8 @@ const list: Reference[] = [
   { id: "occt-docs", kind: "doc", title: "Open CASCADE Technology Documentation", authors: "Open Cascade SAS", year: 2025, venue: "dev.opencascade.org", url: "https://dev.opencascade.org/doc/overview/html/", free: true, note: "The open B-rep kernel under FreeCAD, CadQuery and build123d." },
   { id: "build123d-docs", kind: "doc", title: "build123d Documentation", authors: "build123d contributors", year: 2025, venue: "build123d.readthedocs.io", url: "https://build123d.readthedocs.io/", free: true, note: "The code-CAD library used in the MCP lesson." },
   { id: "mcp-python-sdk", kind: "doc", title: "MCP Python SDK: v2 migration guide", authors: "Model Context Protocol maintainers", year: 2026, venue: "py.sdk.modelcontextprotocol.io", url: "https://py.sdk.modelcontextprotocol.io/v2/migration/", free: true, note: "What changed in SDK 2.0: FastMCP became MCPServer, timeouts moved to seconds, and only ToolError text reaches the model. The lesson listing targets 2.x." },
+  // Datasheets and vendor design guides checked for this course
+  { id: "ams1117-ds", kind: "doc", title: "AMS1117: 1A Low Dropout Voltage Regulator (datasheet)", authors: "Advanced Monolithic Systems", year: 2012, venue: "advanced-monolithic.com", url: "http://www.advanced-monolithic.com/pdf/ds1117.pdf", free: true, note: "1 A output, current limit 0.9 to 1.5 A; dropout 1.1 V typical and 1.3 V maximum at 0.8 A (note 4: higher above 0.8 A); quiescent current 5 mA typical, 11 mA maximum; a 22 µF solid tantalum output capacitor keeps it stable; SOT-223 46 to 90 °C/W depending on copper." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -163,11 +165,13 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "coombs", read: "The surface-mount components chapter for package sizes." },
   ],
   "active-components": [
+    { id: "ams1117-ds", read: "Page 3 for dropout and quiescent current, page 4 for why it needs a 22 µF tantalum output capacitor." },
     { id: "horowitz-hill", read: "The voltage-regulator and op-amp chapters." },
     { id: "zumbahlen", read: "The op-amp basics chapter." },
     { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
   ],
   "schematic-capture": [
+    { id: "ams1117-ds", read: "The Stability section: the output-capacitor footnote the lesson refers to." },
     { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
     { id: "altium-getting-started", read: "Pages 4-13: schematic, placing parts, nets and net labels, compiling the schematic." },
     { id: "kicad-docs", read: "The Eeschema (schematic editor) manual." },
@@ -181,6 +185,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "altium-getting-started", read: "Pages 14-27: transferring to the PCB, placement, design rules, routing, 3D view." },
   ],
   "power-and-signal-integrity": [
+    { id: "ams1117-ds", read: "Dropout voltage: why 3V3 collapses when VM dips to 4.4 V." },
     { id: "ott", read: "The chapters on grounding, return currents and decoupling." },
     { id: "bogatin", read: "Chapters on impedance, transmission lines and crosstalk." },
     { id: "johnson-graham", read: "The chapters on rise time, ringing and termination." },
@@ -193,10 +198,12 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "ipc-7351", read: "Why pad geometry decides tombstoning." },
   ],
   "bring-up-and-debugging": [
+    { id: "ams1117-ds", read: "Quiescent current and thermal resistance for the idle-current and heat estimates." },
     { id: "horowitz-hill", read: "The chapter on instruments and measurement, and the probing advice." },
     { id: "ott", read: "The chapter on measurement and troubleshooting of noise." },
   ],
   "kicad-project-walkthrough": [
+    { id: "ams1117-ds", read: "Thermal resistance figures behind the copper pour under U3." },
     { id: "kicad-docs", read: "The Getting Started tutorial and the PCB editor manual." },
     { id: "altium-getting-started", read: "The same project flow in Altium Designer, step by step with screenshots." },
     { id: "pcad-guide", read: "Chapter 4, the tutorial design session, for a second worked layout." },

@@ -257,7 +257,7 @@ export default function Lesson() {
                 "VDD pins   3 x 100 nF X7R 0402, 16 V   one per pin, within 2 mm, ground via at the pad",
                 "VDDA       1 x 1 µF X7R 0603, 16 V     plus 1 x 10 nF to 100 nF 0402, behind a ferrite bead",
                 "Bulk       1 x 10 µF X7R 0805, 16 V    near the MCU, on the 3.3 V rail",
-                "LDO        per datasheet (AMS1117-3.3: 10 µF in, 22 µF tantalum or polymer out)",
+                "LDO        per datasheet (AMS1117-3.3: 22 µF solid tantalum out for stability; 10 µF in is good practice)",
                 "",
                 "Bulk capacitance at 3.3 V:",
                 "  16 V rating: 3.3 / 16 = 0.21 of rating, about 86% -> 8.6 µF",

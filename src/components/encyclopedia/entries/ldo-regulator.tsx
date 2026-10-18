@@ -98,8 +98,8 @@ export const entry: ComponentEntry = {
   ],
   keySpecs: [
     { label: "Dropout voltage", value: "1.1-1.3 V (AMS1117); 0.18 V at 250 mA (MCP1700); about 2 V (7805)" },
-    { label: "Output current", value: "1 A (AMS1117, thermally limited); 250 mA (MCP1700)" },
-    { label: "Quiescent current Iq", value: "5-10 mA (AMS1117); 1.6 µA (MCP1700)" },
+    { label: "Output current", value: "1 A (AMS1117; current limit 0.9 to 1.5 A, thermally limited in a SOT-223); 250 mA (MCP1700)" },
+    { label: "Quiescent current Iq", value: "5 mA typical, 11 mA maximum (AMS1117); 1.6 µA (MCP1700)" },
     { label: "Output accuracy", value: "±1-2% over temperature" },
     { label: "PSRR", value: "60-80 dB at low frequency, falling to about 30 dB at 1 MHz" },
     { label: "Packages", value: "SOT-223, SOT-23-5, TO-220, DFN" },
