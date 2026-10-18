@@ -3,12 +3,15 @@
 /**
  * Top view of the motor-driver board for the components-in-action tour: the KiCad lesson's board data drawn with the
  * current station's parts glowing, its copper bright and the rest dimmed, charge dots running along the station's
- * copper at a speed proportional to the current, and every part a focusable button for probe mode.
+ * copper at a speed proportional to the current, every part a focusable button for probe mode, and twelve labelled test
+ * pads that take the multimeter's probes.
  */
 
 import { useId, type KeyboardEvent } from "react";
 import { Label, SvgCanvas, vizColors } from "@/components/viz/shared";
-import { allNets, allParts, FLOW_DOT_SPACING_PX, IO35_PAD, type Station } from "./BoardInAction.board";
+import type { TestPointId } from "@/lib/sim/board";
+import { allNets, allParts, FLOW_DOT_SPACING_PX, type Station } from "./BoardInAction.board";
+import { TEST_POINTS, type Probes } from "./BoardInAction.meter";
 import { dotCount, FlowDots, makePath, type FlowPath } from "./OhmsLawCircuit.helpers";
 import { BOARD, NET_WIDTH, antennaKeepout, type Net, type Pt } from "./SchematicToLayoutBoard";
 import { BACK_COPPER, BOARD_FILL, FRONT_COPPER, KeepoutHatch, PX, PartFootprint, bx, by } from "./SchematicToLayoutShapes";
@@ -24,6 +27,12 @@ export interface BoardTopViewProps {
   onSelect: (ref: string | null) => void;
   /** left motor direction, which picks the winding station's flow geometry */
   forward: boolean;
+  /** which test pads hold the multimeter's probes */
+  probes: Probes;
+  onProbe: (id: TestPointId) => void;
+  onClearProbes: () => void;
+  /** the multimeter is switched on: the pads and their labels come forward */
+  meterOn: boolean;
 }
 
 /** The station's flows as arc-length paths in pixels; the winding flows swap geometry when the motor reverses. */
@@ -63,7 +72,21 @@ function Routes({ layer, lit }: { layer: "F" | "B"; lit: Set<string> }) {
   );
 }
 
-export function BoardTopView({ station, phases, flowPaths, selected, onSelect, forward }: BoardTopViewProps) {
+const PROBE_COLOR = { black: "#18181b", red: "#ef4444" } as const;
+
+/** A probe tip on a pad: a short lead that leans away from the other probe (black to the left, red to the right, when alone). */
+function ProbeTip({ x, y, probe, awayFrom }: { x: number; y: number; probe: "black" | "red"; awayFrom: number | null }) {
+  const dx = awayFrom === null ? (probe === "black" ? -12 : 12) : awayFrom > x ? -12 : 12;
+  return (
+    <g data-probe-tip={probe}>
+      <line x1={x} y1={y} x2={x + dx} y2={y - 20} stroke={vizColors.silk} strokeWidth={5} strokeLinecap="round" />
+      <line x1={x} y1={y} x2={x + dx} y2={y - 20} stroke={PROBE_COLOR[probe]} strokeWidth={3} strokeLinecap="round" />
+      <circle cx={x} cy={y} r={4} fill={PROBE_COLOR[probe]} stroke={vizColors.silk} strokeWidth={1.2} />
+    </g>
+  );
+}
+
+export function BoardTopView({ station, phases, flowPaths, selected, onSelect, forward, probes, onProbe, onClearProbes, meterOn }: BoardTopViewProps) {
   const uid = useId().replace(/:/g, "");
   const litParts = new Set(station.parts);
   const litNets = new Set(station.nets);
@@ -75,12 +98,21 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
       onSelect(ref);
     }
   };
+  const padKeys = (id: TestPointId) => (e: KeyboardEvent<SVGGElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onProbe(id);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onClearProbes();
+    }
+  };
 
   return (
     <SvgCanvas
       viewBox="0 0 720 470"
       role="group"
-      title={`Top view of the motor-driver board. Station: ${station.title}. Lit parts: ${station.parts.join(", ")}. Every part is a button you can inspect.`}
+      title={`Top view of the motor-driver board. Station: ${station.title}. Lit parts: ${station.parts.join(", ")}. Every part is a button you can inspect, and ${TEST_POINTS.length} test points take the multimeter's probes.`}
     >
       <defs>
         <KeepoutHatch id={`${uid}-hatch`} />
@@ -107,6 +139,11 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
           </g>
         )),
       )}
+
+      {/* short copper stubs from the test pads to their nets, under the parts like the rest of the copper */}
+      <g data-test-stubs fill="none" stroke={FRONT_COPPER} strokeOpacity={0.55} strokeWidth={NET_WIDTH.signal * PX} strokeLinecap="round" strokeLinejoin="round">
+        {TEST_POINTS.flatMap((t) => (t.stubs ?? []).map((s, k) => <polyline key={`${t.id}-${k}`} points={toPx(s)} />))}
+      </g>
 
       {/* mounting holes are not parts to inspect */}
       {allParts
@@ -154,9 +191,37 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
           );
         })}
 
-      {/* the Rev B pad on the module for the battery divider */}
-      <rect x={bx(IO35_PAD[0]) - 4.5} y={by(IO35_PAD[1]) - 4.5} width={9} height={9} fill={vizColors.copper} />
-      <Label x={bx(IO35_PAD[0])} y={by(IO35_PAD[1]) - 10} size={8} mono color={vizColors.muted}>IO35</Label>
+      {/* test pads: a ring on the copper, a silk label, and the probe that sits on it (the IO35 pad is the Rev B divider's) */}
+      {TEST_POINTS.map((t) => {
+        const probe = probes.black === t.id ? "black" : probes.red === t.id ? "red" : null;
+        const other = probe === "black" ? probes.red : probe === "red" ? probes.black : null;
+        const otherPad = other ? TEST_POINTS.find((p) => p.id === other) : undefined;
+        const x = bx(t.at[0]);
+        const y = by(t.at[1]);
+        return (
+          <g
+            key={t.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`Test point ${t.name}`}
+            aria-pressed={probe !== null}
+            data-test-point={t.id}
+            data-probe={probe ?? undefined}
+            opacity={meterOn || probe ? 1 : 0.8}
+            onClick={() => onProbe(t.id)}
+            onKeyDown={padKeys(t.id)}
+            style={{ cursor: "pointer" }}
+          >
+            <circle cx={x} cy={y} r={9} fill="transparent" />
+            <circle cx={x} cy={y} r={5.5} fill={vizColors.copper} stroke={meterOn ? vizColors.silk : vizColors.muted} strokeWidth={1.2} />
+            <circle cx={x} cy={y} r={2} fill={BOARD_FILL} />
+            <Label x={bx(t.labelAt[0])} y={by(t.labelAt[1])} anchor={t.anchor} size={8} mono color={meterOn ? vizColors.silk : vizColors.muted}>
+              {t.label}
+            </Label>
+            {probe && <ProbeTip x={x} y={y} probe={probe} awayFrom={otherPad ? bx(otherPad.at[0]) : null} />}
+          </g>
+        );
+      })}
 
       {station.flows.map((flow, k) => {
         const path = flowPaths[k];

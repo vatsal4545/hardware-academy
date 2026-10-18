@@ -180,6 +180,10 @@ export default function Lesson() {
             <li>Station 5: switch C9 off. The Thevenin resistance stays 32 kΩ, but the verdict flips to &quot;reads low&quot;.</li>
             <li>Station 8: choose Reverse. The current arrows on the coil flip, the hand turns over and north moves to the other end.</li>
             <li>Click any part on the board, C1 for example, to read its job and its live numbers; press Escape to close the card.</li>
+            <li>
+              Switch the multimeter on and put the black probe on GND and the red on VM: 7.34 V, the pack minus Q1&apos;s 58 mV. Then black on K and red on
+              A across the LED: 2.00 V, its forward voltage; red on IO13 reads 3.30 V, so R3 holds the 1.30 V in between (KVL).
+            </li>
           </ul>
         </Callout>
         <BoardInAction />

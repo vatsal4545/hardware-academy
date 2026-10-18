@@ -207,6 +207,38 @@ export function windingStation(i: BoardInputs) {
   };
 }
 
+/* ---------- test points for the virtual multimeter ---------- */
+
+/** The pads a learner can put the meter's probes on, in the order the readout lists them. */
+export const TEST_POINT_IDS = ["GND", "VBAT", "VM", "U3_IN", "3V3", "EN", "IO13", "D1_A", "D1_K", "VBAT_SENSE", "M1A", "M1B"] as const;
+export type TestPointId = (typeof TEST_POINT_IDS)[number];
+
+/**
+ * DC voltage of every test point above ground, taken from the station functions so the meter and the panels agree to the
+ * last bit. EN is read after it has settled (5τ and more after power-up). The LED loop runs IO13 → R3 → D1 → ground as
+ * the LED station draws it, so the anode sits at Vf and the cathode on ground. The motor terminals are PWM duty averages,
+ * which is what a meter on its DC range shows: the driven side at duty × VM, the other side held at ground by the bridge.
+ * U3_IN is the regulator's input pin on the VM net (its SOT-223 tab is the output, not an input: AMS1117 datasheet).
+ */
+export function nodeVoltages(i: BoardInputs): Record<TestPointId, number> {
+  const vm = i.vPack - fetStation(i).vFet;
+  const vMotor = i.duty * vm;
+  return {
+    GND: 0,
+    VBAT: i.vPack,
+    VM: vm,
+    U3_IN: vm,
+    "3V3": BOARD.ldoVout,
+    EN: BOARD.ldoVout,
+    IO13: BOARD.ldoVout,
+    D1_A: BOARD.ldoVout - ledStation(i).kvl.dropR,
+    D1_K: 0,
+    VBAT_SENSE: dividerStation(i).vOut,
+    M1A: i.forward ? vMotor : 0,
+    M1B: i.forward ? 0 : vMotor,
+  };
+}
+
 export function boardModel(i: BoardInputs) {
   return {
     fet: fetStation(i),

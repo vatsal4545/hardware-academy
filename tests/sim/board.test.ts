@@ -11,6 +11,8 @@ import {
   ldoStation,
   traceResistance,
   windingStation,
+  nodeVoltages,
+  TEST_POINT_IDS,
 } from "@/lib/sim/board";
 
 const stalled = { ...BOARD_DEFAULTS, iMotorL: 1.5, iMotorR: 1.5 };
@@ -156,5 +158,62 @@ describe("boardModel", () => {
     const m = boardModel(BOARD_DEFAULTS);
     expect(Object.keys(m).sort()).toEqual(["decoupling", "divider", "en", "fet", "kcl", "ldo", "led", "winding"]);
     expect(m.fet.iPack).toBe(m.kcl.iPack);
+  });
+});
+
+describe("board model: node voltages for the multimeter", () => {
+  it("names twelve test points, GND first, and returns a voltage for each", () => {
+    expect(TEST_POINT_IDS).toEqual(["GND", "VBAT", "VM", "U3_IN", "3V3", "EN", "IO13", "D1_A", "D1_K", "VBAT_SENSE", "M1A", "M1B"]);
+    expect(Object.keys(nodeVoltages(BOARD_DEFAULTS)).sort()).toEqual([...TEST_POINT_IDS].sort());
+  });
+
+  it("at the defaults: 7.4 V pack, VM 58 mV lower, 3.3 V rails, the LED loop and the divider", () => {
+    const v = nodeVoltages(BOARD_DEFAULTS);
+    expect(v.GND).toBe(0);
+    expect(v.VBAT).toBe(7.4);
+    expect(v.VM).toBeCloseTo(7.34225, 9);
+    expect(v.U3_IN).toBe(v.VM);
+    expect(v["3V3"]).toBe(3.3);
+    expect(v.EN).toBe(3.3);
+    expect(v.IO13).toBe(3.3);
+    // IO13 -> R3 -> D1 -> ground, as the station panel draws it: the anode sits at Vf, 3.3 V minus the 1.3 V across R3
+    expect(v.D1_A).toBeCloseTo(2.0, 9);
+    expect(v.D1_K).toBe(0);
+    expect(v.VBAT_SENSE).toBeCloseTo(2.365986, 6);
+    // the left motor forward at 60% duty: M1A averages 0.6 x VM, M1B is held at ground
+    expect(v.M1A).toBeCloseTo(4.40535, 9);
+    expect(v.M1B).toBe(0);
+  });
+
+  it("at 8.4 V with both motors stalled: VM drops 158 mV, M1A averages 4.95 V, the divider gives 2.686 V", () => {
+    const v = nodeVoltages({ ...fullPack, iMotorL: 1.5, iMotorR: 1.5 });
+    expect(v.GND).toBe(0);
+    expect(v.VBAT).toBe(8.4);
+    expect(v.VM).toBeCloseTo(8.24225, 9);
+    expect(v.U3_IN).toBeCloseTo(8.24225, 9);
+    expect(v["3V3"]).toBe(3.3);
+    expect(v.EN).toBe(3.3);
+    expect(v.IO13).toBe(3.3);
+    expect(v.D1_A).toBeCloseTo(2.0, 9);
+    expect(v.D1_K).toBe(0);
+    expect(v.VBAT_SENSE).toBeCloseTo(2.685714, 6);
+    expect(v.M1A).toBeCloseTo(4.94535, 9);
+    expect(v.M1B).toBe(0);
+  });
+
+  it("reverse swaps the motor terminals; a blue LED lifts the anode to 3.0 V", () => {
+    const r = nodeVoltages({ ...BOARD_DEFAULTS, forward: false });
+    expect(r.M1A).toBe(0);
+    expect(r.M1B).toBeCloseTo(4.40535, 9);
+    expect(nodeVoltages({ ...BOARD_DEFAULTS, ledColor: "blue" }).D1_A).toBeCloseTo(3.0, 9);
+  });
+
+  it("is finite at every corner of the sliders", () => {
+    const corners = [
+      BOARD_DEFAULTS,
+      { ...BOARD_DEFAULTS, vPack: 6, iMotorL: 0, iMotorR: 0, iLogic: 0, duty: 0 },
+      { ...BOARD_DEFAULTS, vPack: 8.4, iMotorL: 1.5, iMotorR: 1.5, iLogic: 0.45, duty: 1, ledR: 47, forward: false },
+    ];
+    for (const i of corners) for (const [k, v] of Object.entries(nodeVoltages(i))) expect(Number.isFinite(v), k).toBe(true);
   });
 });
