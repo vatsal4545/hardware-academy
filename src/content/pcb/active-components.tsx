@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Section, Prose, Callout, Figure, Exercise, CodeBlock } from "@/components/lesson";
 import { Arrow, Label, SvgCanvas, vizColors } from "@/components/viz/shared";
@@ -177,6 +178,16 @@ export default function Lesson() {
             plugs. Add a P-FET or diode for reverse-battery protection on any supply that people plug in by hand.
           </p>
         </Prose>
+
+        <Callout kind="tip" title="See these parts working">
+          <p>
+            Every part in this lesson sits on the robot&apos;s motor-driver board. The{" "}
+            <Link href="/learn/pcb/components-in-action" className="underline">
+              components-in-action lesson
+            </Link>{" "}
+            powers that board up one station at a time, with live numbers.
+          </p>
+        </Callout>
 
         <Callout kind="warning" title="Always compute the LDO heat first">
           <p>

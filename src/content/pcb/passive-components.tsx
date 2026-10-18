@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Section, Prose, Callout, Figure, Exercise, CodeBlock } from "@/components/lesson";
 import { Arrow, Label, SvgCanvas, makeScale, polyline, vizColors } from "@/components/viz/shared";
 import { RcCharging } from "@/components/viz/pcb/RcCharging";
@@ -160,6 +161,16 @@ export default function Lesson() {
             3.3 mA.
           </p>
         </Prose>
+
+        <Callout kind="tip" title="See these parts working">
+          <p>
+            Every part in this lesson sits on the robot&apos;s motor-driver board. The{" "}
+            <Link href="/learn/pcb/components-in-action" className="underline">
+              components-in-action lesson
+            </Link>{" "}
+            powers that board up one station at a time, with live numbers.
+          </p>
+        </Callout>
 
         <Callout kind="tip" title="Reading markings">
           <ul>
