@@ -7,9 +7,10 @@ import type { ReactElement } from "react";
 import type { RenderResult } from "@testing-library/react";
 import { dotCount } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { RightHandRule, RightHandRuleFigure } from "@/components/viz/pcb/RightHandRule";
-import { parts, partBox, nets, connectorPins } from "@/components/viz/pcb/SchematicToLayoutBoard";
+import { parts, partBox, nets, connectorPins, dist } from "@/components/viz/pcb/SchematicToLayoutBoard";
 import { allNets, allParts, FLOW_DOT_SPACING_PX, IO35_PAD, PART_ROLES, revBNets, revBParts, STATIONS } from "@/components/viz/pcb/BoardInAction.board";
-import { BOARD_DEFAULTS, boardModel } from "@/lib/sim/board";
+import { BOARD_DEFAULTS, boardModel, TEST_POINT_IDS, type TestPointId } from "@/lib/sim/board";
+import { meterReading, nextProbes, NO_PROBES, TEST_POINTS } from "@/components/viz/pcb/BoardInAction.meter";
 
 const overlaps = (a: ReturnType<typeof partBox>, b: ReturnType<typeof partBox>) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
@@ -109,10 +110,11 @@ describe("BoardTopView", () => {
   const noop = () => {};
 
   it("is a group with 28 part buttons, lights the station's parts and names them for a screen reader", () => {
-    const { container } = render(<BoardTopView station={station} phases={paths.map(() => 0)} flowPaths={paths} selected={null} onSelect={noop} forward />);
+    const { container } = render(<BoardTopView station={station} phases={paths.map(() => 0)} flowPaths={paths} selected={null} onSelect={noop} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
     const svg = container.querySelector("svg")!;
     expect(svg.getAttribute("role")).toBe("group");
-    expect(svg.querySelectorAll('[role="button"]')).toHaveLength(28);
+    expect(svg.querySelectorAll('[role="button"][data-part]')).toHaveLength(28);
+    expect(svg.querySelectorAll('[role="button"][data-test-point]')).toHaveLength(12);
     expect(container.querySelectorAll('[data-part][data-lit="true"]')).toHaveLength(station.parts.length);
     expect(screen.getByRole("button", { name: "Inspect Q1, AO3401A" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Inspect R4, 100 k" })).toBeTruthy();
@@ -120,26 +122,26 @@ describe("BoardTopView", () => {
   });
 
   it("draws the station's flows as evenly spaced dots along the copper", () => {
-    const { container } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward />);
+    const { container } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
     expect(container.querySelectorAll('[data-flow="pack"] circle')).toHaveLength(dotCount(paths[0].length, FLOW_DOT_SPACING_PX));
   });
 
   it("marks the station's nets bright and leaves the others dim", () => {
-    const { container } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward />);
+    const { container } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
     expect(container.querySelectorAll('[data-net="VM"][data-lit="true"]').length).toBeGreaterThan(0);
     expect(container.querySelectorAll('[data-net="PWMA"][data-lit="false"]').length).toBeGreaterThan(0);
   });
 
   it("selects a part by click, by Enter and by Space, and shows which part is selected", () => {
     const onSelect = vi.fn();
-    const { rerender } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={onSelect} forward />);
+    const { rerender } = render(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={onSelect} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
     fireEvent.click(screen.getByRole("button", { name: /Inspect R3/ }));
     expect(onSelect).toHaveBeenLastCalledWith("R3");
     fireEvent.keyDown(screen.getByRole("button", { name: /Inspect U3/ }), { key: "Enter" });
     expect(onSelect).toHaveBeenLastCalledWith("U3");
     fireEvent.keyDown(screen.getByRole("button", { name: /Inspect C9/ }), { key: " " });
     expect(onSelect).toHaveBeenLastCalledWith("C9");
-    rerender(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected="R3" onSelect={onSelect} forward />);
+    rerender(<BoardTopView station={station} phases={[0]} flowPaths={paths} selected="R3" onSelect={onSelect} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
     expect(screen.getByRole("button", { name: /Inspect R3/ }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /Inspect U3/ }).getAttribute("aria-pressed")).toBe("false");
   });
@@ -156,7 +158,7 @@ describe("BoardTopView", () => {
     for (const s of STATIONS) {
       const ps = flowPathsFor(s, true);
       expect(ps).toHaveLength(s.flows.length);
-      const { container } = render(<BoardTopView station={s} phases={ps.map(() => 0.3)} flowPaths={ps} selected={null} onSelect={noop} forward />);
+      const { container } = render(<BoardTopView station={s} phases={ps.map(() => 0.3)} flowPaths={ps} selected={null} onSelect={noop} forward probes={NO_PROBES} onProbe={noop} onClearProbes={noop} meterOn={false} />);
       for (const flow of s.flows) expect(container.querySelectorAll(`[data-flow="${flow.id}"] circle`).length).toBeGreaterThanOrEqual(2);
       expect(container.innerHTML).not.toMatch(/NaN/);
       cleanup();
@@ -325,6 +327,194 @@ describe("BoardInAction", () => {
   });
 });
 
+describe("multimeter test points", () => {
+  it("has one pad per node, inside the board outline and at least 1 mm from every other pad", () => {
+    expect(TEST_POINTS.map((t) => t.id)).toEqual([...TEST_POINT_IDS]);
+    for (const t of TEST_POINTS) {
+      expect(t.at[0], t.id).toBeGreaterThan(0);
+      expect(t.at[0], t.id).toBeLessThan(60);
+      expect(t.at[1], t.id).toBeGreaterThan(0);
+      expect(t.at[1], t.id).toBeLessThan(40);
+      expect(t.name.length, t.id).toBeGreaterThan(1);
+      for (const u of TEST_POINTS) if (u !== t) expect(dist(t.at[0], t.at[1], u.at[0], u.at[1]), `${t.id} vs ${u.id}`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("probe rule: the first pad is black, the second red, a third moves red, and a held pad lifts its probe", () => {
+    let p = nextProbes(NO_PROBES, "GND");
+    expect(p).toEqual({ black: "GND", red: null });
+    p = nextProbes(p, "VM");
+    expect(p).toEqual({ black: "GND", red: "VM" });
+    p = nextProbes(p, "3V3");
+    expect(p).toEqual({ black: "GND", red: "3V3" });
+    p = nextProbes(p, "GND");
+    expect(p).toEqual({ black: null, red: "3V3" });
+    p = nextProbes(p, "EN");
+    expect(p).toEqual({ black: "EN", red: "3V3" });
+    p = nextProbes(p, "3V3");
+    expect(p).toEqual({ black: "EN", red: null });
+  });
+
+  it("meterReading is V(red) − V(black), autoranged like a meter, with the law behind the number", () => {
+    const m = boardModel(BOARD_DEFAULTS);
+    const read = (black: TestPointId, red: TestPointId, inputs = BOARD_DEFAULTS) => meterReading(black, red, boardModel(inputs), inputs);
+    expect(read("GND", "VM").display).toBe("7.34 V");
+    expect(read("GND", "VM").law).toContain("Ohm's law on the FET");
+    expect(read("VM", "VBAT").display).toBe("57.8 mV");
+    expect(read("VM", "VBAT").law).toContain("1.155 A × 50 mΩ");
+    expect(read("VBAT", "VM").display).toBe("−57.8 mV");
+    expect(read("VBAT", "VM").law).toContain("red probe");
+    expect(read("D1_K", "D1_A").display).toBe("2.00 V");
+    expect(read("D1_K", "D1_A").law).toContain("KVL: 3.30 − 1.30 − 2.00 = 0 across the LED loop");
+    expect(read("D1_A", "IO13").display).toBe("1.30 V");
+    expect(read("D1_A", "IO13").law).toContain("Ohm's law on R3");
+    expect(read("GND", "VBAT_SENSE").display).toBe("2.37 V");
+    expect(read("GND", "VBAT_SENSE").law).toContain("47 k / 147 k");
+    expect(read("M1B", "M1A").display).toBe("4.41 V");
+    expect(read("M1B", "M1A").law).toContain("0.60 × 7.34");
+    expect(read("EN", "3V3").display).toBe("0.00 V");
+    expect(read("EN", "3V3").law).toContain("I = 0");
+    expect(read("VM", "3V3").law).toContain("P = (Vin − Vout) · I");
+    expect(read("GND", "3V3", { ...BOARD_DEFAULTS, vPack: 8.4 }).display).toBe("3.30 V");
+    expect(read("EN", "VBAT_SENSE").law).toContain("difference");
+    expect(m.fet.iPack).toBeCloseTo(1.155, 9);
+  });
+});
+
+describe("BoardTopView test pads", () => {
+  afterEach(cleanup);
+  const station = STATIONS[0];
+  const paths = flowPathsFor(station, true);
+  const noop = () => {};
+  const pad = (name: string) => screen.getByRole("button", { name: `Test point ${name}` });
+
+  it("draws twelve labelled pads that place a probe by click, Enter and Space, and lift them with Escape", () => {
+    const onProbe = vi.fn();
+    const onClearProbes = vi.fn();
+    const { container } = render(
+      <BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward probes={NO_PROBES} onProbe={onProbe} onClearProbes={onClearProbes} meterOn />,
+    );
+    expect(container.querySelectorAll('[role="button"][data-test-point]')).toHaveLength(12);
+    expect(container.querySelectorAll('[role="button"][data-part]')).toHaveLength(28);
+    expect(container.textContent).toContain("VBAT_SENSE");
+    fireEvent.click(pad("VM"));
+    expect(onProbe).toHaveBeenLastCalledWith("VM");
+    fireEvent.keyDown(pad("GND"), { key: "Enter" });
+    expect(onProbe).toHaveBeenLastCalledWith("GND");
+    fireEvent.keyDown(pad("3V3"), { key: " " });
+    expect(onProbe).toHaveBeenLastCalledWith("3V3");
+    expect(onClearProbes).not.toHaveBeenCalled();
+    fireEvent.keyDown(pad("3V3"), { key: "Escape" });
+    expect(onClearProbes).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the pads that hold the black and the red probe", () => {
+    render(
+      <BoardTopView station={station} phases={[0]} flowPaths={paths} selected={null} onSelect={noop} forward probes={{ black: "GND", red: "VM" }} onProbe={noop} onClearProbes={noop} meterOn />,
+    );
+    expect(pad("GND").getAttribute("data-probe")).toBe("black");
+    expect(pad("GND").getAttribute("aria-pressed")).toBe("true");
+    expect(pad("VM").getAttribute("data-probe")).toBe("red");
+    expect(pad("3V3").getAttribute("data-probe")).toBeNull();
+    expect(pad("3V3").getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("BoardInAction multimeter", () => {
+  afterEach(cleanup);
+  const pad = (name: string) => screen.getByRole("button", { name: `Test point ${name}` });
+  const meterSwitch = () => screen.getByRole("switch", { name: "Multimeter" });
+  const meter = (c: HTMLElement) => c.querySelector("[data-meter]") as HTMLElement | null;
+  const READING = "Reading  V(red) − V(black)";
+
+  it("is off until the Multimeter switch is on; then it asks for the black probe first", () => {
+    const { container } = render(<BoardInAction />);
+    expect(meter(container)).toBeNull();
+    expect(meterSwitch().getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(meterSwitch());
+    expect(meterSwitch().getAttribute("aria-checked")).toBe("true");
+    expect(meter(container)?.textContent).toContain("black probe");
+  });
+
+  it("GND then VM by click reads 7.34 V, the pack minus Q1's drop, and follows the sliders", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(meterSwitch());
+    fireEvent.click(pad("GND"));
+    expect(pad("GND").getAttribute("data-probe")).toBe("black");
+    expect(meter(container)!.textContent).toContain("red probe");
+    fireEvent.click(pad("VM"));
+    const card = meter(container)!;
+    expect(readout(card, "Black probe (COM)")).toBe("GND");
+    expect(readout(card, "Red probe")).toBe("VM");
+    expect(readout(card, READING)).toBe("7.34 V");
+    expect(card.textContent).toContain("Ohm's law on the FET");
+    fireEvent.change(screen.getByRole("slider", { name: /Left motor current/ }), { target: { value: "1.5" } });
+    expect(readout(meter(container)!, READING)).toBe("7.29 V");
+    fireEvent.click(pad("VBAT"));
+    expect(readout(meter(container)!, "Red probe")).toBe("VBAT");
+    expect(readout(meter(container)!, READING)).toBe("7.40 V");
+  });
+
+  it("the LED cathode to anode by keyboard reads the forward voltage and names KVL", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(meterSwitch());
+    fireEvent.keyDown(pad("D1 cathode (K)"), { key: "Enter" });
+    fireEvent.keyDown(pad("D1 anode (A)"), { key: " " });
+    const card = meter(container)!;
+    expect(readout(card, READING)).toBe("2.00 V");
+    expect(card.textContent).toContain("KVL: 3.30 − 1.30 − 2.00 = 0 across the LED loop");
+  });
+
+  it("Escape on a pad, Escape on the meter and the Clear button all lift both probes", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(meterSwitch());
+    const place = () => {
+      fireEvent.click(pad("GND"));
+      fireEvent.click(pad("VM"));
+      expect(readout(meter(container)!, READING)).toBe("7.34 V");
+    };
+    const lifted = () => {
+      expect(pad("GND").getAttribute("data-probe")).toBeNull();
+      expect(pad("VM").getAttribute("data-probe")).toBeNull();
+      expect(meter(container)!.textContent).toContain("black probe");
+    };
+    place();
+    fireEvent.keyDown(pad("VM"), { key: "Escape" });
+    lifted();
+    place();
+    fireEvent.keyDown(meter(container)!, { key: "Escape" });
+    lifted();
+    place();
+    fireEvent.click(screen.getByRole("button", { name: /^Clear/ }));
+    lifted();
+    expect(meterSwitch().getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("the meter and the part card do not fight: a pad never opens the card, a part never moves a probe", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(meterSwitch());
+    fireEvent.click(pad("GND"));
+    expect(container.querySelector("[data-probe-card]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Inspect Q1/ }));
+    expect(container.querySelector("[data-probe-card]")).not.toBeNull();
+    expect(pad("GND").getAttribute("data-probe")).toBe("black");
+    expect(container.querySelectorAll('[data-probe="red"]')).toHaveLength(0);
+    fireEvent.click(pad("VM"));
+    expect(readout(meter(container)!, READING)).toBe("7.34 V");
+    expect(container.querySelector("[data-probe-card]")).not.toBeNull();
+  });
+
+  it("a pad clicked while the meter is off switches it on and takes the black probe; switching off lifts the probes", () => {
+    const { container } = render(<BoardInAction />);
+    fireEvent.click(pad("VM"));
+    expect(meterSwitch().getAttribute("aria-checked")).toBe("true");
+    expect(pad("VM").getAttribute("data-probe")).toBe("black");
+    fireEvent.click(meterSwitch());
+    expect(meter(container)).toBeNull();
+    expect(pad("VM").getAttribute("data-probe")).toBeNull();
+  });
+});
+
 // Same approach as tests/content/pcb-a.test.tsx: render a state with and without the transcendental functions nudged
 // by one part in 10^14 and require identical markup.
 const NUDGE_FUNCS = ["sin", "cos", "tan", "atan2", "atan", "asin", "acos", "exp", "log", "log10", "sqrt", "pow", "hypot", "cbrt"] as const;
@@ -360,9 +550,11 @@ describe("BoardInAction hydration stability", () => {
   const go = (n: number) => fireEvent.click(screen.getByRole("button", { name: new RegExp(`Go to step ${n}`) }));
   const drive: Array<[string, (utils: RenderResult) => void]> = [
     ["default", () => {}],
-    ["station 5 without C9", () => (go(5), fireEvent.click(screen.getByRole("switch")))],
+    ["station 5 without C9", () => (go(5), fireEvent.click(screen.getByRole("switch", { name: /C9/ })))],
     ["station 8 reversed at 1.5 A", ({ container }) => (go(8), fireEvent.click(screen.getByRole("radio", { name: "Reverse" })), fireEvent.change(container.querySelector('input[type="range"]')!, { target: { value: "25" } }))],
     ["station 6 with 10 µF", () => (go(6), fireEvent.click(screen.getByRole("radio", { name: "10 µF" })))],
+    ["meter on at station 3, black on GND, red on VM, then the LED pair", () => (go(3), fireEvent.click(screen.getByRole("switch", { name: "Multimeter" })), fireEvent.click(screen.getByRole("button", { name: "Test point GND" })), fireEvent.click(screen.getByRole("button", { name: "Test point VM" })))],
+    ["meter across the LED with the blue LED at station 4", () => (go(4), fireEvent.click(screen.getByRole("radio", { name: "Blue, 3.0 V" })), fireEvent.click(screen.getByRole("button", { name: "Test point D1 cathode (K)" })), fireEvent.click(screen.getByRole("button", { name: "Test point D1 anode (A)" })))],
     ["station 3 at 8.4 V with R3 probed", ({ container }) => (go(3), fireEvent.change(container.querySelectorAll('input[type="range"]')[1], { target: { value: "8.4" } }), fireEvent.click(screen.getByRole("button", { name: /Inspect R3/ })))],
   ];
   it.each(drive)("%s renders identical markup when sin, cos, exp, log, sqrt, pow and hypot differ in the last bits", (_name, d) => {
