@@ -36,23 +36,23 @@ const data: LessonData = {
     },
   ],
   scenario: {
-    title: "The motor driver works on the bench and cuts out in the field",
+    title: "The motor driver works on the bench and never moves in the field",
     context:
-      "A first batch of 20 motor-driver boards passes bench testing: both motors spin from the lab supply, the firmware ramps them smoothly and the robot drives around the lab floor. After delivery, field units stall at random. The wheels stop for 50 to 300 ms, usually when the robot accelerates or crosses a cable duct, and then resume with no reset and no brown-out message. The design review was signed off, and the ERC report had 41 messages that the team dismissed as cosmetic warnings.",
+      "A first batch of 20 motor-driver boards passes bench testing: both motors spin from the lab supply, the firmware ramps them smoothly and the robot drives around the lab floor. The 200 production boards that follow never move: the firmware boots, 3V3 and VM are fine, the PWM and direction pins toggle on the scope, and the motor outputs stay at high impedance. The design review was signed off, and the ERC report had 41 messages that the team dismissed as cosmetic warnings.",
     symptoms: [
-      "Motors cut out for 50 to 300 ms at random and then resume, with no MCU reset and a steady 3V3 rail.",
-      "The dropouts correlate with motor start-up current and with moving the motor cable.",
-      "On the bench the fault almost never appears, and touching the driver's STBY pin with a finger switches the driver on or off.",
+      "Every production board boots normally, but no motor ever turns and both OUT pairs read high impedance with the supply on.",
+      "The TB6612FNG's STBY pin measures 0 V on a production board and about 3.3 V on the bench prototypes.",
+      "A note taped to the prototypes reads 'STBY: temporary jumper to 3V3 for the demo'.",
       "The ERC log contains 'Pin not connected (U3, STBY)' among the 41 dismissed messages.",
     ],
     hints: [
       "What does the STBY pin of a TB6612FNG do, and what is it connected to on this board?",
-      "A CMOS input with nothing attached has no defined voltage. What decides whether the driver is enabled or in standby?",
-      "Why would a motor starting, or a moved cable, change that voltage while a quiet bench does not?",
+      "The datasheet's pin table says what an unconnected STBY does: look for the 200 kΩ internal pull-down.",
+      "Why did the prototypes drive when the production boards do not?",
     ],
     rootCause:
-      "The driver's STBY (standby) pin was never wired: no GPIO, no pull-up, no pull-down. A floating CMOS input sits near its switching threshold, so stray capacitance, leakage and noise decide whether the driver is enabled. On the quiet bench the pin happened to float high, and a probe or a hand nearby held it there. In the field, motor start-up current and cable movement coupled enough noise onto the pin to drop the driver into standby for tens of milliseconds. ERC had reported it, but the message was dismissed with the other 40.",
-    fix: "Wire STBY to a GPIO with a 100 kΩ pull-down, so the driver stays off until firmware enables it (or tie it to 3V3 through 10 kΩ if the motors must always be armed). Fix the process as well: treat every ERC message as a defect until it is fixed or waived with a written reason, mark intentionally open pins with a no-connect flag only after reading the datasheet, and review every IC pin by pin against its datasheet.",
+      "The driver's STBY (standby) pin was never wired: no GPIO, no label, nothing. It does not float, because the TB6612FNG pulls STBY to ground through an internal 200 kΩ resistor (the datasheet's pin table lists the same pull-down on every IN and PWM input), so an unconnected STBY sits at 0 V and the driver stays in standby with its outputs at high impedance. The prototypes only drove because a technician had jumpered STBY to 3V3 for the demo, and nobody carried the jumper into the schematic. ERC had reported the pin, but the message was dismissed with the other 40.",
+    fix: "Wire STBY to a GPIO so firmware arms the driver after setup(); the internal pull-down keeps it in standby until then, which is what you want during boot, and an explicit 100 kΩ pull-down on the schematic documents that default for the next reader. Fix the process as well: treat every ERC message as a defect until it is fixed or waived with a written reason, mark intentionally open pins with a no-connect flag only after reading the datasheet, and review every IC pin by pin against its datasheet.",
     lesson:
       "An unconnected input is a design error, not a warning. Give every pin a defined state in every phase of operation, and never dismiss an ERC message without a written reason.",
   },
@@ -101,7 +101,7 @@ const data: LessonData = {
       ],
       answer: 1,
       explain:
-        "ERC flags any pin that is neither wired nor marked with a no-connect flag. A dangling STBY is exactly the kind of message that must be fixed, not dismissed, because a floating enable input behaves unpredictably.",
+        "ERC flags any pin that is neither wired nor marked with a no-connect flag. A dangling STBY is exactly the kind of message that must be fixed, not dismissed: the TB6612FNG's internal 200 kΩ pull-down holds an unwired STBY low, so the driver never leaves standby and the motors never run.",
     },
     {
       q: "Which of these mistakes can an electrical rules check NOT detect?",
@@ -119,9 +119,9 @@ const data: LessonData = {
       q: "What does a PWR_FLAG symbol tell the ERC?",
       choices: [
         "The net is driven from off-board, so power inputs on it count as powered",
-        "The net carries high current",
-        "The track should be widened",
-        "The net is the ground return",
+        "The net carries high current, so the layout tool should assign it a wider track class",
+        "The track should be widened to the width set in the net class for power",
+        "The net is the ground return, so ERC skips its unconnected pins",
       ],
       answer: 0,
       explain:
@@ -149,10 +149,10 @@ const data: LessonData = {
     {
       q: "A net is labelled STBY on one sheet and STNDBY on another. What happens in KiCad?",
       choices: [
-        "They connect because the first letters match",
+        "They connect because the first letters match and KiCad treats labels as prefixes",
         "They stay two separate nets, and ERC can only flag single-pin nets",
-        "KiCad merges them automatically",
-        "The netlist export fails",
+        "KiCad merges them automatically, since the names differ by one letter",
+        "The netlist export fails until the two labels are made identical",
       ],
       answer: 1,
       explain:

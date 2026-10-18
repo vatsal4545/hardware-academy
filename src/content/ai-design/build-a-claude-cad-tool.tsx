@@ -6,7 +6,7 @@ import { McpSequence } from "@/components/viz/ai-design/McpSequence";
 
 const SERVER_CODE = `# /// script
 # requires-python = ">=3.10,<3.14"
-# dependencies = ["mcp>=1.2", "build123d"]
+# dependencies = ["mcp>=2,<3", "build123d>=0.13"]
 # ///
 """cad_server.py: an MCP server that gives Claude a CAD kernel (build123d) and a DFM checker."""
 import re
@@ -15,10 +15,11 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from build123d import Axis, Box, Cylinder, GeomType, Pos, export_step as write_step
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer             # mcp 2.x; on SDK 1.10 to 1.28 this class was FastMCP in mcp.server.fastmcp
+from mcp.server.mcpserver.exceptions import ToolError  # the one exception whose text reaches the model
 from pydantic import Field
 
-mcp = FastMCP("cad")
+mcp = MCPServer("cad")
 OUT_DIR = Path.home() / "cad-out"  # the only folder this server writes to
 MIN_WALL = 1.5       # mm: thinnest wall or ligament we will machine (6061, 3-axis mill)
 HOLE_EDGE = 1.0      # fastener holes: rim to part edge, in hole diameters (centre to edge 1.5 d)
@@ -30,13 +31,13 @@ PARTS: dict = {}     # name -> build123d Part; this dict is the server's memory
 
 def get(name: str):
     if name not in PARTS:
-        raise ValueError(f"No part named {name!r}. Existing parts: {sorted(PARTS) or 'none'}")
+        raise ToolError(f"No part named {name!r}. Existing parts: {sorted(PARTS) or 'none'}")
     return PARTS[name]
 
 
 def store(name: str, part) -> dict[str, Any]:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", name):
-        raise ValueError("name must be 1 to 40 letters, digits, hyphens or underscores")
+        raise ToolError("name must be 1 to 40 letters, digits, hyphens or underscores")
     PARTS[name] = part
     size = part.bounding_box().size
     return {"name": name, "size_mm": [round(v, 2) for v in (size.X, size.Y, size.Z)],
@@ -58,7 +59,7 @@ def make_plate_with_holes(
     """Create a plate centred on the origin with four through-holes, each hole_inset mm from
     its two nearest edges (to the hole centre), plus an optional centre bore. In mm."""
     if not hole_diameter / 2 < hole_inset < min(length, width) / 2:
-        raise ValueError("hole_inset must keep the whole hole inside the plate")
+        raise ToolError("hole_inset must keep the whole hole inside the plate")
     plate = Box(length, width, thickness)
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -66,7 +67,7 @@ def make_plate_with_holes(
             plate -= at * Cylinder(hole_diameter / 2, thickness * 2)
     if bore_diameter:
         if bore_diameter > min(length, width) - 2 * MIN_WALL:
-            raise ValueError("bore_diameter leaves less than the minimum wall at the plate edge")
+            raise ToolError("bore_diameter leaves less than the minimum wall at the plate edge")
         plate -= Cylinder(bore_diameter / 2, thickness * 2)
     return store(name, plate)
 
@@ -86,10 +87,13 @@ def fillet_edges(name: str, radius: Dim, which: Literal["corners", "top", "botto
         face = part.faces().sort_by(Axis.Z)[-1 if which == "top" else 0]
         edges, limit = face.outer_wire().edges(), box.size.Z
     if not edges:
-        raise ValueError(f"No {which} edges found. Was this part already filleted?")
+        raise ToolError(f"No {which} edges found. Was this part already filleted?")
     if radius >= limit:
-        raise ValueError(f"radius {radius} mm must be below {limit:.2f} mm for {which} edges")
-    return store(name, part.fillet(radius, edges))  # the kernel raises a readable ValueError on failure
+        raise ToolError(f"radius {radius} mm must be below {limit:.2f} mm for {which} edges")
+    try:
+        return store(name, part.fillet(radius, edges))
+    except ValueError as e:  # the kernel's message is readable ("Failed creating a fillet with radius of 20, try a smaller value...")
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool()
@@ -130,7 +134,7 @@ def export_step(name: str) -> dict[str, Any]:
     part = get(name)
     report = dfm_check(name)
     if not report["pass"]:
-        raise ValueError("Refusing to export; dfm_check failed: " + "; ".join(report["violations"]))
+        raise ToolError("Refusing to export; dfm_check failed: " + "; ".join(report["violations"]))
     OUT_DIR.mkdir(exist_ok=True)
     path = OUT_DIR / f"{name}.step"
     write_step(part, str(path))
@@ -197,8 +201,10 @@ Claude: Done. mount.step is 42 x 42 x 6 mm with four 3.4 mm holes on a 31 mm squ
         22.5 mm bore. I reduced the corner radius from 8 mm to 4 mm because at 8 mm the
         holes were only 2.76 mm from the edge, under the 3.4 mm rule.`;
 
-const TEST_CODE = `# test_cad_server.py   run:  uv run --with pytest --with mcp --with build123d pytest -q
+const TEST_CODE = `# test_cad_server.py   run:  uv run --with pytest --with "mcp>=2,<3" --with build123d pytest -q
 import pytest
+from mcp.server.mcpserver.exceptions import ToolError
+
 import cad_server as cad
 
 
@@ -222,7 +228,7 @@ def test_export_refuses_a_thin_part(tmp_path, monkeypatch):
     monkeypatch.setattr(cad, "OUT_DIR", tmp_path)
     for size in [(40, 40, 1.0), (1.0, 40, 40), (40, 1.0, 40)]:   # a 1 mm wall in z, in x and in y
         cad.make_box("thin", *size)                              # below the 1.5 mm rule
-        with pytest.raises(ValueError):
+        with pytest.raises(ToolError):
             cad.export_step("thin")
     assert not list(tmp_path.iterdir())`;
 
@@ -359,7 +365,7 @@ export default function Lesson() {
           </p>
           <p>
             A server can offer three kinds of capability: tools (functions the model chooses to call), resources (data the application attaches, such as a file or a part list) and prompts (templates the user picks). For CAD, tools do
-            the work. Each tool has a name, a natural-language description and a JSON Schema for its arguments, and the model reads those to decide what to call, so they are part of the prompt. A result comes back as content blocks plus an isError flag. A tool with a declared return type (dict[str, Any] in our server) also gets an output schema and a structuredContent copy of its data, and when a tool raises an exception the Python SDK turns it into an isError result that carries the message.
+            the work. Each tool has a name, a natural-language description and a JSON Schema for its arguments, and the model reads those to decide what to call, so they are part of the prompt. A result comes back as content blocks plus an isError flag. A tool with a declared return type (dict[str, Any] in our server) also gets an output schema and a structuredContent copy of its data, and when a tool raises ToolError the Python SDK turns it into an isError result that carries the message. Since SDK 2.0 any other exception reaches the client only as the bare text <code>Error executing tool</code>, with its details kept in the server log, so a rule the model should read is raised as ToolError.
           </p>
         </Prose>
         <Figure caption="Architecture of the Claude CAD tool: the model never touches the kernel directly. Every call crosses the MCP boundary, where the server validates it, runs it and measures the result.">
@@ -407,21 +413,23 @@ export default function Lesson() {
         </Callout>
       </Section>
 
-      <Section id="server" title="The complete server, about 130 lines">
+      <Section id="server" title="The complete server, about 140 lines">
         <Prose>
           <p>
             Save this as <code>~/cad-mcp/cad_server.py</code>. The comment block at the top is inline script metadata, so <code>uv run</code> builds an environment with the right Python and packages by itself. The part kernel is
             build123d in algebra mode. Everything the model can do goes through five functions, and three of them (<code>make_plate_with_holes</code>, <code>dfm_check</code> and <code>export_step</code>) carry the rules.
+            The listing was run for this lesson with uv 0.13.1, Python 3.13.7, mcp 2.3.0 and build123d 0.13.0 (macOS, October 2026); every number in the
+            transcript and in the answers below comes from that run, driven through the MCP Python client over stdio.
           </p>
         </Prose>
         <CodeBlock code={SERVER_CODE} lang="python" title="cad_server.py" />
         <Prose>
           <ul>
             <li>
-              <code>Dim</code> and the <code>thickness</code> annotation put limits in the JSON Schema. The model sees <code>minimum: 1.5</code> before it calls, and FastMCP rejects violations before your code runs.
+              <code>Dim</code> and the <code>thickness</code> annotation put limits in the JSON Schema. The model sees <code>minimum: 1.5</code> before it calls, and the SDK rejects violations before your code runs, as an isError result that quotes pydantic: <code>Input should be greater than or equal to 1.5</code>.
             </li>
             <li>
-              <code>fillet_edges</code> selects by geometry (vertical edges at the bounding-box corners) and refuses a radius that cannot fit. The kernel&apos;s own failure message is already readable.
+              <code>fillet_edges</code> selects by geometry (vertical edges at the bounding-box corners) and refuses a radius that cannot fit. When the kernel itself fails (8 mm corners on the 42 mm plate are fine, 20 mm are not) build123d raises a ValueError with a readable message, and the except clause re-raises it as ToolError so the text gets through.
             </li>
             <li>
               <code>dfm_check</code> measures the geometry with exact kernel distances, and its thinnest-wall search starts at the smallest bounding-box dimension, so a block that is only 0.5 mm thick in x, y or z fails. A failed check is a normal return value with the rule, the worst measured value and the limit, so the model can repair the design.
@@ -437,7 +445,11 @@ export default function Lesson() {
         <Callout kind="warning" title="build123d moves quickly">
           <p>
             The listing sticks to documented build123d calls (<code>inner_wires</code>, <code>distance_to</code>, <code>filter_by</code>, the <code>fillet</code> method), but the library is young and renames things between releases. Pin
-            the version you test with in the script header, and if a name has moved, run the tool in the Inspector and read the traceback.
+            the version you test with in the script header, and if a name has moved, run the tool in the Inspector and read the traceback. The mcp package moved
+            faster still: version 2.0 renamed FastMCP to MCPServer (now in <code>mcp.server.mcpserver</code>) and stopped forwarding the text of plain
+            exceptions, which is why the header says <code>mcp&gt;=2,&lt;3</code> and the listing raises ToolError. Output schemas and structuredContent
+            arrived in SDK 1.10; on a 1.x install (1.10 to 1.28) the imports are <code>from mcp.server.fastmcp import FastMCP</code> and{" "}
+            <code>from mcp.server.fastmcp.exceptions import ToolError</code>.
           </p>
         </Callout>
 
@@ -448,7 +460,7 @@ export default function Lesson() {
           </p>
         </Prose>
         <CodeBlock code={CONFIG_UV} lang="json" title="claude_desktop_config.json (uv)" />
-        <CodeBlock code={CONFIG_PY} lang="json" title="claude_desktop_config.json (venv with pip install mcp build123d)" />
+        <CodeBlock code={CONFIG_PY} lang="json" title='claude_desktop_config.json (venv with pip install "mcp>=2,<3" build123d)' />
         <CodeBlock code={RUN_CMDS} lang="bash" title="try it, then debug it" />
 
         <Prose>

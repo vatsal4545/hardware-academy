@@ -121,7 +121,7 @@ export default function Lesson() {
             <code>P = (Vin − Vout) · I</code>, and the efficiency is just Vout / Vin. From 12 V to 3.3 V at 500 mA that is 8.7 V × 0.5 A =
             4.35 W at 27.5% efficiency, inside a part the size of a fingernail whose junction rises 60 to 90 °C per watt. Its virtues are
             real: two capacitors, no switching noise, and 60 dB or more of supply rejection. The <strong>dropout voltage</strong>, the smallest
-            Vin − Vout it can regulate, is about 1.1 to 1.3 V for the classic AMS1117 and 100 to 300 mV for modern PMOS parts.
+            Vin − Vout it can regulate, is 1.1 V typical and 1.3 V maximum at 0.8 A for the classic AMS1117 (Advanced Monolithic Systems datasheet) and 100 to 300 mV for modern PMOS parts.
           </p>
           <p>
             A <strong>buck converter</strong> never lets a resistive element carry the difference. A switch connects the input to an inductor

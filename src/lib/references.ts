@@ -36,7 +36,7 @@ const list: Reference[] = [
   { id: "montrose", kind: "book", title: "Printed Circuit Board Design Techniques for EMC Compliance", authors: "Mark I. Montrose", year: 2000, venue: "IEEE Press, 2nd edition", note: "A layout-rules handbook for passing EMC tests." },
   { id: "coombs", kind: "book", title: "Printed Circuits Handbook", authors: "Clyde F. Coombs Jr. and Happy T. Holden (editors)", year: 2016, venue: "McGraw-Hill, 7th edition", note: "How boards are actually fabricated and assembled, written by the industry. Dip into the chapters you need." },
   { id: "robertson", kind: "book", title: "Printed Circuit Board Designer's Reference: Basics", authors: "Christopher T. Robertson", year: 2004, venue: "Prentice Hall", note: "A short practical reference on layers, stack-ups and design rules." },
-  { id: "ipc-2221", kind: "standard", title: "IPC-2221B: Generic Standard on Printed Board Design", authors: "IPC", year: 2012, venue: "IPC", url: "https://www.ipc.org/", note: "The base design standard: clearances, trace width charts, hole sizes. The trace-width formula in this course comes from it." },
+  { id: "ipc-2221", kind: "standard", title: "IPC-2221B: Generic Standard on Printed Board Design", authors: "IPC", year: 2012, venue: "IPC", url: "https://www.ipc.org/", note: "The base design standard: clearances, trace width charts, hole sizes. The trace-width formula in this course comes from it, and Table 6-1 column B2 gives the 0.1 mm (to 30 V) and 0.6 mm (31 to 150 V) clearances quoted in the layout lesson." },
   { id: "ipc-2152", kind: "standard", title: "IPC-2152: Standard for Determining Current Carrying Capacity in Printed Board Design", authors: "IPC", year: 2009, venue: "IPC", url: "https://www.ipc.org/", note: "Newer and more accurate current-capacity data than the IPC-2221 charts; use it when a trace really matters." },
   { id: "ipc-7351", kind: "standard", title: "IPC-7351B: Generic Requirements for Surface Mount Design and Land Pattern Standard", authors: "IPC", year: 2010, venue: "IPC", url: "https://www.ipc.org/", note: "Footprint (land pattern) geometry for SMT parts." },
   { id: "ipc-a-610", kind: "standard", title: "IPC-A-610H: Acceptability of Electronic Assemblies", authors: "IPC", year: 2020, venue: "IPC", url: "https://www.ipc.org/", note: "What a good solder joint looks like; the inspection standard assemblers work to." },
@@ -85,13 +85,13 @@ const list: Reference[] = [
   { id: "padhi1997", kind: "paper", title: "Phospho-olivines as Positive-Electrode Materials for Rechargeable Lithium Batteries", authors: "A. K. Padhi, K. S. Nanjundaswamy and J. B. Goodenough", year: 1997, venue: "Journal of The Electrochemical Society 144(4), 1188-1194", doi: "10.1149/1.1837571", note: "The LFP cathode paper; LFP is now in most standard-range EVs." },
   { id: "burress2011", kind: "report", title: "Evaluation of the 2010 Toyota Prius Hybrid Synergy Drive System", authors: "Tim A. Burress et al., Oak Ridge National Laboratory", year: 2011, venue: "ORNL/TM-2010/253", url: "https://info.ornl.gov/sites/publications/files/Pub26762.pdf", free: true, note: "A government lab tears down a production motor and inverter and publishes every measurement. The model for how to benchmark a drive unit." },
   { id: "sae-j1772", kind: "standard", title: "SAE J1772: Electric Vehicle and Plug-in Hybrid Electric Vehicle Conductive Charge Coupler", authors: "SAE International", year: 2017, venue: "SAE", url: "https://www.sae.org/standards/content/j1772_201710/", note: "The AC charging connector and the pilot signal used in the charging lesson." },
-  { id: "sae-j3400", kind: "standard", title: "SAE J3400: NACS Electric Vehicle Coupler", authors: "SAE International", year: 2024, venue: "SAE", url: "https://www.sae.org/standards/content/j3400_202409/", note: "The North American Charging Standard (Tesla's connector) as an open standard." },
+  { id: "sae-j3400", kind: "standard", title: "SAE J3400: NACS Electric Vehicle Coupler", authors: "SAE International", year: 2024, venue: "SAE", url: "https://www.sae.org/standards/content/j3400_202409/", note: "The North American Charging Standard (Tesla's connector) as an open standard; rated up to 1,000 V DC and 1,000 A with cooling, per the Joint Office of Energy and Transportation." },
   { id: "iso-15118", kind: "standard", title: "ISO 15118-20: Road Vehicles, Vehicle to Grid Communication Interface, 2nd Generation Network Layer and Application Layer Requirements", authors: "ISO", year: 2022, venue: "ISO", url: "https://www.iso.org/standard/77845.html", note: "Plug and charge, bidirectional charging and the car-to-charger protocol." },
   { id: "ocpp", kind: "standard", title: "Open Charge Point Protocol 2.0.1", authors: "Open Charge Alliance", year: 2020, venue: "Open Charge Alliance", url: "https://openchargealliance.org/protocols/open-charge-point-protocol/", free: true, note: "How chargers talk to the back office: sessions, meter values, load management, firmware." },
   { id: "iec-61851", kind: "standard", title: "IEC 61851-1: Electric Vehicle Conductive Charging System, Part 1: General Requirements", authors: "IEC", year: 2017, venue: "IEC", url: "https://webstore.iec.ch/", note: "The international charging-system safety and modes standard." },
   { id: "nec-625", kind: "standard", title: "NFPA 70, National Electrical Code, Article 625: Electric Vehicle Power Transfer System", authors: "NFPA", year: 2023, venue: "NFPA", url: "https://www.nfpa.org/codes-and-standards/nfpa-70-standard-development/70", note: "The US electrical code article for charging installations: circuit sizing, disconnects, ventilation." },
   { id: "ada-2010", kind: "standard", title: "2010 ADA Standards for Accessible Design", authors: "US Department of Justice", year: 2010, venue: "US DOJ", url: "https://www.ada.gov/law-and-regs/design-standards/2010-stds/", free: true, note: "Federal accessibility rules; EV charging guidance builds on them." },
-  { id: "cbc-11b", kind: "standard", title: "California Building Code, Chapter 11B: Accessibility to Public Buildings (Section 11B-812, Electric Vehicle Charging Stations)", authors: "California Building Standards Commission", year: 2022, venue: "CBC", url: "https://www.dgs.ca.gov/BSC/Codes", note: "The California rules for accessible EV charging spaces; confirm numbers against the edition your site uses." },
+  { id: "cbc-11b", kind: "standard", title: "California Building Code, Chapter 11B: Accessibility to Public Buildings (Section 11B-812, Electric Vehicle Charging Stations)", authors: "California Building Standards Commission", year: 2022, venue: "CBC", url: "https://www.dgs.ca.gov/BSC/Codes", note: "Table 11B-228.3.2.1 (how many accessible EVCS) and 11B-812.6 and 11B-812.7 (216 in long; van 144 in, standard 108 in, ambulatory 120 in wide; 60 in aisle), checked against the 2022 edition and unchanged in 2025; confirm against the edition your site uses." },
   // AI-assisted design
   { id: "requicha1980", kind: "paper", title: "Representations for Rigid Solids: Theory, Methods, and Systems", authors: "Aristides A. G. Requicha", year: 1980, venue: "ACM Computing Surveys 12(4), 437-464", doi: "10.1145/356827.356833", note: "The survey that defined solid modelling: B-rep, CSG and what makes a representation valid." },
   { id: "mantyla1988", kind: "book", title: "An Introduction to Solid Modeling", authors: "Martti Mäntylä", year: 1988, venue: "Computer Science Press", note: "The classic B-rep kernel book, with the Euler operators every kernel implements." },
@@ -106,6 +106,18 @@ const list: Reference[] = [
   { id: "mcp-spec", kind: "doc", title: "Model Context Protocol Specification", authors: "Anthropic and the MCP community", year: 2025, venue: "modelcontextprotocol.io", url: "https://modelcontextprotocol.io/specification/", free: true, note: "The protocol used in the Claude CAD tool lesson: tools, resources, transports." },
   { id: "occt-docs", kind: "doc", title: "Open CASCADE Technology Documentation", authors: "Open Cascade SAS", year: 2025, venue: "dev.opencascade.org", url: "https://dev.opencascade.org/doc/overview/html/", free: true, note: "The open B-rep kernel under FreeCAD, CadQuery and build123d." },
   { id: "build123d-docs", kind: "doc", title: "build123d Documentation", authors: "build123d contributors", year: 2025, venue: "build123d.readthedocs.io", url: "https://build123d.readthedocs.io/", free: true, note: "The code-CAD library used in the MCP lesson." },
+  { id: "mcp-python-sdk", kind: "doc", title: "MCP Python SDK: v2 migration guide", authors: "Model Context Protocol maintainers", year: 2026, venue: "py.sdk.modelcontextprotocol.io", url: "https://py.sdk.modelcontextprotocol.io/v2/migration/", free: true, note: "What changed in SDK 2.0: FastMCP became MCPServer, timeouts moved to seconds, and only ToolError text reaches the model. The lesson listing targets 2.x." },
+  // Datasheets and vendor design guides checked for this course
+  { id: "ams1117-ds", kind: "doc", title: "AMS1117: 1A Low Dropout Voltage Regulator (datasheet)", authors: "Advanced Monolithic Systems", year: 2012, venue: "advanced-monolithic.com (free PDF at advanced-monolithic.com/pdf/ds1117.pdf, http only)", free: true, note: "1 A output, current limit 0.9 to 1.5 A; dropout 1.1 V typical and 1.3 V maximum at 0.8 A (note 4: higher above 0.8 A); quiescent current 5 mA typical, 11 mA maximum; a 22 µF solid tantalum output capacitor keeps it stable; SOT-223 46 to 90 °C/W depending on copper." },
+  { id: "tb6612fng-ds", kind: "doc", title: "TB6612FNG: Driver IC for Dual DC Motor (datasheet)", authors: "Toshiba", year: 2014, venue: "toshiba.semicon-storage.com", url: "https://toshiba.semicon-storage.com/info/TB6612FNG_datasheet_en_20141001.pdf", free: true, note: "Pin table: STBY, IN1, IN2 and PWM each have a 200 kΩ internal pull-down. VM 2.5 to 13.5 V, 1.2 A average and 3.2 A peak per channel above 4.5 V, 0.5 Ω typical upper plus lower on-resistance, PWM to 100 kHz (figures checked in the 2008-05-09 revision)." },
+  { id: "p2n2222a-ds", kind: "doc", title: "P2N2222A: Amplifier Transistors, NPN Silicon (datasheet, Rev. 7)", authors: "onsemi", year: 2013, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/p2n2222a-d.pdf", free: true, note: "TO-92 case 29 style 17: pin 1 collector, 2 base, 3 emitter (C-B-E with the flat face toward you). IC 600 mA, VCEO 40 V, hFE 100 to 300 at 150 mA, fT 300 MHz." },
+  { id: "pn2222a-ds", kind: "doc", title: "PN2222A: NPN General-Purpose Amplifier (datasheet, Rev. 1.1.0)", authors: "Fairchild Semiconductor, now onsemi", year: 2014, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/pn2222a-d.pdf", free: true, note: "The other common 2N2222 in TO-92, with the opposite E-B-C lead order; IC 1 A, VCEO 40 V." },
+  { id: "esp32-hw-guidelines", kind: "doc", title: "ESP32 Hardware Design Guidelines: Schematic Checklist", authors: "Espressif Systems", year: 2025, venue: "docs.espressif.com", url: "https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html", free: true, note: "CHIP_PU (EN) must not be left floating; the recommended RC delay is R = 10 kΩ and C = 1 µF; strapping pins GPIO0, GPIO2, GPIO5, MTDI (GPIO12) and MTDO (GPIO15); 0.1 µF at each digital supply pin." },
+  { id: "nevi-23cfr680", kind: "standard", title: "23 CFR Part 680: National Electric Vehicle Infrastructure Standards and Requirements", authors: "Federal Highway Administration", year: 2023, venue: "Code of Federal Regulations", url: "https://www.ecfr.gov/current/title-23/part-680", free: true, note: "The NEVI minimum standards: at least four DC ports at 150 kW each, simultaneously (680.106); ISO 15118 and OCPP 2.0.1 (680.108); 97 % uptime per port (680.116)." },
+  { id: "iec-62196-3", kind: "standard", title: "IEC 62196-3:2022: Plugs, socket-outlets, vehicle connectors and vehicle inlets, Part 3: Dimensional compatibility requirements for DC and AC/DC pin and contact-tube vehicle couplers", authors: "IEC", year: 2022, venue: "IEC", url: "https://webstore.iec.ch/", note: "Configurations AA (CHAdeMO), EE (CCS1) and FF (CCS2) are rated 1,000 V DC and 400 A." },
+  { id: "iec-ts-62196-3-1", kind: "standard", title: "IEC TS 62196-3-1:2020: Vehicle connectors, vehicle inlets and cable assemblies for DC charging intended to be used with a thermal management system", authors: "IEC", year: 2020, venue: "IEC", url: "https://webstore.iec.ch/", note: "The cooled-coupler specification: up to 1,500 V DC and 500 A with thermal management." },
+  { id: "jedec-ddr5", kind: "standard", title: "JESD79-5: DDR5 SDRAM", authors: "JEDEC", year: 2020, venue: "JEDEC", url: "https://www.jedec.org/", note: "Refresh: tREFI is 3.9 µs, so 8,192 refresh commands cover every row within a 32 ms window below 85 °C; DDR4 (JESD79-4) uses 7.8 µs and 64 ms." },
+  { id: "jedec-hbm2", kind: "standard", title: "JESD235: High Bandwidth Memory (HBM) DRAM", authors: "JEDEC", year: 2013, venue: "JEDEC", url: "https://www.jedec.org/", note: "HBM2 uses the same 3.9 µs tREFI and 32 ms refresh window as DDR5." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -127,12 +139,16 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "sedra-smith", read: "The diodes chapter and its problems; LED and Schottky examples." },
   ],
   "transistors-bjt-mosfet": [
+    { id: "pn2222a-ds", read: "The same part number family with the opposite E-B-C order; the reason to check every TO-92." },
+    { id: "p2n2222a-ds", read: "The pinout page: the P2N2222A is C-B-E, and the encyclopedia drawing follows it." },
     { id: "bardeen1948", read: "One page: the first transistor announcement." },
     { id: "kahng1960", read: "The first MOSFET; cite it when asked who invented the device." },
     { id: "sedra-smith", read: "The MOSFET chapter: threshold, the three regions, the switch model." },
     { id: "sze", read: "Power MOSFET structure and the body diode." },
   ],
   "cmos-logic-and-chips": [
+    { id: "jedec-hbm2", read: "HBM refresh timing, which matches DDR5." },
+    { id: "jedec-ddr5", read: "The refresh timing (tREFI, refresh window) behind the memory table." },
     { id: "wanlass1963", read: "Two pages: why complementary pairs draw almost no static current." },
     { id: "dennard1974", read: "The scaling rules and the table of what shrinks with what." },
     { id: "hisamoto2000", read: "The FinFET structure, before gate-all-around replaced it." },
@@ -167,6 +183,8 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "coombs", read: "The surface-mount components chapter for package sizes." },
   ],
   "active-components": [
+    { id: "esp32-hw-guidelines", read: "A real reset and boot-strap checklist for the MCU-on-a-board section." },
+    { id: "ams1117-ds", read: "Page 3 for dropout and quiescent current, page 4 for why it needs a 22 µF tantalum output capacitor." },
     { id: "horowitz-hill", read: "The voltage-regulator and op-amp chapters." },
     { id: "zumbahlen", read: "The op-amp basics chapter." },
     { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
@@ -181,6 +199,9 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "hughes-drury", read: "The brushed DC motor chapter: torque from current, back-EMF from speed." },
   ],
   "schematic-capture": [
+    { id: "esp32-hw-guidelines", read: "The EN (CHIP_PU) RC values and the strapping pins the schematic audit checks." },
+    { id: "tb6612fng-ds", read: "The pin table: every control input has a 200 kΩ internal pull-down, which decides the STBY scenario." },
+    { id: "ams1117-ds", read: "The Stability section: the output-capacitor footnote the lesson refers to." },
     { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
     { id: "altium-getting-started", read: "Pages 4-13: schematic, placing parts, nets and net labels, compiling the schematic." },
     { id: "kicad-docs", read: "The Eeschema (schematic editor) manual." },
@@ -194,6 +215,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "altium-getting-started", read: "Pages 14-27: transferring to the PCB, placement, design rules, routing, 3D view." },
   ],
   "power-and-signal-integrity": [
+    { id: "ams1117-ds", read: "Dropout voltage: why 3V3 collapses when VM dips to 4.4 V." },
     { id: "ott", read: "The chapters on grounding, return currents and decoupling." },
     { id: "bogatin", read: "Chapters on impedance, transmission lines and crosstalk." },
     { id: "johnson-graham", read: "The chapters on rise time, ringing and termination." },
@@ -206,10 +228,15 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "ipc-7351", read: "Why pad geometry decides tombstoning." },
   ],
   "bring-up-and-debugging": [
+    { id: "esp32-hw-guidelines", read: "The EN RC delay (10 kΩ, 1 µF) behind the 10 ms time constant in the checklist." },
+    { id: "ams1117-ds", read: "Quiescent current and thermal resistance for the idle-current and heat estimates." },
     { id: "horowitz-hill", read: "The chapter on instruments and measurement, and the probing advice." },
     { id: "ott", read: "The chapter on measurement and troubleshooting of noise." },
   ],
   "kicad-project-walkthrough": [
+    { id: "esp32-hw-guidelines", read: "EN pull-up, strapping pins and decoupling for U1." },
+    { id: "tb6612fng-ds", read: "The ratings quoted for U3 and the VM range." },
+    { id: "ams1117-ds", read: "Thermal resistance figures behind the copper pour under U3." },
     { id: "kicad-docs", read: "The Getting Started tutorial and the PCB editor manual." },
     { id: "altium-getting-started", read: "The same project flow in Altium Designer, step by step with screenshots." },
     { id: "pcad-guide", read: "Chapter 4, the tutorial design session, for a second worked layout." },
@@ -226,6 +253,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "kalman1960", read: "Read the abstract and the idea of blending prediction with measurement." },
   ],
   "actuators-and-drivers": [
+    { id: "tb6612fng-ds", read: "Output saturation voltage (0.5 V typical at 1 A) behind the L298N comparison." },
     { id: "hughes-drury", read: "Chapters on brushed DC, stepper and brushless motors." },
     { id: "siegwart", read: "The locomotion chapter on wheel configurations." },
     { id: "horowitz-hill", read: "The section on driving motors and H-bridges." },
@@ -254,6 +282,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "durrant-whyte2006", read: "The SLAM tutorial, part I." },
   ],
   "build-your-smart-robot": [
+    { id: "tb6612fng-ds", read: "Ratings and the pin table behind the STBY pull-down and the 1.2 A per channel." },
     { id: "siegwart", read: "The locomotion and sensors chapters, to understand each part you are wiring." },
     { id: "white", read: "The firmware-structure chapters before you extend the sketch." },
     { id: "horowitz-hill", read: "Power supplies and motor driving." },
@@ -268,6 +297,9 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "macenski2022", read: "Why ROS 2 changed the architecture and who runs it in production." },
   ],
   "ev-powertrain-architecture": [
+    { id: "sae-j3400", read: "The NACS coupler rating (up to 1,000 A with cooling) that lets Tesla exceed 500 A." },
+    { id: "iec-ts-62196-3-1", read: "Cooled couplers to 500 A, the figure the practice problem uses." },
+    { id: "iec-62196-3", read: "CCS couplers are rated 400 A; the reason a 400 V car is current-limited at the charger." },
     { id: "larminie-lowry", read: "The chapters on vehicle architecture and energy flow." },
     { id: "mohan", read: "The inverter and DC-DC chapters." },
     { id: "burress2011", read: "A full teardown of a production drive unit, with measurements." },
@@ -298,6 +330,8 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "larminie-lowry", read: "The vehicle-level context." },
   ],
   "ev-charging-systems": [
+    { id: "iec-62196-3", read: "The coupler ratings behind the 400 A and 500 A cable figures." },
+    { id: "nevi-23cfr680", read: "Sections 680.106, 680.108 and 680.116: the port count, power, protocols and uptime quoted in the lesson." },
     { id: "sae-j1772", read: "The AC connector and the pilot signal." },
     { id: "sae-j3400", read: "The NACS connector standard." },
     { id: "iso-15118", read: "Plug and charge and bidirectional charging." },
@@ -323,6 +357,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "yao2023", read: "The reason-and-act loop agents use." },
   ],
   "build-a-claude-cad-tool": [
+    { id: "mcp-python-sdk", read: "The migration guide, before you adapt the listing to a 1.x install or a later major version." },
     { id: "mcp-spec", read: "Tools and resources; then the Python SDK docs it links to." },
     { id: "schick2023", read: "Why tool use is taught, not assumed." },
     { id: "yao2023", read: "The agent loop you are building around the tools." },

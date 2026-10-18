@@ -8,7 +8,7 @@ const data: LessonData = {
     },
     {
       term: "Dropout voltage",
-      def: "The minimum Vin − Vout at which an LDO still regulates: about 1.1 to 1.3 V for an AMS1117 at 800 mA, 100 to 300 mV for modern PMOS LDOs. Below it, the output simply follows the input down.",
+      def: "The minimum Vin − Vout at which an LDO still regulates: 1.1 V typical and 1.3 V maximum for an AMS1117 at 0.8 A (its datasheet specifies dropout up to 0.8 A and says it rises above that), 100 to 300 mV for modern PMOS LDOs. Below it, the output simply follows the input down.",
     },
     {
       term: "Buck converter",
@@ -141,9 +141,9 @@ const data: LessonData = {
       q: "Why must a 5 V HC-SR04 echo pin not be wired straight to an ESP32 GPIO?",
       choices: [
         "The ESP32 inputs are not 5 V tolerant, so 5 V can damage the pin",
-        "The HC-SR04 only works with a 3.3 V supply",
-        "A divider is only needed to filter noise",
-        "5 V is read as a logic low by the ESP32",
+        "The HC-SR04 only works from a 3.3 V supply, so 5 V on its echo line means it is miswired",
+        "A divider is only needed to filter noise on the echo line, not to drop the voltage",
+        "5 V is read as a logic low by the ESP32, so the echo pulse would arrive inverted",
       ],
       answer: 0,
       explain:

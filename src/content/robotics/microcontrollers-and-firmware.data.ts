@@ -111,9 +111,9 @@ const data: LessonData = {
       q: "Why is loop() { work(); delay(10); } not a 100 Hz control loop?",
       choices: [
         "The period is 10 ms plus however long work() takes, and it drifts",
-        "delay() is inaccurate by up to 50%",
-        "delay() disables interrupts",
-        "loop() is limited to 50 Hz on an ESP32",
+        "delay() is inaccurate by up to 50%, since it counts CPU cycles",
+        "delay() disables interrupts, so encoder counts are lost",
+        "loop() is limited to 50 Hz on an ESP32 by the Arduino core",
       ],
       answer: 0,
       explain:

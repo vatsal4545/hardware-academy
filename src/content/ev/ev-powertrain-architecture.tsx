@@ -240,8 +240,10 @@ export default function Lesson() {
             70 mm² cable (two conductors) holds about 2.5 kg of copper, its 35 mm² equivalent about 1.25 kg.
           </p>
           <p>
-            Charging is where it shows. DC fast-charge cables and stations top out around 500 A, so a 400 V car peaks near
-            200 kW while an 800 V car can use a 350 kW charger; Hyundai&apos;s E-GMP cars (Ioniq 5, 2021) charge 10-80% in
+            Charging is where it shows. A CCS coupler is rated 400 A in IEC 62196-3:2022 and 500 A with a liquid-cooled cable under
+            IEC TS 62196-3-1, so most CCS dispensers top out around 500 A: a 400 V car peaks near 200 kW while an 800 V car can use a
+            350 kW charger. Tesla&apos;s NACS cables are the exception, with over 600 A on a V3 Supercharger (250 kW at about 400 V) and
+            a J3400 rating of up to 1,000 A with cooling. Hyundai&apos;s E-GMP cars (Ioniq 5, 2021) charge 10-80% in
             about 18 minutes. The price is parts rated for 1,000 V-class peaks. A full 800 V pack sits near 850-900 V
             and switching overshoot adds more, so the inverter needs 1,200 V switches. 1,200 V SiC MOSFETs, with far
             lower switching loss than 1,200 V IGBTs, make an 800 V drivetrain more efficient, but they are not what made

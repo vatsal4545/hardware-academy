@@ -99,10 +99,10 @@ const data: LessonData = {
     {
       q: "Why must the ESP32, the TB6612 and every sensor share a ground?",
       choices: [
-        "To halve the total current drawn",
-        "Because logic levels are voltages measured against ground; without a shared reference the inputs float",
-        "Because the pack has only one negative terminal",
-        "To cancel motor noise",
+        "To halve the total current drawn, since the return currents of the two rails cancel",
+        "Logic levels are voltages measured against ground; without a shared reference the inputs float",
+        "Because the pack has only one negative terminal, and there is nowhere else to connect them",
+        "To cancel motor noise, because the brushes' sparks are shorted out by the common wire",
       ],
       answer: 1,
       explain:
@@ -132,22 +132,22 @@ const data: LessonData = {
     {
       q: "Why is the TB6612's STBY pin held low until setup() has configured the PWM pins?",
       choices: [
-        "To save power while the ESP32 sleeps",
+        "To save power while the ESP32 boots, since the driver's quiescent current is large",
         "So the H-bridges cannot drive the motors while the GPIOs are undefined during boot",
-        "Because STBY selects the PWM frequency",
-        "To reset the encoders",
+        "Because STBY selects the PWM frequency, and it must be set before the timers start",
+        "To reset the encoders to zero before the first speed measurement",
       ],
       answer: 1,
       explain:
-        "During reset and boot, GPIOs float or toggle (GPIO 14 even outputs PWM at boot). Holding STBY low with a pull-down keeps the outputs off until firmware has put every control pin in a known state.",
+        "During reset and boot, GPIOs float or toggle (GPIO 14 even outputs PWM at boot). Holding STBY low with a pull-down keeps the outputs off until firmware has put every control pin in a known state. The TB6612FNG already has a 200 kΩ pull-down inside on STBY (and on every IN and PWM pin), so the chip wakes up in standby by itself; the external 10 kΩ makes that default stiff against noise on breadboard wiring.",
     },
     {
       q: "A Li-ion cell in the robot is hot and starting to swell. What do you do?",
       choices: [
-        "Keep driving until the pack is empty",
+        "Keep driving until the pack is empty, since a discharged cell cannot catch fire",
         "Disconnect it and move it to a non-flammable surface outdoors, away from people",
-        "Put it in a freezer to cool it",
-        "Puncture it to release the gas",
+        "Put it in a freezer to cool it, then charge it slowly to reseat the electrolyte",
+        "Puncture it to release the gas before the case splits on its own",
       ],
       answer: 1,
       explain:

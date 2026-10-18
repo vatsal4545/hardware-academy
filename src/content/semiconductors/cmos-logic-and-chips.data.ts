@@ -28,7 +28,7 @@ const data: LessonData = {
     },
     {
       term: "DRAM (1T1C)",
-      def: "Dynamic RAM: one transistor and one capacitor per bit. Dense and cheap, but the charge leaks, so every row must be refreshed every 64 ms.",
+      def: "Dynamic RAM: one transistor and one capacitor per bit. Dense and cheap, but the charge leaks, so every row must be refreshed within a fixed window: 64 ms for DDR4, 32 ms for DDR5 and HBM, with a refresh command about every 3.9 µs.",
     },
     {
       term: "Flash (floating gate)",
@@ -123,7 +123,7 @@ const data: LessonData = {
       choices: ["SRAM", "Flash", "DRAM", "Processor registers"],
       answer: 2,
       explain:
-        "DRAM stores each bit as charge on a tiny capacitor that leaks, so every row is read and rewritten every 64 ms. SRAM holds data in cross-coupled inverters as long as it is powered, and Flash keeps it for years without power.",
+        "DRAM stores each bit as charge on a tiny capacitor that leaks, so every row is read and rewritten within 64 ms (DDR4) or 32 ms (DDR5 and HBM). SRAM holds data in cross-coupled inverters as long as it is powered, and Flash keeps it for years without power.",
     },
     {
       q: "How are the transistors arranged in a 2-input CMOS NAND gate?",
@@ -140,9 +140,9 @@ const data: LessonData = {
     {
       q: "What does the name of TSMC's '3 nm' process tell you?",
       choices: [
-        "The transistor gate length is 3 nm",
-        "The tightest metal pitch is 3 nm",
-        "The fins are 3 nm wide",
+        "The physical gate length of every transistor is 3 nm, measured along the channel",
+        "The tightest metal pitch is 3 nm, the smallest line that EUV lithography can print",
+        "The fins are 3 nm wide, about half the width of the fins on the 5 nm node",
         "It is a generation label: no feature is 3 nm, and the gate pitch is around 45-50 nm",
       ],
       answer: 3,
@@ -152,10 +152,10 @@ const data: LessonData = {
     {
       q: "Why did the industry move from planar transistors to FinFETs and then to gate-all-around?",
       choices: [
-        "To lower the cost of each wafer",
+        "To lower the cost of each wafer, because fins and nanosheets need fewer lithography and etch steps than planar",
         "To give the gate control of the channel from more sides, so short transistors can still turn fully off",
-        "To allow higher supply voltages",
-        "To remove the need for a gate oxide",
+        "To allow higher supply voltages, since a gate that wraps the channel withstands more drain stress",
+        "To remove the need for a gate oxide, since the gate touches the channel on several sides",
       ],
       answer: 1,
       explain:

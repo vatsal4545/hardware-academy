@@ -120,6 +120,7 @@ function PowerFigure() {
 const sketch = String.raw`// Hardware Academy course robot
 // ESP32 DevKitC + TB6612FNG + 2x N20 encoder gearmotors + HC-SR04 on an SG90 + 2x TCRT5000.
 // Target: Arduino IDE 2.x with the esp32 boards package 3.x (board: ESP32 Dev Module), saved as robot/robot.ino.
+// Verified October 2026: compiles with no warnings (-Wall -Wextra) on arduino-cli 1.5.1 with esp32 core 3.3.12, FQBN esp32:esp32:esp32.
 // Core 3.x API: ledcAttach / ledcWrite take a pin (on core 2.x use ledcSetup + ledcAttachPin).
 // Every type is declared before the first function, so the IDE's auto-generated prototypes compile;
 // the same file also builds as a plain C++ main.cpp, for example in PlatformIO with an Arduino-ESP32 3.x platform.
@@ -131,7 +132,7 @@ const sketch = String.raw`// Hardware Academy course robot
 // ---------- Pin map (matches the wiring diagram) ----------
 constexpr uint8_t PIN_PWMA = 25, PIN_AIN1 = 26, PIN_AIN2 = 27;  // left motor
 constexpr uint8_t PIN_PWMB = 13, PIN_BIN1 = 4, PIN_BIN2 = 16;   // right motor
-constexpr uint8_t PIN_STBY = 17;                                // 10k pull-down to GND
+constexpr uint8_t PIN_STBY = 17;                                // 10k pull-down to GND (the chip has 200k inside)
 constexpr uint8_t PIN_ENC_LA = 18, PIN_ENC_LB = 19;
 constexpr uint8_t PIN_ENC_RA = 32, PIN_ENC_RB = 33;
 constexpr uint8_t PIN_TRIG = 14, PIN_ECHO = 34;                 // ECHO through 1k/2k divider
@@ -640,7 +641,7 @@ export default function Lesson() {
                 <td>Driver standby</td>
                 <td>GPIO 17</td>
                 <td>TB6612 STBY</td>
-                <td>10 kΩ pull-down: motors off during boot</td>
+                <td>10 kΩ pull-down (the TB6612 has 200 kΩ inside too): motors off during boot</td>
               </tr>
               <tr>
                 <td>Left encoder A, B</td>
@@ -724,7 +725,9 @@ export default function Lesson() {
             in a row it stops and looks around. The listing targets the Arduino IDE 2.x with the esp32 boards package 3.x: save it
             as <code>robot/robot.ino</code>, select ESP32 Dev Module, upload, open the serial monitor at 115200 baud and type{" "}
             <code>g</code> to start obstacle avoidance, <code>l</code> for line following, <code>s</code> to stop. It also builds
-            unchanged as <code>main.cpp</code> in PlatformIO, provided the platform ships Arduino-ESP32 3.x.
+            unchanged as <code>main.cpp</code> in PlatformIO, provided the platform ships Arduino-ESP32 3.x. The listing was compiled for this lesson with
+            arduino-cli 1.5.1 and esp32 core 3.3.12 (the package the IDE&apos;s Boards Manager installs) for the ESP32 Dev Module with every compiler
+            warning enabled, and it builds clean.
           </p>
         </Prose>
         <CodeBlock lang="cpp" title="robot.ino" code={sketch} />

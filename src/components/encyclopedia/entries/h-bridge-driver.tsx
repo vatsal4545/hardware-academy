@@ -95,8 +95,8 @@ export const entry: ComponentEntry = {
   howItWorks: [
     "An H-bridge has four switches (MOSFETs) around the motor: high-side Q1 and Q3 to the supply, low-side Q2 and Q4 to ground. Closing Q1 and Q4 sends current left to right through the motor (forward), and Q3 with Q2 sends it right to left (reverse). Closing both low-side switches shorts the motor terminals so back-EMF brakes it, and opening all four lets it coast.",
     "Never close both switches of the same leg (Q1 with Q2, or Q3 with Q4): that is shoot-through, a short circuit across the supply. Driver ICs insert dead time and decode their inputs so the illegal state cannot be requested.",
-    "Speed control is PWM on the enable or one input, at about 20 kHz so it is inaudible, so the average motor voltage is duty × supply. The TB6612FNG's logic is simple: IN1 and IN2 choose forward, reverse, brake or stop, a PWM pin sets the speed, and STBY enables the chip, for two motors (channels A and B).",
-    "The TB6612FNG takes a 4.5-13.5 V motor supply and a 2.7-5.5 V logic supply, handles 1.2 A continuous and 3.2 A peak per channel, has about 0.5 Ω of total on-resistance, built-in thermal shutdown and flyback diodes, and accepts PWM up to 100 kHz. The older L298N uses bipolar transistors that drop about 2 V and run hot. The DRV8833 (1.5 A), DRV8871 (3.6 A) and VNH5019 (30 A) sit further up the scale.",
+    "Speed control is PWM on the enable or one input, at about 20 kHz so it is inaudible, so the average motor voltage is duty × supply. The TB6612FNG's logic is simple: IN1 and IN2 choose forward, reverse, brake or stop, a PWM pin sets the speed, and STBY enables the chip, for two motors (channels A and B). Every input, STBY included, has a 200 kΩ internal pull-down, so the chip wakes up in standby.",
+    "The TB6612FNG takes a 2.5-13.5 V motor supply (the full 1.2 A only from 4.5 V) and a 2.7-5.5 V logic supply, handles 1.2 A average and 3.2 A peak per channel, has about 0.5 Ω of total on-resistance, built-in thermal shutdown and flyback diodes, and accepts PWM up to 100 kHz. The older L298N uses bipolar transistors that drop about 2 V and run hot. The DRV8833 (1.5 A), DRV8871 (3.6 A) and VNH5019 (30 A) sit further up the scale.",
     "Add a 100-470 µF bulk capacitor on the motor supply and 100 nF at each supply pin: motor spikes and regeneration push the supply up when braking. Internal body diodes clamp the inductive kick at the supply rail.",
   ],
   whereUsed: [
@@ -107,7 +107,7 @@ export const entry: ComponentEntry = {
     "Discrete MOSFET bridges for 20-100 A loads in electric skateboards, wheelchairs and brushed-motor ESCs.",
   ],
   keySpecs: [
-    { label: "Motor supply VM", value: "4.5-13.5 V (TB6612FNG)" },
+    { label: "Motor supply VM", value: "2.5-13.5 V, full current from 4.5 V (TB6612FNG)" },
     { label: "Current per channel", value: "1.2 A continuous, 3.2 A peak" },
     { label: "On-resistance", value: "About 0.5 Ω high plus low side (the L298N drops about 2 V)" },
     { label: "Logic supply and inputs", value: "2.7-5.5 V, compatible with 3.3 V MCUs" },

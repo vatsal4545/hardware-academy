@@ -103,7 +103,8 @@ export default function Lesson() {
             With the pack the right way round the FET turns on and drops about 50 mΩ × 3 A = 0.15 V; connect the pack backwards and the gate sees no
             voltage below its source, so the FET stays off and its body diode blocks. The VM rail feeds the TB6612FNG (4.5 to 13.5 V, 1.2 A average and
             3.2 A peak per channel) and the AMS1117-3.3. That regulator burns (8.4 − 3.3) × 0.15 A = 0.77 W at a full pack and 150 mA, about a 46 °C
-            rise at 60 °C/W, so its tab gets a copper pour; a buck module is the upgrade for heavy Wi-Fi use.
+            rise at 60 °C/W (the datasheet gives 15 °C/W junction to tab and 46 to 90 °C/W to ambient for a SOT-223, depending on the copper), so its
+            tab gets a copper pour; a buck module is the upgrade for heavy Wi-Fi use.
           </p>
 
           <h3>Pins and strapping</h3>

@@ -111,9 +111,9 @@ const data: LessonData = {
     {
       q: "When does derivative kick happen, and how is it avoided?",
       choices: [
-        "When the sensor is noisy; filter the input",
-        "When the output saturates; clamp the integral",
-        "When the loop rate drops; use a faster MCU",
+        "When the sensor is noisy; low-pass filter the input before the derivative term sees it",
+        "When the output saturates; clamp the integral so the derivative cannot wind up",
+        "When the loop rate drops; use a faster MCU so the time step stays constant",
         "When the setpoint steps; take the derivative of the measurement instead of the error",
       ],
       answer: 3,
@@ -130,10 +130,10 @@ const data: LessonData = {
     {
       q: "When does integral windup occur?",
       choices: [
-        "When the setpoint changes slowly",
-        "When the derivative gain is too high",
+        "When the setpoint changes slowly and the integral has time to grow",
+        "When the derivative gain is set too high",
         "When the actuator is saturated while the error persists",
-        "When the loop runs faster than 1 kHz",
+        "When the loop runs faster than about 1 kHz",
       ],
       answer: 2,
       explain:
@@ -149,9 +149,9 @@ const data: LessonData = {
     {
       q: "In the tuner, raising Kd on the wheel-speed plant makes the overshoot slightly worse. Why?",
       choices: [
-        "The simulator has a bug",
-        "D always increases overshoot",
-        "The derivative is computed on the error",
+        "The simulator has a bug in its derivative term that adds the step instead of subtracting it",
+        "D always increases overshoot, whatever the plant, because it amplifies the setpoint step",
+        "The derivative is computed on the error, so the setpoint step appears as a spike",
         "A first-order speed plant has no inertia for D to damp; D on measurement acts like extra lag",
       ],
       answer: 3,

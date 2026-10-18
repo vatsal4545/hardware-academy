@@ -109,9 +109,9 @@ const data: LessonData = {
       q: "What is dead time for?",
       choices: [
         "To make sure one switch of a leg is fully off before the other turns on",
-        "To let the motor cool between pulses",
-        "To synchronize the PWM with the resolver",
-        "To lower the switching frequency",
+        "To let the motor windings cool between pulses, so the copper stays within its rating",
+        "To synchronize the PWM carrier with the resolver's excitation signal",
+        "To lower the effective switching frequency so the inverter runs cooler",
       ],
       answer: 0,
       explain: "If both switches of a leg conduct at once, the DC link is shorted through them (shoot-through). A gap of 0.1-2 µs with both off prevents it; the price is a small voltage error whose sign follows the current.",
@@ -124,7 +124,12 @@ const data: LessonData = {
     },
     {
       q: "Which signal does the Park transform need that the Clarke transform does not?",
-      choices: ["The DC-link voltage", "The rotor's electrical angle", "The motor temperature", "The PWM carrier"],
+      choices: [
+        "The measured DC-link voltage",
+        "The rotor's electrical angle",
+        "The stator winding temperature",
+        "The PWM carrier frequency",
+      ],
       answer: 1,
       explain: "Clarke is a fixed projection of a, b, c onto α and β. Park rotates α-β by the rotor electrical angle θ so the currents appear as DC values Id and Iq, which is why FOC needs a resolver, an encoder or an angle observer.",
     },
@@ -137,9 +142,9 @@ const data: LessonData = {
     {
       q: "What does desaturation detection in a gate driver catch?",
       choices: [
-        "A resolver that has lost its signal",
-        "A DC-link capacitor that has lost capacitance",
-        "An open motor phase",
+        "A resolver that has lost its signal, so the rotor angle used by FOC is no longer valid",
+        "A DC-link capacitor that has lost capacitance, so the bus voltage ripple rises above its design limit",
+        "An open motor phase, detected because the phase current never reaches its command",
         "A switch whose on-state voltage rises far above normal, meaning a short circuit or shoot-through",
       ],
       answer: 3,

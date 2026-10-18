@@ -99,10 +99,10 @@ const data: LessonData = {
     {
       q: "When does Bug2 leave an obstacle boundary?",
       choices: [
-        "As soon as the goal is in line of sight",
+        "As soon as the goal comes into line of sight, wherever it is on the boundary",
         "When it meets the M-line at a point closer to the goal than where it hit the obstacle",
-        "After one full lap of the obstacle",
-        "After a fixed timeout",
+        "After one full lap of the obstacle, when it is back at the point where it hit",
+        "After a fixed timeout, measured from the moment it first touched the obstacle",
       ],
       answer: 1,
       explain:
@@ -111,10 +111,10 @@ const data: LessonData = {
     {
       q: "An FSM enters Avoid when the front range drops below 20 cm and leaves when it rises above 30 cm. What is the 10 cm gap for?",
       choices: [
-        "To save battery",
+        "To save battery by running the avoid behavior less often",
         "To keep sensor noise near one threshold from toggling the state every tick",
-        "To make the robot drive faster",
-        "Because ultrasonic sensors cannot measure between 20 and 30 cm",
+        "To make the robot drive faster once the obstacle is behind it",
+        "Because ultrasonic sensors cannot return a valid reading between 20 and 30 cm",
       ],
       answer: 1,
       explain:
@@ -142,10 +142,10 @@ const data: LessonData = {
     {
       q: "Both line sensors suddenly read white. What should a robust line follower do first?",
       choices: [
-        "Drive straight at full speed until it finds the line",
+        "Drive straight at full speed until it finds the line again, then resume following",
         "Turn toward the side where the line was last seen, with a timeout",
-        "Reverse to the starting point",
-        "Reset the microcontroller",
+        "Reverse to the starting point and begin the course again",
+        "Reset the microcontroller so the sensors recalibrate",
       ],
       answer: 1,
       explain:
@@ -154,10 +154,10 @@ const data: LessonData = {
     {
       q: "What does a loop closure do in SLAM?",
       choices: [
-        "Closes the control loop around the wheel motors",
-        "Recognizes a previously visited place and uses that constraint to remove drift from the whole trajectory",
-        "Stops the robot when the map is complete",
-        "Fills unknown cells in the occupancy grid with free space",
+        "Closes the control loop around the wheel motors so the robot tracks the planned path",
+        "Recognizes a place seen before and uses that constraint to pull the drift out of the whole trajectory",
+        "Stops the robot when the map is complete and every frontier has been explored",
+        "Fills unknown cells in the occupancy grid with free space once the robot has driven all the way around them",
       ],
       answer: 1,
       explain:

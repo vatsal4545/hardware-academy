@@ -110,9 +110,9 @@ const data: LessonData = {
       q: "In a complementary filter with α = 0.98, what is the 0.02 weight on the accelerometer angle for?",
       choices: [
         "It slowly pulls the gyro-integrated angle toward gravity, cancelling drift",
-        "It removes accelerometer noise",
-        "It converts g into degrees",
-        "It makes the filter respond faster",
+        "It removes accelerometer noise by averaging about 50 samples before each update",
+        "It converts the accelerometer's g reading into degrees of tilt",
+        "It makes the filter respond faster to quick rotations than the gyro alone would",
       ],
       answer: 0,
       explain:
@@ -128,10 +128,10 @@ const data: LessonData = {
     {
       q: "Why does an HC-SR04 often report no echo from a smooth wall 40° off square?",
       choices: [
-        "Paint absorbs 40 kHz sound",
+        "Paint absorbs 40 kHz sound almost completely",
         "The wall reflects the sound away like a mirror",
-        "40 kHz sound cannot travel that far",
-        "The trigger pulse was too short",
+        "40 kHz sound cannot travel that far and back",
+        "The trigger pulse was too short to register",
       ],
       answer: 1,
       explain:
