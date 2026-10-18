@@ -78,7 +78,7 @@ Station functions and what they return (all SI, unrounded; the UI rounds):
 | `ledStation(i)` | `vf`, `iLed = max(0, (3.3 − vf) / R)`, `pR`, `verdict` (`"dim"` < 1 mA, `"ok"` ≤ 20 mA, `"too much"`), `kvl` = `{ rise: 3.3, dropR: iLed·R, dropLed: vf }` |
 | `dividerStation(i)` | `vOut = vPack·47/147`, `rth = 100k ∥ 47k`, `iDiv`, `counts = round(vOut/3.3·4095)`, `settleUs = 8.3·rth·10 pF`, `rechargeMs = rth·100 nF` (when fitted), `verdict` (`"ok"` with cap, `"loaded"` without) |
 | `enStation(i)` | `tau = 10 kΩ·enC`, `tBoot = tau·ln 4`, `samples` (41 values of `3.3·(1 − e^(−t/τ))` over 0..5τ, rounded to 1e-6) |
-| `decouplingStation(i)` | `loopH = 1e-9·mm + 0.5e-9`, `vDip = loopH·0.05/2e-9`, `verdict` (`"ok"` ≤ 33 mV, `"marginal"` ≤ 330 mV, `"bad"`) |
+| `decouplingStation(i)` | `loopH = 1e-9·mm + 0.5e-9`, `vDip = loopH·0.05/2e-9`, `verdict` (`"ok"` ≤ 165 mV, 5% of the rail; `"marginal"` ≤ 330 mV; `"bad"`) |
 | `windingStation(i)` | `iAvg = iMotorL`, `vAvg = duty·vPack`, `rippleA = vPack·duty·(1 − duty)/(L·f)`, `bTraceUt = 2e-7·iAvg/0.005·1e6`, `earthRatio`, `flybackV = L·1/100e-9` (no path), `clampV = vPack + 0.7`, `direction` ("forward"/"reverse") |
 | `boardModel(i)` | all eight results in one object |
 
@@ -174,7 +174,7 @@ Cross-links: `passive-components.tsx` and `active-components.tsx` each get a one
 - `tests/components/board-in-action.test.tsx`: renders; eight stations reachable with Next and the step dots; the
   readouts at the defaults; a slider changes a readout; LED colour changes the current; the divider toggle changes the
   verdict; probe mode selects a part by click and by keyboard, shows its role, and "Go to station" moves the stepper;
-  the board SVG is `role="group"` with 35 focusable part buttons and no nested `role="img"` conflicts; and a hydration
+  the board SVG is `role="group"` with 31 focusable part buttons (mounting holes are not buttons) and no nested `role="img"` conflicts; and a hydration
   check that renders four interactive states with nudged Math functions and requires identical markup (same approach as
   `tests/content/pcb-a.test.tsx`).
 - `tests/content/pcb-c.test.tsx`: the lesson has `#theory`, `#viz`, `#practice`, a theory figure with an SVG, range or
@@ -190,7 +190,7 @@ Cross-links: `passive-components.tsx` and `active-components.tsx` each get a one
 
 Every control is an existing labelled component (Slider, Segmented, Toggle, Stepper, PlayPause). The board's part buttons
 are reachable by Tab and operable with Enter and Space. Live readouts sit in a `<dl aria-live="polite">`. The SVG keeps
-under about 500 elements: 36 footprints, about 30 route polylines, at most 40 dots, one glow rect per lit part. All
+under about 500 elements: 32 footprints, about 30 route polylines, at most 40 dots, one glow rect per lit part. All
 coordinates derived from arithmetic on constants; the only transcendental value (the EN curve) is rounded to 1e-6 before
 it becomes a path. Reduced motion stops the dots until the learner presses Play. The section-level error boundary in
 `Section` and the one in `VizFrame` contain any throw.
