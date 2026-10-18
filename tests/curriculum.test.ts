@@ -5,9 +5,9 @@ import { lessonData } from "@/content/registry";
 import { lessonBodies } from "@/content/bodies";
 
 describe("curriculum", () => {
-  it("has 37 lessons with unique slugs", () => {
-    expect(lessons.length).toBe(37);
-    expect(new Set(lessons.map((l) => l.slug)).size).toBe(37);
+  it("has 38 lessons with unique slugs", () => {
+    expect(lessons.length).toBe(38);
+    expect(new Set(lessons.map((l) => l.slug)).size).toBe(38);
   });
 
   it("every lesson belongs to a known track and has objectives", () => {

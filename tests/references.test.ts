@@ -19,7 +19,7 @@ describe("references", () => {
     for (const r of Object.values(references)) {
       expect(r.title.length).toBeGreaterThan(3);
       expect(r.authors.length).toBeGreaterThanOrEqual(2);
-      expect(r.year).toBeGreaterThanOrEqual(1940);
+      expect(r.year).toBeGreaterThanOrEqual(1800); // the circuit laws' original papers are from the 1800s
       expect(r.year).toBeLessThanOrEqual(2026);
       expect(r.note.length).toBeGreaterThan(20);
       if (r.doi) expect(r.doi).toMatch(/^10\.\d{4,9}\/\S+$/);

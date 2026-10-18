@@ -259,6 +259,20 @@ export const lessons: LessonMeta[] = [
     ],
   },
   {
+    slug: "components-in-action",
+    track: "pcb",
+    title: "Components in action: one board, every law",
+    day: 4,
+    minutes: 55,
+    summary:
+      "Power up the robot's motor-driver board one part at a time and watch Ohm's law, Kirchhoff's laws, the RC time constant and the right-hand rule work on real values.",
+    objectives: [
+      "You can follow the current through a real board from the battery connector to the motor and say what each part does on the way.",
+      "You can apply Ohm's law, KCL, KVL, the voltage divider, Thevenin's theorem, the RC time constant and V = L·di/dt to the parts of the motor-driver board with real numbers.",
+      "You can use the right-hand rule to find the direction of the magnetic field around a trace and inside a motor winding, and say what reversing the current does.",
+    ],
+  },
+  {
     slug: "schematic-capture",
     track: "pcb",
     title: "Schematic capture: drawing a circuit people can read",
@@ -592,7 +606,7 @@ export const days: DayPlan[] = [
   { day: 1, title: "Silicon basics", focus: "Bands, doping and the p-n junction.", lessonSlugs: ["atoms-to-bands", "doping-and-carriers", "pn-junction-and-diodes"], labIds: [] },
   { day: 2, title: "Transistors to fabs", focus: "MOSFETs, CMOS logic and how wafers are made.", lessonSlugs: ["transistors-bjt-mosfet", "cmos-logic-and-chips", "wafer-fabrication"], labIds: [] },
   { day: 3, title: "Packaging, power and the industry", focus: "Packages, SiC and GaN, and where the jobs are.", lessonSlugs: ["packaging-and-testing", "power-semiconductors", "semiconductor-industry-and-roles"], labIds: [] },
-  { day: 4, title: "Circuits and components", focus: "Fundamentals, passives and actives.", lessonSlugs: ["circuit-fundamentals", "passive-components", "active-components"], labIds: [] },
+  { day: 4, title: "Circuits and components", focus: "Fundamentals, passives and actives.", lessonSlugs: ["circuit-fundamentals", "passive-components", "active-components", "components-in-action"], labIds: [] },
   { day: 5, title: "Schematic to layout", focus: "Capture, stack-up, routing and integrity.", lessonSlugs: ["schematic-capture", "pcb-layout-and-stackup", "power-and-signal-integrity"], labIds: ["trace-width"] },
   { day: 6, title: "Manufacturing and bring-up", focus: "DFM, debugging and a real KiCad project.", lessonSlugs: ["dfm-and-manufacturing", "bring-up-and-debugging", "kicad-project-walkthrough"], labIds: [] },
   { day: 7, title: "Robot anatomy, sensors, actuators", focus: "What a robot is made of.", lessonSlugs: ["anatomy-of-a-robot", "sensors", "actuators-and-drivers"], labIds: [] },

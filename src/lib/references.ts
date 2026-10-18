@@ -43,6 +43,11 @@ const list: Reference[] = [
   { id: "kicad-docs", kind: "doc", title: "KiCad Documentation", authors: "The KiCad Team", year: 2025, venue: "docs.kicad.org", url: "https://docs.kicad.org/", free: true, note: "The official manual for the free tool used in this course." },
   { id: "altium-getting-started", kind: "doc", title: "Getting Started with PCB Design", authors: "David Haboud, Altium", year: 2016, venue: "Altium tutorial, 29 pages", url: "https://www.altium.com/", free: true, note: "A short walkthrough of the whole flow in Altium Designer: project, schematic, nets, rules, routing, 3D view, fabrication files. The same steps as this course's KiCad lesson, in the other major tool." },
   { id: "pcad-guide", kind: "doc", title: "P-CAD 2002 PCB User's Guide", authors: "Altium Limited", year: 2002, venue: "Altium, 620 pages", note: "The manual for Altium's older P-CAD tool. Dated software, but chapter 3 (layers, placement, selection, properties) and the tutorial in chapter 4 explain layout concepts that every tool still uses." },
+  // PCB: the original papers behind the circuit laws, and the physics of the right-hand rule
+  { id: "ohm1827", kind: "book", title: "Die galvanische Kette, mathematisch bearbeitet", authors: "Georg Simon Ohm", year: 1827, venue: "T. H. Riemann, Berlin", note: "The book that states V = I · R. The 1891 English translation, The Galvanic Circuit Investigated Mathematically, is the easier read; scans of both are free online." },
+  { id: "kirchhoff1845", kind: "paper", title: "Ueber den Durchgang eines elektrischen Stromes durch eine Ebene, insbesondere durch eine kreisförmige", authors: "Gustav Kirchhoff", year: 1845, venue: "Annalen der Physik und Chemie 140(4), 497-514", doi: "10.1002/andp.18451400402", note: "The paper with the two circuit laws, written when Kirchhoff was a 21-year-old student. The laws are stated in the closing section." },
+  { id: "thevenin1883", kind: "paper", title: "Sur un nouveau théorème d'électricité dynamique", authors: "Léon Charles Thévenin", year: 1883, venue: "Comptes rendus hebdomadaires des séances de l'Académie des sciences 97, 159-161", note: "Two pages: any network seen from two terminals behaves like one source in series with one resistance." },
+  { id: "feynman-ii", kind: "book", title: "The Feynman Lectures on Physics, Volume II: Mainly Electromagnetism and Matter", authors: "Richard P. Feynman, Robert B. Leighton and Matthew Sands", year: 1964, venue: "Addison-Wesley; free online edition by Caltech", url: "https://www.feynmanlectures.caltech.edu/", free: true, note: "Chapter 13 explains why a current makes a magnetic field and which way it points, with the right-hand rule; chapter 22 covers AC circuits." },
   // Robotics: books
   { id: "siegwart", kind: "book", title: "Introduction to Autonomous Mobile Robots", authors: "Roland Siegwart, Illah R. Nourbakhsh and Davide Scaramuzza", year: 2011, venue: "MIT Press, 2nd edition", note: "The mobile-robot textbook: locomotion, kinematics, sensors, localization, planning. Matches this course's robot closely." },
   { id: "craig", kind: "book", title: "Introduction to Robotics: Mechanics and Control", authors: "John J. Craig", year: 2018, venue: "Pearson, 4th edition", note: "The classic manipulator text: frames, forward and inverse kinematics, dynamics, control." },
@@ -165,6 +170,15 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "horowitz-hill", read: "The voltage-regulator and op-amp chapters." },
     { id: "zumbahlen", read: "The op-amp basics chapter." },
     { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
+  ],
+  "components-in-action": [
+    { id: "horowitz-hill", read: "Chapter 1 for Ohm, Kirchhoff, dividers and Thevenin; chapter 9 for linear regulators and their heat." },
+    { id: "kirchhoff1845", read: "The closing section: both circuit laws in their original words." },
+    { id: "ohm1827", read: "The preface and the first chapter, to see how V = I · R was argued from experiments." },
+    { id: "thevenin1883", read: "All two pages; the theorem behind the divider's 32 kΩ." },
+    { id: "feynman-ii", read: "Chapter 13, sections 13-1 to 13-5: the field of a wire and of a solenoid, and the right-hand rule." },
+    { id: "ott", read: "The decoupling chapter: V = L · di/dt and why distance to the pin is inductance." },
+    { id: "hughes-drury", read: "The brushed DC motor chapter: torque from current, back-EMF from speed." },
   ],
   "schematic-capture": [
     { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
