@@ -475,7 +475,7 @@ export interface Flow { id: string; pts: Pt[]; current: (m: BoardModel) => numbe
 export interface Station { id: StationId; title: string; law: string; parts: string[]; nets: string[]; flows: Flow[]; controls: ControlId[]; }
 export const STATIONS: Station[];            // eight, in lesson order
 export interface PartRole { role: string; station?: StationId; readings: (m: BoardModel, i: BoardInputs) => Array<{ label: string; value: string }>; }
-export const PART_ROLES: Record<string, PartRole>;  // one entry per non-hole part, 31 keys
+export const PART_ROLES: Record<string, PartRole>;  // one entry per non-hole part, 28 keys
 export const FLOW_DOT_SPACING_PX = 24;
 ```
 
@@ -574,7 +574,7 @@ Flows per station (`pts` in mm; the view converts with `bx`/`by`):
 | winding | out | forward: [19,11] [19,9.6] [17.3,7.9] [17.3,5.4]; reverse: the M1B path | `m.winding.iAvg` | 1 |
 | winding | back | forward: [19.3,5.4] [19.3,8.3] [20.6,9.6] [20.6,11]; reverse: M1A reversed | `m.winding.iAvg` | 1 |
 
-Each station's `parts`, `nets` and `controls` come from the spec's station table (section 5). `PART_ROLES` has 31 entries; roles are one or two plain sentences; readings are two to four label/value pairs formatted with `formatSI` from `./OhmsLawCircuit.helpers` (R1: current `vPack / 100 k`, power; C1: start-step droop; U2: both motor currents and `pDriver`; J4 to J7, SW1, C5: readings from the rail they sit on, for example "3.3 V rail" and the logic current).
+Each station's `parts`, `nets` and `controls` come from the spec's station table (section 5). `PART_ROLES` has 28 entries; roles are one or two plain sentences; readings are two to four label/value pairs formatted with `formatSI` from `./OhmsLawCircuit.helpers` (R1: current `vPack / 100 k`, power; C1: start-step droop; U2: both motor currents and `pDriver`; J4 to J7, SW1, C5: readings from the rail they sit on, for example "3.3 V rail" and the logic current).
 
 - [ ] **Step 4: Run the tests**
 
@@ -675,11 +675,11 @@ describe("BoardTopView", () => {
   afterEach(cleanup);
   const station = STATIONS[0];
   const paths = flowPathsFor(station, true);
-  it("is a group with 31 part buttons, lights the station's parts and dims the rest", () => {
+  it("is a group with 28 part buttons, lights the station's parts and dims the rest", () => {
     const { container } = render(<BoardTopView station={station} phases={paths.map(() => 0)} flowPaths={paths} selected={null} onSelect={() => {}} forward />);
     const svg = container.querySelector("svg")!;
     expect(svg.getAttribute("role")).toBe("group");
-    expect(svg.querySelectorAll('[role="button"]')).toHaveLength(31);
+    expect(svg.querySelectorAll('[role="button"]')).toHaveLength(28);
     expect(container.querySelectorAll("[data-lit='true']").length).toBe(station.parts.length);
     expect(screen.getByRole("button", { name: /Inspect Q1/ })).toBeTruthy();
   });

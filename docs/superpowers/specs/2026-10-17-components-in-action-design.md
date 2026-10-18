@@ -157,11 +157,11 @@ the RC time constant and the right-hand rule work on real values.", three object
 board and name each part's job; apply the laws to the board with numbers; use the right-hand rule on a trace and a
 winding). Day 4's `lessonSlugs` gets the new slug last.
 
-References (`src/lib/references.ts`): new entries `ohm1827` (Die galvanische Kette, mathematisch bearbeitet, 1827),
+References (`src/lib/references.ts`; the well-formedness test's year floor drops from 1940 to 1800 for the originals): new entries `ohm1827` (Die galvanische Kette, mathematisch bearbeitet, 1827),
 `kirchhoff1845` (Annalen der Physik und Chemie 140(4), 497–514, doi 10.1002/andp.18451400402), `thevenin1883`
 (Comptes rendus 97, 159–161), `feynman-ii` (The Feynman Lectures on Physics, Volume II, free at
 feynmanlectures.caltech.edu); the lesson also cites `horowitz-hill`, `zumbahlen`, `ott`, `hughes-drury`,
-`esp32-hw-guidelines`, `tb6612fng-ds` and `ams1117-ds`.
+and `hughes-drury`. (The ESP32, TB6612FNG and AMS1117 datasheet entries live on the unmerged fact-check branch; they can be added to this lesson's list in one line once that branch is in.)
 
 Cross-links: `passive-components.tsx` and `active-components.tsx` each get a one-line tip callout linking to
 `/learn/pcb/components-in-action` ("See every one of these parts working on the robot's board").
@@ -174,7 +174,7 @@ Cross-links: `passive-components.tsx` and `active-components.tsx` each get a one
 - `tests/components/board-in-action.test.tsx`: renders; eight stations reachable with Next and the step dots; the
   readouts at the defaults; a slider changes a readout; LED colour changes the current; the divider toggle changes the
   verdict; probe mode selects a part by click and by keyboard, shows its role, and "Go to station" moves the stepper;
-  the board SVG is `role="group"` with 31 focusable part buttons (mounting holes are not buttons) and no nested `role="img"` conflicts; and a hydration
+  the board SVG is `role="group"` with 28 focusable part buttons (the 25 non-hole parts of the KiCad board plus R4, R5 and C9) and no nested `role="img"` conflicts; and a hydration
   check that renders four interactive states with nudged Math functions and requires identical markup (same approach as
   `tests/content/pcb-a.test.tsx`).
 - `tests/content/pcb-c.test.tsx`: the lesson has `#theory`, `#viz`, `#practice`, a theory figure with an SVG, range or
