@@ -97,7 +97,7 @@ const data: LessonData = {
     },
     {
       q: "An NMOS with Vth = 1.5 V has Vgs = 3 V and Vds = 0.5 V. Which region is it in?",
-      choices: ["Cutoff", "Triode (linear)", "Saturation", "Breakdown"],
+      choices: ["Cutoff (subthreshold)", "Triode (linear)", "Saturation (pinch-off)", "Breakdown"],
       answer: 1,
       explain:
         "The overdrive is Vgs − Vth = 1.5 V, and Vds = 0.5 V is below it, so the channel reaches the drain: triode. It would saturate once Vds reached 1.5 V.",
@@ -112,10 +112,10 @@ const data: LessonData = {
     {
       q: "A datasheet lists Vgs(th) = 1.0-2.0 V at I_D = 250 µA. What does that tell you?",
       choices: [
-        "The MOSFET is fully on for any Vgs above 2 V",
+        "The MOSFET is fully on for any Vgs above 2 V, so a 3.3 V logic output can drive it directly",
         "Conduction starts somewhere between 1 and 2 V; you still need Rds(on) at your actual Vgs",
-        "The gate oxide will be damaged above 2 V",
-        "Rds(on) is guaranteed at Vgs = 2 V",
+        "The gate oxide will be damaged above 2 V, so the drive voltage must be clamped below that",
+        "Rds(on) is guaranteed at Vgs = 2 V, so the datasheet on-resistance applies at that drive",
       ],
       answer: 1,
       explain:
@@ -132,9 +132,9 @@ const data: LessonData = {
       q: "Why does every vertical power MOSFET contain a body diode?",
       choices: [
         "The p-body is shorted to the source, so the body-to-drift junction forms a diode from source to drain",
-        "It is added deliberately as ESD protection for the gate",
-        "The gate oxide forms a diode with the drain",
-        "It exists only in P-channel parts",
+        "It is added deliberately as ESD protection for the gate, which would otherwise break down easily",
+        "The gate oxide forms a diode with the drain, which conducts whenever the drain goes negative",
+        "It exists only in P-channel parts, where the n-type body makes a junction to the drain",
       ],
       answer: 0,
       explain:

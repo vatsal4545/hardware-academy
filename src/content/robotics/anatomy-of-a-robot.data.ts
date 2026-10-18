@@ -103,9 +103,9 @@ const data: LessonData = {
       q: "Why does the course robot feed its motors from the pack through the driver, but its ESP32 through a buck converter and an LDO?",
       choices: [
         "Motor current spikes would brown out the logic if both shared one unregulated rail",
-        "The ESP32 needs more current than the motors",
-        "The TB6612FNG cannot accept more than 5 V on its motor supply",
-        "Buck converters cannot supply motors at all",
+        "The ESP32 needs more current than the motors, so it must have a converter of its own",
+        "The TB6612FNG cannot accept more than 5 V on its motor supply, so the pack must be stepped down first",
+        "Buck converters cannot supply motors at all, because their output ripple would stall brushed motors",
       ],
       answer: 0,
       explain:
@@ -120,7 +120,7 @@ const data: LessonData = {
     },
     {
       q: "What is a typical rate for the wheel-speed control loop of a small mobile robot?",
-      choices: ["1 Hz", "10 Hz", "100 Hz to 1 kHz", "1 MHz"],
+      choices: ["1 Hz to 10 Hz", "10 Hz to 50 Hz", "100 Hz to 1 kHz", "1 MHz to 5 MHz"],
       answer: 2,
       explain:
         "Wheel-speed and balance loops usually run at 100 Hz-1 kHz: 10-20 times faster than the mechanical response, yet slow enough to leave CPU time and to collect several encoder counts per cycle. Motor current loops run faster (10-40 kHz) and planners slower (1-50 Hz).",

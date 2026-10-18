@@ -106,10 +106,10 @@ const data: LessonData = {
     {
       q: "Why is a heading error more damaging to odometry than an equal-sized distance error?",
       choices: [
-        "Heading is measured with fewer encoder ticks",
+        "Heading is measured with fewer encoder ticks, so its quantization error is larger",
         "A heading error rotates every later step, so sideways error keeps growing with distance driven",
-        "Distance errors always cancel out on average",
-        "Encoders cannot measure heading at all",
+        "Distance errors always cancel out on average, because the wheels slip equally forward and back",
+        "Encoders cannot measure heading at all, so it must come from a gyro",
       ],
       answer: 1,
       explain:
@@ -126,9 +126,9 @@ const data: LessonData = {
       q: "At a singularity of a 2-link planar arm,",
       choices: [
         "θ2 is 0° or 180°, and the tip cannot move along the radial direction",
-        "θ1 is 90°, and the gravity load on the shoulder peaks",
-        "the two IK solutions are exactly 90° apart",
-        "the encoders lose count",
+        "θ1 is 90°, and the gravity load on the shoulder joint reaches its peak",
+        "the two IK solutions are exactly 90° apart, so the solver cannot pick one",
+        "the encoders lose count, because both joints move at the same speed",
       ],
       answer: 0,
       explain:
@@ -137,10 +137,10 @@ const data: LessonData = {
     {
       q: "Why does UMBmark drive the square both clockwise and counter-clockwise?",
       choices: [
-        "To double the amount of data for averaging",
-        "Wheel-diameter and wheel-base errors add up in one direction and partly cancel in the other, so the two runs separate them",
-        "Motors behave differently when spinning backwards",
-        "The gyro must be calibrated in both directions",
+        "To double the amount of data, so the average of eight runs has half the random error",
+        "Wheel-diameter and wheel-base errors add in one direction and partly cancel in the other, so two runs separate them",
+        "Motors behave differently when spinning backwards, so running both directions averages out that asymmetry",
+        "The gyro must be calibrated in both turning directions before odometry can be trusted",
       ],
       answer: 1,
       explain:

@@ -119,9 +119,9 @@ const data: LessonData = {
       q: "What does a PWR_FLAG symbol tell the ERC?",
       choices: [
         "The net is driven from off-board, so power inputs on it count as powered",
-        "The net carries high current",
-        "The track should be widened",
-        "The net is the ground return",
+        "The net carries high current, so the layout tool should assign it a wider track class",
+        "The track should be widened to the width set in the net class for power",
+        "The net is the ground return, so ERC skips its unconnected pins",
       ],
       answer: 0,
       explain:
@@ -149,10 +149,10 @@ const data: LessonData = {
     {
       q: "A net is labelled STBY on one sheet and STNDBY on another. What happens in KiCad?",
       choices: [
-        "They connect because the first letters match",
+        "They connect because the first letters match and KiCad treats labels as prefixes",
         "They stay two separate nets, and ERC can only flag single-pin nets",
-        "KiCad merges them automatically",
-        "The netlist export fails",
+        "KiCad merges them automatically, since the names differ by one letter",
+        "The netlist export fails until the two labels are made identical",
       ],
       answer: 1,
       explain:

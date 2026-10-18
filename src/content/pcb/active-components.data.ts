@@ -141,9 +141,9 @@ const data: LessonData = {
       q: "Why must a 5 V HC-SR04 echo pin not be wired straight to an ESP32 GPIO?",
       choices: [
         "The ESP32 inputs are not 5 V tolerant, so 5 V can damage the pin",
-        "The HC-SR04 only works with a 3.3 V supply",
-        "A divider is only needed to filter noise",
-        "5 V is read as a logic low by the ESP32",
+        "The HC-SR04 only works from a 3.3 V supply, so 5 V on its echo line means it is miswired",
+        "A divider is only needed to filter noise on the echo line, not to drop the voltage",
+        "5 V is read as a logic low by the ESP32, so the echo pulse would arrive inverted",
       ],
       answer: 0,
       explain:

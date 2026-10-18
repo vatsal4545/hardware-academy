@@ -100,10 +100,10 @@ const data: LessonData = {
     {
       q: "What causes an IGBT's tail current?",
       choices: [
-        "Gate leakage",
+        "Gate leakage through the oxide that keeps the channel partly on after turn-off",
         "Stored minority carriers in the drift region that must recombine after turn-off",
-        "Reverse recovery of the gate driver",
-        "Package inductance",
+        "Reverse recovery of the gate driver's bootstrap diode feeding charge back into the gate",
+        "Package inductance that keeps the collector current circulating after the switch opens",
       ],
       answer: 1,
       explain:
@@ -112,10 +112,10 @@ const data: LessonData = {
     {
       q: "Where are GaN power transistors most common today?",
       choices: [
-        "6.5 kV grid converters",
+        "Multi-megawatt grid converters at 6.5 kV",
         "Compact USB-C chargers for phones and laptops",
-        "Engine starter motors",
-        "Microcontroller logic gates",
+        "Starter motors and alternators in cars",
+        "The core logic gates of microcontrollers",
       ],
       answer: 1,
       explain:
@@ -131,10 +131,10 @@ const data: LessonData = {
     {
       q: "Why can a 50 V/ns switching edge cause EMI problems?",
       choices: [
-        "It lowers conduction loss",
-        "It drives large currents through small stray capacitances (i = C·dv/dt) and excites ringing in loop inductance",
-        "It reduces the blocking voltage",
-        "It raises Rds(on)",
+        "It lowers conduction loss, which concentrates the heating into the switching instants",
+        "It pushes current through stray capacitances (i = C·dv/dt) and rings the loop inductance",
+        "It reduces the blocking voltage, so the drain overshoots and avalanches on every edge",
+        "It raises Rds(on) by heating the channel, so the switch dissipates more at every edge",
       ],
       answer: 1,
       explain:

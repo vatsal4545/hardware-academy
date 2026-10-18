@@ -90,10 +90,10 @@ const data: LessonData = {
     {
       q: "Why is a 300 mm wafer about 775 µm thick when transistors use only the top few micrometres?",
       choices: [
-        "Thicker wafers dice more cleanly",
-        "The extra silicon gives mechanical strength to survive handling and hundreds of process steps without breaking or warping",
-        "Transistors need 775 µm of silicon beneath them to switch",
-        "It raises the wafer's electrical conductivity",
+        "Thicker wafers dice more cleanly, because the saw needs at least 700 µm of silicon to cut a straight kerf",
+        "The bulk is a mechanical carrier that survives handling and hundreds of process steps without breaking or warping",
+        "Transistors need several hundred micrometres of silicon beneath them, or the depletion region would reach the back",
+        "It raises the wafer's electrical conductivity, so the substrate can act as a low-resistance ground plane",
       ],
       answer: 1,
       explain:
@@ -108,7 +108,12 @@ const data: LessonData = {
     },
     {
       q: "Which step makes the wafer flat before the next lithography layer?",
-      choices: ["Ion implantation", "Chemical mechanical planarization (CMP)", "Thermal oxidation", "Wet etching"],
+      choices: [
+        "Plasma-enhanced chemical vapour deposition (PECVD)",
+        "Chemical mechanical planarization (CMP)",
+        "Thermal oxidation",
+        "Wet etching",
+      ],
       answer: 1,
       explain:
         "CMP presses the wafer onto a rotating pad with an abrasive slurry and removes topography to within nanometres, keeping the next exposure inside the scanner's shallow depth of focus.",
@@ -116,10 +121,10 @@ const data: LessonData = {
     {
       q: "Why is copper wiring made with the damascene process instead of being plasma-etched like aluminium?",
       choices: [
-        "Copper is too expensive to etch",
-        "Copper does not form volatile etch products at practical temperatures, so it is inlaid into trenches and polished back",
-        "Copper is an insulator until it is annealed",
-        "Damascene layouts are easier to draw",
+        "Copper is too expensive to etch away, because the metal sputtered into the plasma cannot be recovered and reused",
+        "Copper has no volatile etch products at practical temperatures, so it is inlaid into trenches and polished back",
+        "Copper is an insulator until it is annealed, so the lines must be shaped before the anneal makes them conduct",
+        "Damascene layouts are easier to draw, because the trenches and the vias come from a single mask",
       ],
       answer: 1,
       explain:
@@ -135,10 +140,10 @@ const data: LessonData = {
     {
       q: "Why are back-end-of-line steps kept below about 400 °C?",
       choices: [
-        "Photoresist melts above 400 °C",
+        "Photoresist melts above 400 °C, so no pattern could be printed over the metal",
         "Copper and low-k dielectrics degrade, and copper diffuses, at higher temperatures",
-        "Wafers bow permanently above 400 °C",
-        "Ion implanters cannot run hotter",
+        "Wafers bow permanently above 400 °C, and the scanner can no longer focus on them",
+        "Ion implanters cannot run hotter than 400 °C, and the metal layers need implants",
       ],
       answer: 1,
       explain:

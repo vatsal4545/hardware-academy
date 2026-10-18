@@ -121,9 +121,9 @@ const data: LessonData = {
     {
       q: "In a 4-layer SIG/GND/PWR/SIG stack-up, what does the ground plane directly under the top layer mainly give you?",
       choices: [
-        "A cheaper board",
-        "More copper for soldering",
-        "Faster drilling",
+        "A cheaper board, because the fab charges less for a solid plane than for routed inner traces",
+        "More copper for soldering, so the top-layer pads wet more evenly",
+        "Faster drilling, because the plane layer needs no vias of its own",
         "A short return path under every top-layer signal, and a controlled impedance",
       ],
       answer: 3,
@@ -134,9 +134,9 @@ const data: LessonData = {
       q: "A blind via connects:",
       choices: [
         "An outer layer to an inner layer without reaching the other face",
-        "Top to bottom through the whole board",
-        "Two inner layers only",
-        "Two pads on the same layer",
+        "Top to bottom through the whole board, with the barrel plated along its full length",
+        "Two inner layers only, with no opening on either outer surface",
+        "Two pads on the same layer, under a component body",
       ],
       answer: 0,
       explain:
@@ -145,10 +145,10 @@ const data: LessonData = {
     {
       q: "Why does a pad on a large copper pour usually get thermal relief spokes?",
       choices: [
-        "To lower the pad's current rating on purpose",
-        "To increase clearance to neighbouring pads",
+        "To lower the pad's current rating on purpose, so it acts as a fuse for the component",
+        "To increase clearance to neighbouring pads so the solder mask dam fits between them",
         "So soldering heat is not drained away, which prevents cold joints and tombstoning",
-        "To save copper and reduce cost",
+        "To save copper and reduce the cost of the board",
       ],
       answer: 2,
       explain:

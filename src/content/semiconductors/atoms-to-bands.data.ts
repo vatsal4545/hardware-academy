@@ -94,9 +94,9 @@ const data: LessonData = {
     {
       q: "Why can't the electrons in a completely full valence band carry a net current?",
       choices: [
-        "They are bound too tightly to their atoms to move at all",
-        "The band gap repels them from the metal contacts",
-        "Their effective mass becomes infinite in a full band",
+        "They are bound too tightly to their atoms to move, even when a strong electric field is applied",
+        "The band gap acts as a barrier that keeps them away from the metal contacts at the ends",
+        "Their effective mass becomes infinite once every state in the band is filled",
         "Every state is occupied, so for each electron moving one way another moves the opposite way",
       ],
       answer: 3,
@@ -127,10 +127,10 @@ const data: LessonData = {
     {
       q: "Why do 800 V EV traction inverters use SiC MOSFETs rather than silicon devices?",
       choices: [
-        "SiC wafers are cheaper than silicon wafers",
-        "SiC has a direct band gap, so it switches faster",
-        "SiC's wide gap gives about 10× the critical field, so 1200 V parts have thin, low-resistance drift layers and stay low-leakage when hot",
-        "Electrons move about six times faster in SiC than in silicon",
+        "SiC wafers are cheaper than silicon wafers, so a 1200 V die costs less to make",
+        "SiC has a direct band gap, so its carriers recombine quickly and it switches faster",
+        "SiC's wide gap gives about 10× the critical field, so 1200 V parts have thin, low-resistance drift layers",
+        "Electrons move about six times faster in SiC than in silicon, so the channel has less resistance",
       ],
       answer: 2,
       explain:

@@ -115,10 +115,10 @@ const data: LessonData = {
     {
       q: "Why does a blue LED need about 3 V while a red one needs about 2 V?",
       choices: [
-        "Blue LEDs have more internal series resistance",
-        "Each photon carries about the band-gap energy, and blue (about 2.7 eV) needs a wider-gap material than red (about 1.8 eV)",
-        "Blue light is dimmer, so it needs more voltage to be visible",
-        "Blue LEDs are made of silicon, which has a higher threshold",
+        "Blue LEDs have more internal series resistance, so more of the drive voltage is lost in the chip",
+        "Each photon carries about the band-gap energy, so blue (2.7 eV) needs a wider-gap material than red (1.8 eV)",
+        "Blue light is dimmer to the eye, so the LED must be driven harder to look as bright",
+        "Blue LEDs are made of silicon, which has a higher turn-on threshold than the gallium compounds in red LEDs",
       ],
       answer: 1,
       explain:
@@ -128,9 +128,9 @@ const data: LessonData = {
       q: "On a diode datasheet, what does trr describe?",
       choices: [
         "The time needed to sweep out stored charge before the diode blocks after conducting",
-        "The time for the junction to reach thermal equilibrium",
-        "The rise time of the forward current at turn-on",
-        "The thermal resistance from junction to case",
+        "The time for the junction temperature to settle after a step change in forward current",
+        "The rise time of the forward current when the diode is first switched on",
+        "The thermal resistance from the junction to the case, in °C per watt",
       ],
       answer: 0,
       explain:

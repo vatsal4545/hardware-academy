@@ -91,10 +91,10 @@ const data: LessonData = {
     {
       q: "A thin pole sits 10° off the robot's heading, closer than the wall straight ahead. What does a real HC-SR04 most likely report?",
       choices: [
-        "The distance to the wall, like a simulated ray",
+        "The distance to the wall, like a simulated ray that ignores anything off-axis",
         "The distance to the pole, because the pole is inside the beam",
-        "Zero",
-        "The average of the two distances",
+        "Zero, because the two echoes arrive close together and cancel",
+        "The average of the two distances, weighted by echo strength",
       ],
       answer: 1,
       explain:
@@ -117,10 +117,10 @@ const data: LessonData = {
     {
       q: "Why randomize start poses, noise and latency across many simulated runs?",
       choices: [
-        "To make the simulation run faster",
-        "So the controller cannot overfit to one perfect world, and fragile behaviors show up before hardware does",
-        "Because simulators cannot be deterministic",
-        "To reduce the number of tests needed",
+        "To make the simulation run faster, because randomized runs can be spread across cores",
+        "So the controller cannot overfit one perfect world, and fragile behaviors show up before hardware does",
+        "Because simulators cannot be deterministic, so every run is already different anyway",
+        "To reduce the number of test runs needed, since one randomized run stands in for every case",
       ],
       answer: 1,
       explain:
@@ -129,10 +129,10 @@ const data: LessonData = {
     {
       q: "The sonar times out with no echo. What should the controller assume?",
       choices: [
-        "Free space for 4 m",
-        "An obstacle at 0 cm",
+        "Free space for 4 m, the sensor's maximum range",
+        "An obstacle at 0 cm, so it must brake immediately",
         "Unknown: slow down or stop until a valid reading arrives",
-        "The previous reading is still valid forever",
+        "The previous reading is still valid forever, so keep driving on it",
       ],
       answer: 2,
       explain:
