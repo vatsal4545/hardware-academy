@@ -265,7 +265,7 @@ export default function Lesson() {
               lang="text"
               code={[
                 "1  U3 STBY has no wire          ERC: pin not connected",
-                "   fix: IO14 to STBY with R2 = 100 kΩ pull-down (driver off until firmware enables it)",
+                "   fix: IO14 to STBY; R2 = 100 kΩ pull-down documents the chip's own 200 kΩ default (off until firmware enables it)",
                 "2  U1 EN has no pull-up         ERC cannot see it: the net has a switch and a capacitor",
                 "   fix: add R1 = 10 kΩ from EN to 3V3 (with C6 = 1 µF it gives the power-up delay)",
                 "3  U3 PGND2 is not wired        ERC: pin not connected",

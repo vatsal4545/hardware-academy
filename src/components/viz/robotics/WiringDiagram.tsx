@@ -291,7 +291,7 @@ const WIRES: Wire[] = [
   driverLine("bin1", "Right motor direction BIN1", 4, 240, "BIN1", "3.3 V logic level", "Mirrors AIN1 for the right motor; the right motor is mounted reversed, so firmware flips its sign."),
   driverLine("bin2", "Right motor direction BIN2", 16, 255, "BIN2", "3.3 V logic level", "The complement of BIN1."),
   {
-    ...driverLine("stby", "Driver standby (STBY)", 17, 270, "STBY", "3.3 V logic level, low = standby", "A 10 kΩ pull-down keeps the driver in standby while the ESP32 boots; setup() drives STBY high only after the PWM pins are configured."),
+    ...driverLine("stby", "Driver standby (STBY)", 17, 270, "STBY", "3.3 V logic level, low = standby", "A 10 kΩ pull-down, backing up the chip's own 200 kΩ internal one, keeps the driver in standby while the ESP32 boots; setup() drives STBY high only after the PWM pins are configured."),
     stage: 3,
   },
   {
@@ -581,7 +581,7 @@ const STEPS = [
   "Switch on: the pack (about 8.2 V) reaches the fuse, the TB6612 VM pin and the buck input. The driver has motor power but no logic power yet, so its outputs stay off.",
   "Buck soft-start: the 5 V rail ramps up in about a millisecond (slowed down here) and feeds the ESP32's 5V pin, the servo and the sonar.",
   "LDO: the ESP32's AMS1117 makes 3.3 V for the chip, the driver logic, the encoders and the line sensors. An RC delay on EN holds the ESP32 in reset until the rail is stable.",
-  "Boot: every GPIO starts as an input and the 10 kΩ pull-down holds STBY low, so the motors cannot twitch while the bootloader runs.",
+  "Boot: every GPIO starts as an input and the 10 kΩ pull-down (and the driver's internal 200 kΩ) holds STBY low, so the motors cannot twitch while the bootloader runs.",
   "setup(): PWM channels attached at 20 kHz, direction pins set, then STBY driven high. The H-bridges are live but the duty is still zero.",
   "Running: 100 Hz control loop, encoder interrupts counting, a sonar ping every 60 ms, line sensors sampled every tick and telemetry printed at 10 Hz.",
 ];

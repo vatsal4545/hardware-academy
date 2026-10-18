@@ -104,6 +104,7 @@ const list: Reference[] = [
   { id: "mcp-python-sdk", kind: "doc", title: "MCP Python SDK: v2 migration guide", authors: "Model Context Protocol maintainers", year: 2026, venue: "py.sdk.modelcontextprotocol.io", url: "https://py.sdk.modelcontextprotocol.io/v2/migration/", free: true, note: "What changed in SDK 2.0: FastMCP became MCPServer, timeouts moved to seconds, and only ToolError text reaches the model. The lesson listing targets 2.x." },
   // Datasheets and vendor design guides checked for this course
   { id: "ams1117-ds", kind: "doc", title: "AMS1117: 1A Low Dropout Voltage Regulator (datasheet)", authors: "Advanced Monolithic Systems", year: 2012, venue: "advanced-monolithic.com", url: "http://www.advanced-monolithic.com/pdf/ds1117.pdf", free: true, note: "1 A output, current limit 0.9 to 1.5 A; dropout 1.1 V typical and 1.3 V maximum at 0.8 A (note 4: higher above 0.8 A); quiescent current 5 mA typical, 11 mA maximum; a 22 µF solid tantalum output capacitor keeps it stable; SOT-223 46 to 90 °C/W depending on copper." },
+  { id: "tb6612fng-ds", kind: "doc", title: "TB6612FNG: Driver IC for Dual DC Motor (datasheet)", authors: "Toshiba", year: 2014, venue: "toshiba.semicon-storage.com", url: "https://toshiba.semicon-storage.com/info/TB6612FNG_datasheet_en_20141001.pdf", free: true, note: "Pin table: STBY, IN1, IN2 and PWM each have a 200 kΩ internal pull-down. VM 2.5 to 13.5 V, 1.2 A average and 3.2 A peak per channel above 4.5 V, 0.5 Ω typical upper plus lower on-resistance, PWM to 100 kHz (figures checked in the 2008-05-09 revision)." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -171,6 +172,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
   ],
   "schematic-capture": [
+    { id: "tb6612fng-ds", read: "The pin table: every control input has a 200 kΩ internal pull-down, which decides the STBY scenario." },
     { id: "ams1117-ds", read: "The Stability section: the output-capacitor footnote the lesson refers to." },
     { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
     { id: "altium-getting-started", read: "Pages 4-13: schematic, placing parts, nets and net labels, compiling the schematic." },
@@ -203,6 +205,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "ott", read: "The chapter on measurement and troubleshooting of noise." },
   ],
   "kicad-project-walkthrough": [
+    { id: "tb6612fng-ds", read: "The ratings quoted for U3 and the VM range." },
     { id: "ams1117-ds", read: "Thermal resistance figures behind the copper pour under U3." },
     { id: "kicad-docs", read: "The Getting Started tutorial and the PCB editor manual." },
     { id: "altium-getting-started", read: "The same project flow in Altium Designer, step by step with screenshots." },
@@ -220,6 +223,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "kalman1960", read: "Read the abstract and the idea of blending prediction with measurement." },
   ],
   "actuators-and-drivers": [
+    { id: "tb6612fng-ds", read: "Output saturation voltage (0.5 V typical at 1 A) behind the L298N comparison." },
     { id: "hughes-drury", read: "Chapters on brushed DC, stepper and brushless motors." },
     { id: "siegwart", read: "The locomotion chapter on wheel configurations." },
     { id: "horowitz-hill", read: "The section on driving motors and H-bridges." },
@@ -248,6 +252,7 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "durrant-whyte2006", read: "The SLAM tutorial, part I." },
   ],
   "build-your-smart-robot": [
+    { id: "tb6612fng-ds", read: "Ratings and the pin table behind the STBY pull-down and the 1.2 A per channel." },
     { id: "siegwart", read: "The locomotion and sensors chapters, to understand each part you are wiring." },
     { id: "white", read: "The firmware-structure chapters before you extend the sketch." },
     { id: "horowitz-hill", read: "Power supplies and motor driving." },

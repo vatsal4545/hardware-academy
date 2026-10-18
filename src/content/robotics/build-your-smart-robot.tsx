@@ -132,7 +132,7 @@ const sketch = String.raw`// Hardware Academy course robot
 // ---------- Pin map (matches the wiring diagram) ----------
 constexpr uint8_t PIN_PWMA = 25, PIN_AIN1 = 26, PIN_AIN2 = 27;  // left motor
 constexpr uint8_t PIN_PWMB = 13, PIN_BIN1 = 4, PIN_BIN2 = 16;   // right motor
-constexpr uint8_t PIN_STBY = 17;                                // 10k pull-down to GND
+constexpr uint8_t PIN_STBY = 17;                                // 10k pull-down to GND (the chip has 200k inside)
 constexpr uint8_t PIN_ENC_LA = 18, PIN_ENC_LB = 19;
 constexpr uint8_t PIN_ENC_RA = 32, PIN_ENC_RB = 33;
 constexpr uint8_t PIN_TRIG = 14, PIN_ECHO = 34;                 // ECHO through 1k/2k divider
@@ -641,7 +641,7 @@ export default function Lesson() {
                 <td>Driver standby</td>
                 <td>GPIO 17</td>
                 <td>TB6612 STBY</td>
-                <td>10 kΩ pull-down: motors off during boot</td>
+                <td>10 kΩ pull-down (the TB6612 has 200 kΩ inside too): motors off during boot</td>
               </tr>
               <tr>
                 <td>Left encoder A, B</td>
