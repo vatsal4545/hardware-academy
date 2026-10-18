@@ -132,18 +132,25 @@ describe("board model: decoupling, V = L·di/dt", () => {
 });
 
 describe("board model: the motor winding", () => {
-  it("0.5 A gives 20 µT at 5 mm from the trace, 89 mA of ripple at 60% duty, 4.44 V average", () => {
+  it("0.5 A gives 20 µT at 5 mm from the trace, 88 mA of ripple at 60% duty of VM, 4.41 V average", () => {
     const s = windingStation(BOARD_DEFAULTS);
     expect(s.bTraceUt).toBeCloseTo(20, 6);
     expect(s.earthRatio).toBeCloseTo(0.4, 6);
-    expect(s.rippleA).toBeCloseTo(0.0888, 4);
-    expect(s.vAvg).toBeCloseTo(4.44, 6);
+    expect(s.rippleA).toBeCloseTo(0.088107, 6);
+    expect(s.vAvg).toBeCloseTo(4.40535, 9);
     expect(s.direction).toBe("forward");
   });
   it("flyback: 1 A falling in 100 ns through 1 mH wants 10 kV; the body diode clamps at VM + 0.7", () => {
     const s = windingStation(BOARD_DEFAULTS);
     expect(s.flybackV).toBeCloseTo(10000, 6);
-    expect(s.clampV).toBeCloseTo(8.1, 6);
+    expect(s.clampV).toBeCloseTo(8.04225, 9);
+  });
+  it("follows VM, not the pack: stalled motors pull the average to 4.35 V and the clamp to 7.94 V, the meter's M1A to the last bit", () => {
+    const s = windingStation(stalled);
+    expect(s.vAvg).toBeCloseTo(4.34535, 9);
+    expect(s.clampV).toBeCloseTo(7.94225, 9);
+    expect(s.vAvg).toBe(nodeVoltages(stalled).M1A);
+    expect(windingStation(BOARD_DEFAULTS).vAvg).toBe(nodeVoltages(BOARD_DEFAULTS).M1A);
   });
   it("reverse flips the direction and nothing else", () => {
     const f = windingStation(BOARD_DEFAULTS);

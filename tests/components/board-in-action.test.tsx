@@ -241,11 +241,11 @@ describe("StationPanel", () => {
     expect(readout(container, "Verdict")).toBe("Inside 5% of the rail");
     cleanup();
     const { container: c2 } = panel("winding");
-    expect(readout(c2, "Average motor voltage  D · VM")).toBe("4.44 V");
+    expect(readout(c2, "Average motor voltage  D · VM")).toBe("4.41 V");
     expect(readout(c2, "Field 5 mm from the trace")).toBe("20 µT");
-    expect(readout(c2, "PWM ripple  ΔI")).toBe("88.8 mA");
+    expect(readout(c2, "PWM ripple  ΔI")).toBe("88.1 mA");
     expect(readout(c2, "Flyback without a path")).toBe("10 kV");
-    expect(readout(c2, "Clamped by the body diode")).toBe("8.10 V");
+    expect(readout(c2, "Clamped by the body diode")).toBe("8.04 V");
     expect(c2.textContent).toContain("thumb: field");
   });
 
