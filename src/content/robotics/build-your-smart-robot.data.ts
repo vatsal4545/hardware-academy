@@ -139,7 +139,7 @@ const data: LessonData = {
       ],
       answer: 1,
       explain:
-        "During reset and boot, GPIOs float or toggle (GPIO 14 even outputs PWM at boot). Holding STBY low with a pull-down keeps the outputs off until firmware has put every control pin in a known state.",
+        "During reset and boot, GPIOs float or toggle (GPIO 14 even outputs PWM at boot). Holding STBY low with a pull-down keeps the outputs off until firmware has put every control pin in a known state. The TB6612FNG already has a 200 kΩ pull-down inside on STBY (and on every IN and PWM pin), so the chip wakes up in standby by itself; the external 10 kΩ makes that default stiff against noise on breadboard wiring.",
     },
     {
       q: "A Li-ion cell in the robot is hot and starting to swell. What do you do?",

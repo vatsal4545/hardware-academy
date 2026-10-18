@@ -230,7 +230,7 @@ export default function Lesson() {
           <p>
             The board has a P-FET reverse-polarity input from a 7.4 V pack, an AMS1117-3.3, an ESP32-WROOM-32 and a TB6612FNG. Write a numbered checklist
             with, for every step, the instrument and its setting, the reading you expect and what you do if it is wrong. Expected idle current with
-            Wi-Fi off is the AMS1117&apos;s 5 mA plus the module&apos;s 40 to 60 mA plus the LED: call it 60 to 80 mA.
+            Wi-Fi off is the AMS1117&apos;s 5 mA of quiescent current (11 mA maximum) plus the module&apos;s 40 to 60 mA plus the LED: call it 60 to 80 mA.
           </p>
           <details className="mt-3 rounded-md border border-border bg-bg/40 p-3">
             <summary className="cursor-pointer font-semibold text-green-300">Worked answer</summary>

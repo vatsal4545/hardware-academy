@@ -12,7 +12,7 @@ export interface Lifeline {
 export const LIFELINES: Lifeline[] = [
   { id: "user", label: "You", sub: "chat window" },
   { id: "claude", label: "Claude Desktop", sub: "model + MCP client" },
-  { id: "server", label: "cad_server.py", sub: "FastMCP, 5 tools" },
+  { id: "server", label: "cad_server.py", sub: "MCPServer, 5 tools" },
   { id: "kernel", label: "build123d", sub: "OpenCascade kernel" },
 ];
 

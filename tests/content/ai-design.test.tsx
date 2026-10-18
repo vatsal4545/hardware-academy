@@ -518,16 +518,22 @@ describe("numbers quoted in the lessons follow from the geometry", () => {
 });
 
 describe("the MCP server listing", () => {
-  it("is a complete, tested-shape FastMCP server of about 130 lines that never prints to stdout", () => {
+  it("is a complete, tested-shape MCPServer listing of about 140 lines that never prints to stdout", () => {
     const { container } = render(<ClaudeCadTool />);
-    const code = [...container.querySelectorAll("code")].map((c) => c.textContent ?? "").find((t) => t.includes("FastMCP(")) ?? "";
+    const code = [...container.querySelectorAll("code")].map((c) => c.textContent ?? "").find((t) => t.includes("MCPServer(")) ?? "";
     const lines = code.split("\n").length;
-    expect(lines).toBeGreaterThan(110);
-    expect(lines).toBeLessThan(140);
+    expect(lines).toBeGreaterThan(120);
+    expect(lines).toBeLessThan(160);
     for (const tool of ["make_box", "make_plate_with_holes", "fillet_edges", "export_step", "dfm_check"]) expect(code).toContain(`def ${tool}(`);
     expect((code.match(/@mcp\.tool\(\)/g) ?? []).length).toBe(5);
     expect(code).toContain("mcp.run()");
     expect(code).not.toMatch(/\bprint\(/);
+    // mcp 2.x: MCPServer from mcp.server.mcpserver, pinned below 3, and every deliberate rejection is a ToolError so its text reaches the model
+    expect(code).toContain('"mcp>=2,<3"');
+    expect(code).toContain("from mcp.server.mcpserver import MCPServer");
+    expect(code).toContain("from mcp.server.mcpserver.exceptions import ToolError");
+    expect(code).not.toMatch(/raise ValueError\(/);
+    expect((code.match(/raise ToolError\(/g) ?? []).length).toBeGreaterThanOrEqual(7);
     // declared return types give every tool an output schema and a structuredContent copy of its result
     expect((code.match(/-> dict\[str, Any\]:/g) ?? []).length).toBeGreaterThanOrEqual(5);
     expect(code).not.toMatch(/-> dict:/);
@@ -540,7 +546,7 @@ describe("the MCP server listing", () => {
   it("agrees with the payloads shown in the sequence diagram", () => {
     const { container } = render(<ClaudeCadTool />);
     const text = [...container.querySelectorAll("code")].map((c) => c.textContent ?? "");
-    const code = text.find((t) => t.includes("FastMCP(")) ?? "";
+    const code = text.find((t) => t.includes("MCPServer(")) ?? "";
     // structuredContent and outputSchema appear in the payloads exactly when the listing declares return types
     const declared = !/-> dict:/.test(code) && /-> dict\[str, Any\]:/.test(code);
     const story = ROWS.map((r) => r.payload).join("\n");

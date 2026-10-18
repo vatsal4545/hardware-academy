@@ -28,7 +28,7 @@ const data: LessonData = {
     },
     {
       term: "DRAM (1T1C)",
-      def: "Dynamic RAM: one transistor and one capacitor per bit. Dense and cheap, but the charge leaks, so every row must be refreshed every 64 ms.",
+      def: "Dynamic RAM: one transistor and one capacitor per bit. Dense and cheap, but the charge leaks, so every row must be refreshed within a fixed window: 64 ms for DDR4, 32 ms for DDR5 and HBM, with a refresh command about every 3.9 µs.",
     },
     {
       term: "Flash (floating gate)",
@@ -123,7 +123,7 @@ const data: LessonData = {
       choices: ["SRAM", "Flash", "DRAM", "Processor registers"],
       answer: 2,
       explain:
-        "DRAM stores each bit as charge on a tiny capacitor that leaks, so every row is read and rewritten every 64 ms. SRAM holds data in cross-coupled inverters as long as it is powered, and Flash keeps it for years without power.",
+        "DRAM stores each bit as charge on a tiny capacitor that leaks, so every row is read and rewritten within 64 ms (DDR4) or 32 ms (DDR5 and HBM). SRAM holds data in cross-coupled inverters as long as it is powered, and Flash keeps it for years without power.",
     },
     {
       q: "How are the transistors arranged in a 2-input CMOS NAND gate?",

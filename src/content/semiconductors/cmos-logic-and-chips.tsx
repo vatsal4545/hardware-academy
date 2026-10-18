@@ -229,7 +229,7 @@ export default function Lesson() {
                 <td>DRAM</td>
                 <td>1 transistor + 1 capacitor (1T1C)</td>
                 <td>tens of ns</td>
-                <td>Main memory (DDR5, HBM); the charge leaks, so every row is refreshed every 64 ms</td>
+                <td>Main memory (DDR5, HBM); the charge leaks, so every row is refreshed within 32 ms on DDR5 and HBM (64 ms on DDR4)</td>
               </tr>
               <tr>
                 <td>Flash</td>

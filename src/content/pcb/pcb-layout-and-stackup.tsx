@@ -180,7 +180,7 @@ export default function Lesson() {
             31 mil for 2 A and 54 mil for 3 A; an inner layer needs about 2.6 times as much and 2 oz copper halves the width. Set the fab&apos;s
             limits as <strong>design rules</strong> before you route: 6/6 mil (0.15 mm) trace and space, a 0.3 mm drill, a 0.15 mm annular ring
             and 0.3 mm from copper to the board edge. <strong>Clearance</strong> (the air gap) and <strong>creepage</strong> (the path along
-            the surface) grow with voltage: IPC-2221 allows 0.1 mm up to 30 V and 0.6 mm from 31 to 150 V on uncoated outer layers, and mains
+            the surface) grow with voltage: IPC-2221B Table 6-1 (column B2, uncoated external conductors) allows 0.1 mm up to 30 V and 0.6 mm from 31 to 150 V, and mains
             boards need millimetres.
           </p>
 
