@@ -197,6 +197,9 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "feynman-ii", read: "Chapter 13, sections 13-1 to 13-5: the field of a wire and of a solenoid, and the right-hand rule." },
     { id: "ott", read: "The decoupling chapter: V = L · di/dt and why distance to the pin is inductance." },
     { id: "hughes-drury", read: "The brushed DC motor chapter: torque from current, back-EMF from speed." },
+    { id: "esp32-hw-guidelines", read: "The EN (CHIP_PU) RC network and the ADC input notes." },
+    { id: "ams1117-ds", read: "Ground current and thermal resistance for the regulator station." },
+    { id: "tb6612fng-ds", read: "Output saturation voltage and the body diodes that catch the flyback." },
   ],
   "schematic-capture": [
     { id: "esp32-hw-guidelines", read: "The EN (CHIP_PU) RC values and the strapping pins the schematic audit checks." },
