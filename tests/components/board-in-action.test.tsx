@@ -174,7 +174,6 @@ const byId = (id: string) => STATIONS.find((s) => s.id === id)!;
 
 describe("StationPanel", () => {
   afterEach(cleanup);
-  const m = boardModel(BOARD_DEFAULTS);
   const noop = () => {};
   const panel = (id: string, inputs = BOARD_DEFAULTS, onChange: (p: object) => void = noop) =>
     render(<StationPanel station={byId(id)} model={boardModel(inputs)} inputs={inputs} onChange={onChange} />);
