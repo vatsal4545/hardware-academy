@@ -105,6 +105,8 @@ const list: Reference[] = [
   // Datasheets and vendor design guides checked for this course
   { id: "ams1117-ds", kind: "doc", title: "AMS1117: 1A Low Dropout Voltage Regulator (datasheet)", authors: "Advanced Monolithic Systems", year: 2012, venue: "advanced-monolithic.com", url: "http://www.advanced-monolithic.com/pdf/ds1117.pdf", free: true, note: "1 A output, current limit 0.9 to 1.5 A; dropout 1.1 V typical and 1.3 V maximum at 0.8 A (note 4: higher above 0.8 A); quiescent current 5 mA typical, 11 mA maximum; a 22 µF solid tantalum output capacitor keeps it stable; SOT-223 46 to 90 °C/W depending on copper." },
   { id: "tb6612fng-ds", kind: "doc", title: "TB6612FNG: Driver IC for Dual DC Motor (datasheet)", authors: "Toshiba", year: 2014, venue: "toshiba.semicon-storage.com", url: "https://toshiba.semicon-storage.com/info/TB6612FNG_datasheet_en_20141001.pdf", free: true, note: "Pin table: STBY, IN1, IN2 and PWM each have a 200 kΩ internal pull-down. VM 2.5 to 13.5 V, 1.2 A average and 3.2 A peak per channel above 4.5 V, 0.5 Ω typical upper plus lower on-resistance, PWM to 100 kHz (figures checked in the 2008-05-09 revision)." },
+  { id: "p2n2222a-ds", kind: "doc", title: "P2N2222A: Amplifier Transistors, NPN Silicon (datasheet, Rev. 7)", authors: "onsemi", year: 2013, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/p2n2222a-d.pdf", free: true, note: "TO-92 case 29 style 17: pin 1 collector, 2 base, 3 emitter (C-B-E with the flat face toward you). IC 600 mA, VCEO 40 V, hFE 100 to 300 at 150 mA, fT 300 MHz." },
+  { id: "pn2222a-ds", kind: "doc", title: "PN2222A: NPN General-Purpose Amplifier (datasheet, Rev. 1.1.0)", authors: "Fairchild Semiconductor, now onsemi", year: 2014, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/pn2222a-d.pdf", free: true, note: "The other common 2N2222 in TO-92, with the opposite E-B-C lead order; IC 1 A, VCEO 40 V." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -126,6 +128,8 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "sedra-smith", read: "The diodes chapter and its problems; LED and Schottky examples." },
   ],
   "transistors-bjt-mosfet": [
+    { id: "pn2222a-ds", read: "The same part number family with the opposite E-B-C order; the reason to check every TO-92." },
+    { id: "p2n2222a-ds", read: "The pinout page: the P2N2222A is C-B-E, and the encyclopedia drawing follows it." },
     { id: "bardeen1948", read: "One page: the first transistor announcement." },
     { id: "kahng1960", read: "The first MOSFET; cite it when asked who invented the device." },
     { id: "sedra-smith", read: "The MOSFET chapter: threshold, the three regions, the switch model." },
