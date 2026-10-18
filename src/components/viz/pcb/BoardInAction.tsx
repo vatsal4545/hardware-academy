@@ -125,7 +125,7 @@ export function BoardInAction() {
                     Clear probes
                   </Button>
                 </div>
-                <dl className="mt-2 grid grid-cols-3 gap-2" aria-live="polite">
+                <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" aria-live="polite">
                   <Stat label="Black probe (COM)" value={testPointName(probes.black) ?? "—"} />
                   <Stat label="Red probe" value={testPointName(probes.red) ?? "—"} />
                   <Stat label="Reading  V(red) − V(black)" value={reading?.display ?? "—"} tone={reading && reading.volts < 0 ? "warn" : "neutral"} />

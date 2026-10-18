@@ -31,7 +31,7 @@ export interface TestPoint {
  */
 export const TEST_POINTS: TestPoint[] = [
   { id: "GND", name: "GND", label: "GND", at: [4.8, 32.4], labelAt: [5.7, 32.4], anchor: "start", stubs: [[[4.8, 29.25], [4.8, 32.4]]] },
-  { id: "VBAT", name: "VBAT", label: "VBAT", at: [8.3, 26.75], labelAt: [8.3, 25.55], anchor: "middle" },
+  { id: "VBAT", name: "VBAT", label: "VBAT", at: [8.3, 26.75], labelAt: [8.3, 27.95], anchor: "middle" },
   { id: "VM", name: "VM", label: "VM", at: [13.0, 23.5], labelAt: [12.2, 23.5], anchor: "end" },
   { id: "U3_IN", name: "U3 IN", label: "IN", at: [16.9, 26.75], labelAt: [17.7, 26.75], anchor: "start" },
   { id: "3V3", name: "3V3", label: "3V3", at: [26.0, 29.05], labelAt: [26.9, 28.15], anchor: "start" },
@@ -39,12 +39,12 @@ export const TEST_POINTS: TestPoint[] = [
     id: "EN",
     name: "EN",
     label: "EN",
-    at: [38.1, 7.5],
-    labelAt: [38.1, 6.5],
-    anchor: "middle",
+    at: [38.1, 6.4],
+    labelAt: [37.3, 6.4],
+    anchor: "end",
     stubs: [
       [[37.46, 9.0], [38.74, 9.0]],
-      [[38.1, 9.0], [38.1, 7.5]],
+      [[38.1, 9.0], [38.1, 6.4]],
     ],
   },
   { id: "IO13", name: "IO13", label: "IO13", at: [43.0, 33.8], labelAt: [43.8, 33.8], anchor: "start", stubs: [[[41.66, 33.8], [43.0, 33.8]]] },
@@ -61,7 +61,7 @@ export const TEST_POINTS: TestPoint[] = [
     ],
   },
   { id: "D1_K", name: "D1 cathode (K)", label: "K", at: [38.2, 35.3], labelAt: [38.95, 35.3], anchor: "start", stubs: [[[37.54, 33.8], [38.2, 35.3]]] },
-  { id: "VBAT_SENSE", name: "VBAT_SENSE (IO35)", label: "IO35 VBAT_SENSE", at: IO35_PAD, labelAt: [35.5, 28.0], anchor: "start" },
+  { id: "VBAT_SENSE", name: "VBAT_SENSE (IO35)", label: "IO35 VBAT_SENSE", at: IO35_PAD, labelAt: [37.8, 28.0], anchor: "start" },
   { id: "M1A", name: "M1A", label: "M1A", at: [19.0, 10.3], labelAt: [18.3, 10.3], anchor: "end" },
   { id: "M1B", name: "M1B", label: "M1B", at: [20.6, 10.3], labelAt: [21.3, 10.3], anchor: "start" },
 ];

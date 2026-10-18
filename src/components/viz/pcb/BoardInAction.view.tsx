@@ -74,17 +74,14 @@ function Routes({ layer, lit }: { layer: "F" | "B"; lit: Set<string> }) {
 
 const PROBE_COLOR = { black: "#18181b", red: "#ef4444" } as const;
 
-/** A probe tip on a pad: a short lead leaning away from the pad and a tag, COM for the black probe and V for the red. */
-function ProbeTip({ x, y, probe }: { x: number; y: number; probe: "black" | "red" }) {
-  const dx = probe === "black" ? -12 : 12;
+/** A probe tip on a pad: a short lead that leans away from the other probe (black to the left, red to the right, when alone). */
+function ProbeTip({ x, y, probe, awayFrom }: { x: number; y: number; probe: "black" | "red"; awayFrom: number | null }) {
+  const dx = awayFrom === null ? (probe === "black" ? -12 : 12) : awayFrom > x ? -12 : 12;
   return (
     <g data-probe-tip={probe}>
-      <line x1={x} y1={y} x2={x + dx} y2={y - 22} stroke={vizColors.silk} strokeWidth={5} strokeLinecap="round" />
-      <line x1={x} y1={y} x2={x + dx} y2={y - 22} stroke={PROBE_COLOR[probe]} strokeWidth={3} strokeLinecap="round" />
+      <line x1={x} y1={y} x2={x + dx} y2={y - 20} stroke={vizColors.silk} strokeWidth={5} strokeLinecap="round" />
+      <line x1={x} y1={y} x2={x + dx} y2={y - 20} stroke={PROBE_COLOR[probe]} strokeWidth={3} strokeLinecap="round" />
       <circle cx={x} cy={y} r={4} fill={PROBE_COLOR[probe]} stroke={vizColors.silk} strokeWidth={1.2} />
-      <Label x={x + dx} y={y - 30} size={8} bold color={PROBE_COLOR[probe] === PROBE_COLOR.red ? PROBE_COLOR.red : vizColors.silk}>
-        {probe === "black" ? "COM" : "V"}
-      </Label>
     </g>
   );
 }
@@ -197,6 +194,8 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
       {/* test pads: a ring on the copper, a silk label, and the probe that sits on it (the IO35 pad is the Rev B divider's) */}
       {TEST_POINTS.map((t) => {
         const probe = probes.black === t.id ? "black" : probes.red === t.id ? "red" : null;
+        const other = probe === "black" ? probes.red : probe === "red" ? probes.black : null;
+        const otherPad = other ? TEST_POINTS.find((p) => p.id === other) : undefined;
         const x = bx(t.at[0]);
         const y = by(t.at[1]);
         return (
@@ -219,7 +218,7 @@ export function BoardTopView({ station, phases, flowPaths, selected, onSelect, f
             <Label x={bx(t.labelAt[0])} y={by(t.labelAt[1])} anchor={t.anchor} size={8} mono color={meterOn ? vizColors.silk : vizColors.muted}>
               {t.label}
             </Label>
-            {probe && <ProbeTip x={x} y={y} probe={probe} />}
+            {probe && <ProbeTip x={x} y={y} probe={probe} awayFrom={otherPad ? bx(otherPad.at[0]) : null} />}
           </g>
         );
       })}
