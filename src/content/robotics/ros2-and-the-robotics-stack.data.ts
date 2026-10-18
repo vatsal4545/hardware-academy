@@ -122,10 +122,10 @@ const data: LessonData = {
     {
       q: "What does TRANSIENT_LOCAL durability give a subscriber that joins late?",
       choices: [
-        "Nothing until the next message is published",
+        "Nothing until the next message is published, however long that takes",
         "The last messages the publisher kept, delivered on connection",
-        "Every message ever published since boot",
-        "Lower latency",
+        "Every message ever published since boot, replayed from the DDS log",
+        "Lower latency on every later message",
       ],
       answer: 1,
       explain:
@@ -134,10 +134,10 @@ const data: LessonData = {
     {
       q: "What is micro-ROS?",
       choices: [
-        "A smaller ROS 2 distribution for Raspberry Pi",
+        "A smaller ROS 2 distribution for Raspberry Pi, with the GUI tools and simulators removed",
         "ROS 2 for microcontrollers, using an XRCE-DDS client on the chip and an agent on a computer",
-        "A ROS 2 simulator",
-        "A ROS 1 to ROS 2 bridge",
+        "A ROS 2 simulator for testing nodes on a laptop without any hardware attached",
+        "A ROS 1 to ROS 2 bridge that forwards topics between the two message formats",
       ],
       answer: 1,
       explain:
