@@ -111,6 +111,8 @@ const list: Reference[] = [
   { id: "nevi-23cfr680", kind: "standard", title: "23 CFR Part 680: National Electric Vehicle Infrastructure Standards and Requirements", authors: "Federal Highway Administration", year: 2023, venue: "Code of Federal Regulations", url: "https://www.ecfr.gov/current/title-23/part-680", free: true, note: "The NEVI minimum standards: at least four DC ports at 150 kW each, simultaneously (680.106); ISO 15118 and OCPP 2.0.1 (680.108); 97 % uptime per port (680.116)." },
   { id: "iec-62196-3", kind: "standard", title: "IEC 62196-3:2022: Plugs, socket-outlets, vehicle connectors and vehicle inlets, Part 3: Dimensional compatibility requirements for DC and AC/DC pin and contact-tube vehicle couplers", authors: "IEC", year: 2022, venue: "IEC", url: "https://webstore.iec.ch/", note: "Configurations AA (CHAdeMO), EE (CCS1) and FF (CCS2) are rated 1,000 V DC and 400 A." },
   { id: "iec-ts-62196-3-1", kind: "standard", title: "IEC TS 62196-3-1:2020: Vehicle connectors, vehicle inlets and cable assemblies for DC charging intended to be used with a thermal management system", authors: "IEC", year: 2020, venue: "IEC", url: "https://webstore.iec.ch/", note: "The cooled-coupler specification: up to 1,500 V DC and 500 A with thermal management." },
+  { id: "jedec-ddr5", kind: "standard", title: "JESD79-5: DDR5 SDRAM", authors: "JEDEC", year: 2020, venue: "JEDEC", url: "https://www.jedec.org/", note: "Refresh: tREFI is 3.9 µs, so 8,192 refresh commands cover every row within a 32 ms window below 85 °C; DDR4 (JESD79-4) uses 7.8 µs and 64 ms." },
+  { id: "jedec-hbm2", kind: "standard", title: "JESD235: High Bandwidth Memory (HBM) DRAM", authors: "JEDEC", year: 2013, venue: "JEDEC", url: "https://www.jedec.org/", note: "HBM2 uses the same 3.9 µs tREFI and 32 ms refresh window as DDR5." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -140,6 +142,8 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "sze", read: "Power MOSFET structure and the body diode." },
   ],
   "cmos-logic-and-chips": [
+    { id: "jedec-hbm2", read: "HBM refresh timing, which matches DDR5." },
+    { id: "jedec-ddr5", read: "The refresh timing (tREFI, refresh window) behind the memory table." },
     { id: "wanlass1963", read: "Two pages: why complementary pairs draw almost no static current." },
     { id: "dennard1974", read: "The scaling rules and the table of what shrinks with what." },
     { id: "hisamoto2000", read: "The FinFET structure, before gate-all-around replaced it." },
