@@ -1,4 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, cleanup } from "@testing-library/react";
+import { RightHandRule, RightHandRuleFigure } from "@/components/viz/pcb/RightHandRule";
 import { parts, partBox, nets, connectorPins } from "@/components/viz/pcb/SchematicToLayoutBoard";
 import { allNets, allParts, IO35_PAD, PART_ROLES, revBNets, revBParts, STATIONS } from "@/components/viz/pcb/BoardInAction.board";
 import { BOARD_DEFAULTS, boardModel } from "@/lib/sim/board";
@@ -49,5 +51,47 @@ describe("Rev B board data", () => {
   it("leaves the shared board data untouched (J1 still has two pins, 29 parts)", () => {
     expect(connectorPins(parts.find((p) => p.ref === "J1")!)).toHaveLength(2);
     expect(parts).toHaveLength(29);
+  });
+});
+
+describe("RightHandRule", () => {
+  afterEach(cleanup);
+
+  it("draws the coil with field lines, a thumb and labels, and mirrors when the current reverses", () => {
+    const fwd = render(
+      <svg>
+        <RightHandRule variant="coil" forward />
+      </svg>,
+    ).container.innerHTML;
+    cleanup();
+    const rev = render(
+      <svg>
+        <RightHandRule variant="coil" forward={false} />
+      </svg>,
+    ).container.innerHTML;
+    expect(fwd).toContain("thumb: field");
+    expect(fwd).toContain("fingers: current");
+    expect(fwd).not.toBe(rev);
+    expect(fwd).not.toMatch(/NaN/);
+    expect(rev).not.toMatch(/NaN/);
+  });
+
+  it("the trace variant swaps the roles of thumb and fingers", () => {
+    const { container } = render(
+      <svg>
+        <RightHandRule variant="trace" forward />
+      </svg>,
+    );
+    expect(container.textContent).toContain("thumb: current");
+    expect(container.textContent).toContain("fingers: field");
+  });
+
+  it("the figure is a labelled image with both variants", () => {
+    const { container } = render(<RightHandRuleFigure />);
+    const svg = container.querySelector("svg")!;
+    expect(svg.getAttribute("role")).toBe("img");
+    expect(container.textContent).toContain("thumb: current");
+    expect(container.textContent).toContain("thumb: field");
+    expect(container.querySelectorAll("text").length).toBeGreaterThan(6);
   });
 });
