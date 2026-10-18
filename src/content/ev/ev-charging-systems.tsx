@@ -217,9 +217,10 @@ export default function Lesson() {
             1.2 MW, and the utility&apos;s demand charge on the monthly peak shrinks with them.
           </p>
           <p>
-            Accessible stalls are designed in, not added later. In California, CBC sections 11B-228.3 and 11B-812 set how many accessible EV spaces
-            a site needs and their geometry: a van-accessible space is 12 ft wide and a standard accessible space 9 ft wide, each with a 5 ft access
-            aisle and 18 ft long. Operable parts, including the connector, must sit within accessible reach ranges and work with one hand, so cable
+            Accessible stalls are designed in, not added later. In California, CBC Table 11B-228.3.2.1 sets how many accessible EV spaces a site
+            needs and Sections 11B-812.6 and 11B-812.7 their geometry (2022 edition, unchanged in 2025): every space is 216 in (18 ft) long, a
+            van-accessible space is 144 in (12 ft) wide and a standard accessible space 108 in (9 ft) wide, each with a 60 in (5 ft) access aisle,
+            and an ambulatory space is 120 in wide with no aisle. Operable parts, including the connector, must sit within accessible reach ranges and work with one hand, so cable
             weight, reach and cable management matter as much as amps; lighter liquid-cooled cables help.
           </p>
 
@@ -229,8 +230,9 @@ export default function Lesson() {
             did this first; ISO 15118-20 brings it to CCS and NACS, and AC versions need a bidirectional on-board charger. Exporting to the grid
             needs utility interconnection approval and certified equipment, such as UL 1741-SB inverters in the US. Interoperability is the
             industry&apos;s sore point: many failed sessions are communication failures (SLAC timeouts, certificate errors, a failed insulation
-            check) rather than broken power hardware. The US NEVI program requires OCPP, ISO 15118 conformance, at least four 150 kW DC ports per
-            station and 97 % uptime.
+            check) rather than broken power hardware. The US NEVI program&apos;s minimum standards (23 CFR 680, in force since 2023 and kept by
+            FHWA&apos;s 2025 guidance revision) require at least four DC ports that deliver 150 kW each at the same time (680.106), OCPP and
+            ISO 15118 conformance (680.108) and 97 % uptime per port (680.116).
           </p>
         </Prose>
 
@@ -280,8 +282,8 @@ export default function Lesson() {
             <strong>Answer:</strong> 600 kW of shared cabinets, about 653 kVA of demand, a 750 kVA transformer and a 1,000 A main breaker at 480 V.
             Four cars at 150 kW at once is also the NEVI minimum, so the cap meets it exactly. At an assumed demand charge of $20 per kW of monthly
             peak, capping the charging input near 632 kW instead of about 1,263 kW avoids up to about $12,600 a month. In California, CBC Table
-            11B-228.3.2.1 then calls for one van-accessible and one standard accessible EV space for a site with 5 to 25 chargers; confirm against the
-            edition your jurisdiction has adopted.
+            11B-228.3.2.1 then calls for one van-accessible and one standard accessible EV space for a site with 5 to 25 chargers (2022 and 2025
+            editions); confirm against the edition your jurisdiction has adopted.
           </p>
         </Exercise>
       </Section>
