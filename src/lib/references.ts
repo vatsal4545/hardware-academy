@@ -36,7 +36,7 @@ const list: Reference[] = [
   { id: "montrose", kind: "book", title: "Printed Circuit Board Design Techniques for EMC Compliance", authors: "Mark I. Montrose", year: 2000, venue: "IEEE Press, 2nd edition", note: "A layout-rules handbook for passing EMC tests." },
   { id: "coombs", kind: "book", title: "Printed Circuits Handbook", authors: "Clyde F. Coombs Jr. and Happy T. Holden (editors)", year: 2016, venue: "McGraw-Hill, 7th edition", note: "How boards are actually fabricated and assembled, written by the industry. Dip into the chapters you need." },
   { id: "robertson", kind: "book", title: "Printed Circuit Board Designer's Reference: Basics", authors: "Christopher T. Robertson", year: 2004, venue: "Prentice Hall", note: "A short practical reference on layers, stack-ups and design rules." },
-  { id: "ipc-2221", kind: "standard", title: "IPC-2221B: Generic Standard on Printed Board Design", authors: "IPC", year: 2012, venue: "IPC", url: "https://www.ipc.org/", note: "The base design standard: clearances, trace width charts, hole sizes. The trace-width formula in this course comes from it." },
+  { id: "ipc-2221", kind: "standard", title: "IPC-2221B: Generic Standard on Printed Board Design", authors: "IPC", year: 2012, venue: "IPC", url: "https://www.ipc.org/", note: "The base design standard: clearances, trace width charts, hole sizes. The trace-width formula in this course comes from it, and Table 6-1 column B2 gives the 0.1 mm (to 30 V) and 0.6 mm (31 to 150 V) clearances quoted in the layout lesson." },
   { id: "ipc-2152", kind: "standard", title: "IPC-2152: Standard for Determining Current Carrying Capacity in Printed Board Design", authors: "IPC", year: 2009, venue: "IPC", url: "https://www.ipc.org/", note: "Newer and more accurate current-capacity data than the IPC-2221 charts; use it when a trace really matters." },
   { id: "ipc-7351", kind: "standard", title: "IPC-7351B: Generic Requirements for Surface Mount Design and Land Pattern Standard", authors: "IPC", year: 2010, venue: "IPC", url: "https://www.ipc.org/", note: "Footprint (land pattern) geometry for SMT parts." },
   { id: "ipc-a-610", kind: "standard", title: "IPC-A-610H: Acceptability of Electronic Assemblies", authors: "IPC", year: 2020, venue: "IPC", url: "https://www.ipc.org/", note: "What a good solder joint looks like; the inspection standard assemblers work to." },
@@ -107,6 +107,7 @@ const list: Reference[] = [
   { id: "tb6612fng-ds", kind: "doc", title: "TB6612FNG: Driver IC for Dual DC Motor (datasheet)", authors: "Toshiba", year: 2014, venue: "toshiba.semicon-storage.com", url: "https://toshiba.semicon-storage.com/info/TB6612FNG_datasheet_en_20141001.pdf", free: true, note: "Pin table: STBY, IN1, IN2 and PWM each have a 200 kΩ internal pull-down. VM 2.5 to 13.5 V, 1.2 A average and 3.2 A peak per channel above 4.5 V, 0.5 Ω typical upper plus lower on-resistance, PWM to 100 kHz (figures checked in the 2008-05-09 revision)." },
   { id: "p2n2222a-ds", kind: "doc", title: "P2N2222A: Amplifier Transistors, NPN Silicon (datasheet, Rev. 7)", authors: "onsemi", year: 2013, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/p2n2222a-d.pdf", free: true, note: "TO-92 case 29 style 17: pin 1 collector, 2 base, 3 emitter (C-B-E with the flat face toward you). IC 600 mA, VCEO 40 V, hFE 100 to 300 at 150 mA, fT 300 MHz." },
   { id: "pn2222a-ds", kind: "doc", title: "PN2222A: NPN General-Purpose Amplifier (datasheet, Rev. 1.1.0)", authors: "Fairchild Semiconductor, now onsemi", year: 2014, venue: "onsemi.com", url: "https://www.onsemi.com/pdf/datasheet/pn2222a-d.pdf", free: true, note: "The other common 2N2222 in TO-92, with the opposite E-B-C lead order; IC 1 A, VCEO 40 V." },
+  { id: "esp32-hw-guidelines", kind: "doc", title: "ESP32 Hardware Design Guidelines: Schematic Checklist", authors: "Espressif Systems", year: 2025, venue: "docs.espressif.com", url: "https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html", free: true, note: "CHIP_PU (EN) must not be left floating; the recommended RC delay is R = 10 kΩ and C = 1 µF; strapping pins GPIO0, GPIO2, GPIO5, MTDI (GPIO12) and MTDO (GPIO15); 0.1 µF at each digital supply pin." },
 ];
 
 export const references: Record<string, Reference> = Object.fromEntries(list.map((r) => [r.id, r]));
@@ -170,12 +171,14 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "coombs", read: "The surface-mount components chapter for package sizes." },
   ],
   "active-components": [
+    { id: "esp32-hw-guidelines", read: "A real reset and boot-strap checklist for the MCU-on-a-board section." },
     { id: "ams1117-ds", read: "Page 3 for dropout and quiescent current, page 4 for why it needs a 22 µF tantalum output capacitor." },
     { id: "horowitz-hill", read: "The voltage-regulator and op-amp chapters." },
     { id: "zumbahlen", read: "The op-amp basics chapter." },
     { id: "mohan", read: "The DC-DC converter chapter for the buck converter in the viz." },
   ],
   "schematic-capture": [
+    { id: "esp32-hw-guidelines", read: "The EN (CHIP_PU) RC values and the strapping pins the schematic audit checks." },
     { id: "tb6612fng-ds", read: "The pin table: every control input has a 200 kΩ internal pull-down, which decides the STBY scenario." },
     { id: "ams1117-ds", read: "The Stability section: the output-capacitor footnote the lesson refers to." },
     { id: "horowitz-hill", read: "The appendix on how to draw schematic diagrams; the conventions in this lesson come from it." },
@@ -204,11 +207,13 @@ export const lessonReferences: Record<string, LessonReference[]> = {
     { id: "ipc-7351", read: "Why pad geometry decides tombstoning." },
   ],
   "bring-up-and-debugging": [
+    { id: "esp32-hw-guidelines", read: "The EN RC delay (10 kΩ, 1 µF) behind the 10 ms time constant in the checklist." },
     { id: "ams1117-ds", read: "Quiescent current and thermal resistance for the idle-current and heat estimates." },
     { id: "horowitz-hill", read: "The chapter on instruments and measurement, and the probing advice." },
     { id: "ott", read: "The chapter on measurement and troubleshooting of noise." },
   ],
   "kicad-project-walkthrough": [
+    { id: "esp32-hw-guidelines", read: "EN pull-up, strapping pins and decoupling for U1." },
     { id: "tb6612fng-ds", read: "The ratings quoted for U3 and the VM range." },
     { id: "ams1117-ds", read: "Thermal resistance figures behind the copper pour under U3." },
     { id: "kicad-docs", read: "The Getting Started tutorial and the PCB editor manual." },

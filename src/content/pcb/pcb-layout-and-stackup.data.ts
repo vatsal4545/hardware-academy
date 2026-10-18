@@ -32,7 +32,7 @@ const data: LessonData = {
     },
     {
       term: "Clearance and creepage",
-      def: "Clearance is the shortest air gap between conductors; creepage is the shortest path along the surface. Both grow with voltage: IPC-2221 allows 0.1 mm up to 30 V on uncoated outer layers and 0.6 mm from 31 to 150 V, and mains needs millimetres.",
+      def: "Clearance is the shortest air gap between conductors; creepage is the shortest path along the surface. Both grow with voltage: IPC-2221B Table 6-1 (column B2, uncoated external conductors) allows 0.1 mm up to 30 V and 0.6 mm from 31 to 150 V, and mains needs millimetres.",
     },
     {
       term: "Thermal relief",
