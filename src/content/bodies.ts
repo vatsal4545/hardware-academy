@@ -16,6 +16,7 @@ export const lessonBodies: Record<string, LessonBodyLoader> = {
   "circuit-fundamentals": () => import("./pcb/circuit-fundamentals"),
   "passive-components": () => import("./pcb/passive-components"),
   "active-components": () => import("./pcb/active-components"),
+  "components-in-action": () => import("./pcb/components-in-action"),
   "schematic-capture": () => import("./pcb/schematic-capture"),
   "pcb-layout-and-stackup": () => import("./pcb/pcb-layout-and-stackup"),
   "power-and-signal-integrity": () => import("./pcb/power-and-signal-integrity"),

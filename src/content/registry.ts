@@ -13,6 +13,7 @@ import d_semiconductor_industry_and_roles from "./semiconductors/semiconductor-i
 import d_circuit_fundamentals from "./pcb/circuit-fundamentals.data";
 import d_passive_components from "./pcb/passive-components.data";
 import d_active_components from "./pcb/active-components.data";
+import d_components_in_action from "./pcb/components-in-action.data";
 import d_schematic_capture from "./pcb/schematic-capture.data";
 import d_pcb_layout_and_stackup from "./pcb/pcb-layout-and-stackup.data";
 import d_power_and_signal_integrity from "./pcb/power-and-signal-integrity.data";
@@ -52,6 +53,7 @@ export const lessonData: Record<string, LessonData> = {
   "circuit-fundamentals": d_circuit_fundamentals,
   "passive-components": d_passive_components,
   "active-components": d_active_components,
+  "components-in-action": d_components_in_action,
   "schematic-capture": d_schematic_capture,
   "pcb-layout-and-stackup": d_pcb_layout_and_stackup,
   "power-and-signal-integrity": d_power_and_signal_integrity,
