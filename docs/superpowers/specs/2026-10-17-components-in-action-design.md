@@ -79,7 +79,7 @@ Station functions and what they return (all SI, unrounded; the UI rounds):
 | `dividerStation(i)` | `vOut = vPack·47/147`, `rth = 100k ∥ 47k`, `iDiv`, `counts = round(vOut/3.3·4095)`, `settleUs = 8.3·rth·10 pF`, `rechargeMs = rth·100 nF` (when fitted), `verdict` (`"ok"` with cap, `"loaded"` without) |
 | `enStation(i)` | `tau = 10 kΩ·enC`, `tBoot = tau·ln 4`, `samples` (41 values of `3.3·(1 − e^(−t/τ))` over 0..5τ, rounded to 1e-6) |
 | `decouplingStation(i)` | `loopH = 1e-9·mm + 0.5e-9`, `vDip = loopH·0.05/2e-9`, `verdict` (`"ok"` ≤ 165 mV, 5% of the rail; `"marginal"` ≤ 330 mV; `"bad"`) |
-| `windingStation(i)` | `iAvg = iMotorL`, `vAvg = duty·vPack`, `rippleA = vPack·duty·(1 − duty)/(L·f)`, `bTraceUt = 2e-7·iAvg/0.005·1e6`, `earthRatio`, `flybackV = L·1/100e-9` (no path), `clampV = vPack + 0.7`, `direction` ("forward"/"reverse") |
+| `windingStation(i)` | `iAvg = iMotorL`, `vAvg = duty·VM`, `rippleA = VM·duty·(1 − duty)/(L·f)`, `bTraceUt = 2e-7·iAvg/0.005·1e6`, `earthRatio`, `flybackV = L·1/100e-9` (no path), `clampV = VM + 0.7`, `direction` ("forward"/"reverse"); VM = vPack − vFet, the node the bridge switches and the meter reads at M1A |
 | `boardModel(i)` | all eight results in one object |
 
 `BOARD_DEFAULTS`: vPack 7.4, iMotorL 0.5, iMotorR 0.5, iLogic 0.15, red, 1000 Ω, 1 µF, 2 mm, duty 0.6, forward, C9 fitted.
@@ -87,8 +87,8 @@ Station functions and what they return (all SI, unrounded; the UI rounds):
 Numbers at the defaults that the lesson text quotes: iPack 1.155 A; at both motors stalled (1.5 A each) iPack 3.155 A,
 vFet 0.158 V, pFet 0.498 W; LDO at 8.4 V and 150 mA: 0.807 W including ground current (0.765 W without), tj 73 °C;
 LED red/1 kΩ 1.3 mA, blue 0.3 mA; divider at 8.4 V: 2.686 V, 32.0 kΩ, 57 µA, 3333 counts; EN 1 µF: τ 10 ms, boot
-13.9 ms; decoupling 2 mm: 2.5 nH, 62.5 mV; 10 mm: 10.5 nH, 263 mV; winding at 0.5 A: 20 µT at 5 mm, ripple 89 mA at
-duty 0.6 and 7.4 V; flyback 10 kV without a path, clamped to 8.1 V.
+13.9 ms; decoupling 2 mm: 2.5 nH, 62.5 mV; 10 mm: 10.5 nH, 263 mV; winding at 0.5 A: 20 µT at 5 mm, ripple 88 mA at
+duty 0.6 and VM 7.34 V; flyback 10 kV without a path, clamped to 8.04 V (VM + 0.7).
 
 Only `exp` is transcendental; its outputs are rounded to 1e-6 before they reach the UI. Nothing uses `Math.log`,
 `sqrt`, `hypot` or trig, so the hydration gate (`tests/hydration-stability.test.tsx`) sees identical markup.

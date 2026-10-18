@@ -190,18 +190,28 @@ export function decouplingStation(i: BoardInputs) {
   return { loopH, vDip, budget, verdict };
 }
 
-/** Station 8: current in the winding makes a field, ripple and, when switched off, a flyback the body diodes catch. */
+/** The VM node the bridge switches: the pack minus Q1's on-state drop. One expression, so every reading of VM agrees to the last bit. */
+function vmVoltage(i: BoardInputs): number {
+  return i.vPack - fetStation(i).vFet;
+}
+
+/**
+ * Station 8: current in the winding makes a field, ripple and, when switched off, a flyback the body diodes catch. The
+ * bridge switches VM, not the pack, so the average voltage, the ripple and the clamp all start from VM: the multimeter on
+ * M1A reads duty × VM, and the station shows the same number.
+ */
 export function windingStation(i: BoardInputs) {
   const iAvg = i.iMotorL;
+  const vm = vmVoltage(i);
   const bTraceT = (BOARD.mu0Over2Pi * iAvg) / BOARD.fieldAtM;
   return {
     iAvg,
-    vAvg: i.duty * i.vPack,
-    rippleA: (i.vPack * i.duty * (1 - i.duty)) / (BOARD.motorL * BOARD.pwmHz),
+    vAvg: i.duty * vm,
+    rippleA: (vm * i.duty * (1 - i.duty)) / (BOARD.motorL * BOARD.pwmHz),
     bTraceUt: bTraceT * 1e6,
     earthRatio: bTraceT / BOARD.earthFieldT,
     flybackV: (BOARD.motorL * BOARD.flybackDiA) / BOARD.flybackDtS,
-    clampV: i.vPack + BOARD.diodeDropV,
+    clampV: vm + BOARD.diodeDropV,
     pDriver: 2 * iAvg * iAvg * BOARD.driverOhm,
     direction: i.forward ? ("forward" as const) : ("reverse" as const),
   };
@@ -221,7 +231,7 @@ export type TestPointId = (typeof TEST_POINT_IDS)[number];
  * U3_IN is the regulator's input pin on the VM net (its SOT-223 tab is the output, not an input: AMS1117 datasheet).
  */
 export function nodeVoltages(i: BoardInputs): Record<TestPointId, number> {
-  const vm = i.vPack - fetStation(i).vFet;
+  const vm = vmVoltage(i);
   const vMotor = i.duty * vm;
   return {
     GND: 0,
