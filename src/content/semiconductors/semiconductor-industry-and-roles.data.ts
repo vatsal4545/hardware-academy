@@ -92,14 +92,19 @@ const data: LessonData = {
     },
     {
       q: "NVIDIA designs GPUs and has TSMC manufacture them. That makes NVIDIA a...",
-      choices: ["foundry", "IDM", "fabless company", "OSAT"],
+      choices: [
+        "pure-play foundry",
+        "integrated device manufacturer (IDM)",
+        "fabless chip company",
+        "OSAT (outsourced assembly and test) provider",
+      ],
       answer: 2,
       explain:
         "Fabless companies own the design and the customer relationship but no fabs. TSMC, which makes the wafers, is the foundry.",
     },
     {
       q: "What do OSAT companies such as ASE and Amkor do?",
-      choices: ["Sell EDA software", "Grow silicon ingots", "Package and test chips", "License CPU cores"],
+      choices: ["Sell EDA software", "Grow and slice silicon ingots", "Package and test chips", "License CPU cores"],
       answer: 2,
       explain:
         "Outsourced semiconductor assembly and test companies take finished wafers, dice them, package the dies and run final test, often in Taiwan, Malaysia, Korea or China.",
@@ -114,10 +119,10 @@ const data: LessonData = {
     {
       q: "Told that a part fails in the field at high temperature, what should you do first?",
       choices: [
-        "Decapsulate a returned part immediately",
-        "Assume the customer's board is at fault",
+        "Decapsulate a returned part immediately and look for the defect",
+        "Assume the customer's board is at fault until they prove otherwise",
         "Gather data and contain: failure rate, lots, conditions and mission profile",
-        "Start a chip redesign",
+        "Start a chip redesign so the fix is ready before the cause is known",
       ],
       answer: 2,
       explain:
@@ -125,7 +130,12 @@ const data: LessonData = {
     },
     {
       q: "Which role spends the most time with customers debugging their boards?",
-      choices: ["Process engineer", "Device engineer", "Applications or field applications engineer", "Yield engineer"],
+      choices: [
+        "Process integration engineer in the fab",
+        "Device engineer characterizing test structures",
+        "Applications or field applications engineer",
+        "Yield engineer analysing wafer-map defect data",
+      ],
       answer: 2,
       explain:
         "Applications engineers and FAEs support design-ins: reference designs, schematic and layout reviews, lab debug. Process, device and yield engineers work on how the silicon itself is made.",

@@ -120,9 +120,9 @@ const data: LessonData = {
     {
       q: "What does the activation anneal after ion implantation do?",
       choices: [
-        "It drives the dopants deeper until they reach the target junction depth",
-        "It grows an oxide over the implanted layer to protect it",
-        "It strips the photoresist mask used during the implant",
+        "It drives the dopants deeper into the silicon until the junction reaches the depth that the design calls for",
+        "It grows a thin thermal oxide over the implanted layer to protect it during the later steps",
+        "It strips the photoresist mask that defined the implant and cleans the wafer surface",
         "It moves implanted atoms onto lattice sites and repairs implant damage so they become electrically active",
       ],
       answer: 3,

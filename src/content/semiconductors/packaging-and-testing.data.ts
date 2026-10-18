@@ -104,10 +104,10 @@ const data: LessonData = {
     {
       q: "What is the main job of underfill in a flip-chip package?",
       choices: [
-        "Insulating the die electrically",
+        "Insulating the die electrically from the copper traces on the substrate",
         "Spreading thermal-expansion strain so the bumps do not crack",
-        "Gluing the lid to the substrate",
-        "Lowering the dielectric constant of the bumps",
+        "Gluing the lid to the substrate so the heat spreader stays flat",
+        "Lowering the dielectric constant around the bumps to speed up the signals",
       ],
       answer: 1,
       explain:
@@ -116,10 +116,10 @@ const data: LessonData = {
     {
       q: "Why do manufacturers burn in parts?",
       choices: [
-        "To measure θJA",
-        "To program firmware into the chip",
+        "To measure θJA under worst-case power and ambient conditions",
+        "To program the firmware and trim values into the chip before it ships",
         "To make early, infant-mortality failures happen before parts ship",
-        "To anneal the dopants",
+        "To anneal the dopants after the die has been attached to the package",
       ],
       answer: 2,
       explain:
@@ -128,10 +128,10 @@ const data: LessonData = {
     {
       q: "What limits a single monolithic die to about 858 mm²?",
       choices: [
-        "The 300 mm wafer diameter",
+        "The 300 mm wafer diameter, since a larger die would waste the edge",
         "The scanner's 26 × 33 mm exposure field (the reticle limit)",
-        "The largest available BGA package",
-        "The number of probe-card needles",
+        "The largest BGA package that can be reflowed without warping",
+        "The number of needles a probe card can carry at one time",
       ],
       answer: 1,
       explain:
@@ -141,9 +141,9 @@ const data: LessonData = {
       q: "Electromigration lifetime gets shorter when...",
       choices: [
         "current density and temperature increase",
-        "the wire gets thicker",
-        "the die is thinned",
-        "the clock frequency drops",
+        "the wire is made thicker and wider",
+        "the die is thinned to fit the package",
+        "the clock frequency drops at idle",
       ],
       answer: 0,
       explain:
