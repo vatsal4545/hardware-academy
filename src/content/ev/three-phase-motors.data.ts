@@ -98,10 +98,10 @@ const data: LessonData = {
     {
       q: "Balanced currents with peak Im flow in three windings 120° apart. The resultant field vector",
       choices: [
-        "Pulses between 0 and 3·Im along one axis",
-        "Has constant length 3·Im and stands still",
+        "Pulses between 0 and 3·Im along one fixed axis, at twice the line frequency",
+        "Has constant length 3·Im and stands still, since the three currents sum to zero",
         "Has constant length 1.5·Im and rotates at the electrical frequency",
-        "Rotates at the slip frequency",
+        "Rotates at the slip frequency, which is what the rotor sees",
       ],
       answer: 2,
       explain: "Adding the three phase vectors cancels the pulsating parts. The sum has a constant length of 1.5·Im and turns at ω = 2πf, which is what lets an AC motor make smooth torque.",
@@ -110,9 +110,9 @@ const data: LessonData = {
       q: "Why must an induction rotor turn slower than the stator field?",
       choices: [
         "Because current is only induced in the rotor bars when the field moves relative to them",
-        "To keep the magnets cool",
-        "To reduce iron loss in the stator",
-        "Because the inverter cannot reach synchronous frequency",
+        "To keep the rotor magnets cool, since a rotor at synchronous speed would overheat them",
+        "To reduce iron loss in the stator, which rises with the rotor's speed",
+        "Because the inverter cannot reach synchronous frequency at full load",
       ],
       answer: 0,
       explain: "With no relative motion the flux through the rotor bars does not change, so no current is induced and there is no torque. A few percent of slip provides the relative motion, and the rotor currents then run at the slip frequency s·f.",
@@ -120,9 +120,9 @@ const data: LessonData = {
     {
       q: "Field weakening in a PM motor means",
       choices: [
-        "Lowering the DC bus voltage at high speed",
-        "Reducing the q-axis current to save energy",
-        "Heating the magnets on purpose to reduce their strength",
+        "Lowering the DC bus voltage at high speed so the back-EMF stays below it",
+        "Reducing the q-axis current to save energy once the car is cruising",
+        "Heating the magnets on purpose so their remanence drops and the back-EMF falls",
         "Injecting negative d-axis current to oppose the magnet flux above base speed",
       ],
       answer: 3,
@@ -148,9 +148,9 @@ const data: LessonData = {
     {
       q: "What is the main advantage of hairpin windings?",
       choices: [
-        "They need no insulation",
-        "They eliminate AC losses at high frequency",
-        "They let the motor run without cooling",
+        "They need no slot insulation, because the rectangular bars touch only the lamination steel",
+        "They eliminate AC losses at high frequency, since the thick bars have no skin effect",
+        "They let the motor run without liquid cooling, because the welded ends radiate the heat",
         "Slot fill near 70% versus about 45% for round wire, so lower copper loss and better heat transfer",
       ],
       answer: 3,

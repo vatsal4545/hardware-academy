@@ -104,9 +104,9 @@ const data: LessonData = {
     {
       q: "Why does the BMS close a precharge contactor and resistor before the main positive contactor?",
       choices: [
-        "To warm the cells before driving",
-        "To test the 12 V battery",
-        "To synchronize the motor with the inverter",
+        "To warm the cells before driving, by pushing a small current through them",
+        "To test the 12 V battery before the high-voltage system is enabled",
+        "To synchronize the motor with the inverter before the contactor closes",
         "To limit the inrush current into the empty DC-link capacitors",
       ],
       answer: 3,
@@ -132,10 +132,10 @@ const data: LessonData = {
     {
       q: "Why do 800 V cars use 1,200 V-rated inverter switches?",
       choices: [
-        "Because 800 V is an RMS value and its peak is 1,131 V",
-        "Because SiC MOSFETs are only made in 1,200 V ratings",
-        "Because the motor's back-EMF is always 1,200 V",
-        "Because a full pack reaches about 850-900 V and switching overshoot adds more, so 650 V or 900 V parts lack margin",
+        "Because 800 V is an RMS value whose peak is 1,131 V, so the switch must block that peak voltage",
+        "Because SiC MOSFETs are only made in 1,200 V ratings, so there is no 900 V part to choose",
+        "Because the motor's back-EMF is always 1,200 V at top speed, whatever the pack voltage",
+        "Because a full pack sits near 850-900 V and overshoot adds more, so 650 V or 900 V parts lack margin",
       ],
       answer: 3,
       explain: "The bus is DC, so 800 V is not an RMS value. A nominal 800 V pack reaches roughly 850-900 V when full, fast switching adds L·di/dt overshoot, and designers keep devices below about 70-80% of rating. The next standard class is 1,200 V, and 1,200 V SiC keeps switching losses low.",
