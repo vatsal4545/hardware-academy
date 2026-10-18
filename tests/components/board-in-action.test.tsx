@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { BoardTopView, flowPathsFor } from "@/components/viz/pcb/BoardInAction.view";
+import { StationPanel } from "@/components/viz/pcb/BoardInAction.panels";
 import { dotCount } from "@/components/viz/pcb/OhmsLawCircuit.helpers";
 import { RightHandRule, RightHandRuleFigure } from "@/components/viz/pcb/RightHandRule";
 import { parts, partBox, nets, connectorPins } from "@/components/viz/pcb/SchematicToLayoutBoard";
@@ -157,5 +158,111 @@ describe("BoardTopView", () => {
       expect(container.innerHTML).not.toMatch(/NaN/);
       cleanup();
     }
+  });
+});
+
+/** Text of the <dd> that follows the <dt> with this exact label. */
+function readout(container: HTMLElement, label: string): string {
+  const dt = Array.from(container.querySelectorAll("dt")).find((n) => n.textContent === label);
+  if (!dt) throw new Error(`no readout labelled "${label}"`);
+  return dt.nextElementSibling?.textContent ?? "";
+}
+const byId = (id: string) => STATIONS.find((s) => s.id === id)!;
+
+describe("StationPanel", () => {
+  afterEach(cleanup);
+  const m = boardModel(BOARD_DEFAULTS);
+  const noop = () => {};
+  const panel = (id: string, inputs = BOARD_DEFAULTS, onChange: (p: object) => void = noop) =>
+    render(<StationPanel station={byId(id)} model={boardModel(inputs)} inputs={inputs} onChange={onChange} />);
+
+  it("fet: shows the pack current and the drop across Q1, with the two motor sliders", () => {
+    const { container } = panel("fet");
+    expect(readout(container, "Pack current")).toBe("1.155 A");
+    expect(readout(container, "Drop across Q1  V = I · R")).toBe("57.75 mV");
+    expect(readout(container, "Heat in Q1  P = I² · R")).toBe("66.7 mW");
+    expect(readout(container, "Drop along 13 mm of VM trace")).toBe("4.80 mV");
+    expect(container.querySelectorAll('input[type="range"]')).toHaveLength(2);
+    expect(container.querySelector("svg")?.getAttribute("role")).toBe("img");
+  });
+
+  it("kcl: the sum check closes and the droop figure is there", () => {
+    const { container } = panel("kcl");
+    expect(readout(container, "Sum check  KCL")).toBe("1.155 A = 1.000 A + 0.155 A");
+    expect(readout(container, "Bulk capacitor droop at start")).toBe("150 mV");
+    expect(container.querySelectorAll('input[type="range"]')).toHaveLength(3);
+  });
+
+  it("ldo: heat, junction temperature and the buck comparison", () => {
+    const { container } = panel("ldo", { ...BOARD_DEFAULTS, vPack: 8.4 });
+    expect(readout(container, "Heat  P = (Vin − Vout) · I")).toBe("807 mW");
+    expect(readout(container, "Junction temperature")).toBe("73 °C");
+    expect(readout(container, "Verdict")).toBe("Fine");
+    expect(readout(container, "Same job with a 5 V buck")).toBe("55 mW");
+  });
+
+  it("led: red through 1 k is 1.3 mA and the loop sums to zero; blue is dim", () => {
+    const { container } = panel("led");
+    expect(readout(container, "LED current")).toBe("1.3 mA");
+    expect(readout(container, "Loop  +3.3 − I·R − Vf")).toBe("+3.30 − 1.30 − 2.00 = 0 V");
+    cleanup();
+    const { container: c2 } = panel("led", { ...BOARD_DEFAULTS, ledColor: "blue" });
+    expect(readout(c2, "LED current")).toBe("300 µA");
+    expect(readout(c2, "Verdict")).toBe("Dim: raise Vcc or lower R");
+  });
+
+  it("divider: 7.4 V reads 2.366 V behind 32 kΩ; without C9 the verdict changes", () => {
+    const { container } = panel("divider");
+    expect(readout(container, "ADC pin voltage")).toBe("2.366 V");
+    expect(readout(container, "Thevenin resistance  R1 ∥ R2")).toBe("32 kΩ");
+    expect(readout(container, "ADC reading (12-bit)")).toBe("2936 counts");
+    expect(readout(container, "Verdict")).toBe("Capacitor supplies the sample");
+    cleanup();
+    const { container: c2 } = panel("divider", { ...BOARD_DEFAULTS, dividerCap: false });
+    expect(readout(c2, "Verdict")).toBe("Reads low: 32 kΩ is too stiff for the ADC");
+  });
+
+  it("en: τ = 10 ms and 13.9 ms to the threshold, with the curve drawn", () => {
+    const { container } = panel("en");
+    expect(readout(container, "Time constant  τ = R · C")).toBe("10 ms");
+    expect(readout(container, "EN crosses 0.75 × VDD at")).toBe("13.9 ms");
+    expect(readout(container, "5τ (fully charged)")).toBe("50 ms");
+    expect(container.querySelector("path[data-curve]")).not.toBeNull();
+  });
+
+  it("decoupling and winding readouts", () => {
+    const { container } = panel("decoupling");
+    expect(readout(container, "Loop inductance")).toBe("2.5 nH");
+    expect(readout(container, "Rail dip  V = L · di/dt")).toBe("62.5 mV");
+    expect(readout(container, "Verdict")).toBe("Inside 5% of the rail");
+    cleanup();
+    const { container: c2 } = panel("winding");
+    expect(readout(c2, "Average motor voltage  D · VM")).toBe("4.44 V");
+    expect(readout(c2, "Field 5 mm from the trace")).toBe("20 µT");
+    expect(readout(c2, "PWM ripple  ΔI")).toBe("88.8 mA");
+    expect(readout(c2, "Flyback without a path")).toBe("10 kV");
+    expect(readout(c2, "Clamped by the body diode")).toBe("8.10 V");
+    expect(c2.textContent).toContain("thumb: field");
+  });
+
+  it("controls call onChange with a patch", () => {
+    const onChange = vi.fn();
+    panel("led", BOARD_DEFAULTS, onChange);
+    fireEvent.click(screen.getByRole("radio", { name: "Blue, 3.0 V" }));
+    expect(onChange).toHaveBeenCalledWith({ ledColor: "blue" });
+    fireEvent.click(screen.getByRole("radio", { name: "220 Ω" }));
+    expect(onChange).toHaveBeenCalledWith({ ledR: 220 });
+    cleanup();
+    const onChange2 = vi.fn();
+    panel("kcl", BOARD_DEFAULTS, onChange2);
+    fireEvent.change(screen.getByRole("slider", { name: /Logic current/ }), { target: { value: "300" } });
+    expect(onChange2).toHaveBeenCalledWith({ iLogic: 0.3 });
+    cleanup();
+    const onChange3 = vi.fn();
+    panel("winding", BOARD_DEFAULTS, onChange3);
+    fireEvent.click(screen.getByRole("radio", { name: "Reverse" }));
+    expect(onChange3).toHaveBeenCalledWith({ forward: false });
+    fireEvent.change(screen.getByRole("slider", { name: /PWM duty/ }), { target: { value: "25" } });
+    expect(onChange3).toHaveBeenCalledWith({ duty: 0.25 });
   });
 });
