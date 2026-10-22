@@ -45,6 +45,10 @@ describe("jsxToText", () => {
     const source = `<p className="x">The <strong>hole</strong>{" "}moves.{/* note */} Silicon&apos;s gap.</p>`;
     expect(jsxToText(source)).toBe("The hole moves. Silicon's gap.");
   });
+
+  it("re-attaches punctuation that a tag separates from its word", () => {
+    expect(jsxToText(`<p>Run <code>make</code>. Then ( <em>wait</em> ).</p>`)).toBe("Run make. Then (wait).");
+  });
 });
 
 describe("theorySectionSource and missingSentences", () => {
@@ -87,5 +91,11 @@ describe("theorySectionSource and missingSentences", () => {
       "Leakage doubles every ten degrees.",
     ]);
     expect(missingSentences(old, moved)).toEqual([]);
+  });
+
+  it("ignores code markup when the words are unchanged", () => {
+    const old = `<Section id="theory" title="T"><Prose><p>Always run <code>make test</code> first.</p></Prose></Section><Section id="viz" title="V"></Section>`;
+    const after = `<ConceptStep n={1} title="New" deeper={<p>Always run make test first.</p>}><p>Simple.</p></ConceptStep>`;
+    expect(missingSentences(old, after)).toEqual([]);
   });
 });

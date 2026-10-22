@@ -32,8 +32,10 @@ const ENTITIES: Record<string, string> = {
 
 /**
  * The visible text of a stretch of JSX source: comments, tags and their attributes are dropped, {" "} and {"..."}
- * literals and HTML entities are resolved, and whitespace is collapsed. Attribute text such as captions is dropped
- * too, so compare like with like: both sides of a comparison go through this function.
+ * literals and HTML entities are resolved, and whitespace is collapsed. Punctuation is re-attached: whitespace before
+ * . , ; : ! ? ) and after ( is removed, so a tag between a word and its punctuation (make</code>.) reads as plain
+ * text (make.). Attribute text such as captions is dropped too, so compare like with like: both sides of a comparison
+ * go through this function.
  */
 export function jsxToText(source: string): string {
   return source
@@ -43,6 +45,8 @@ export function jsxToText(source: string): string {
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:apos|quot|amp|lt|gt|nbsp);/g, (e) => ENTITIES[e])
     .replace(/\s+/g, " ")
+    .replace(/\s+([.,;:!?)])/g, "$1")
+    .replace(/\(\s+/g, "(")
     .trim();
 }
 
