@@ -16,3 +16,8 @@ export * from "./Quiz";
 export * from "./KeyTermsRail";
 export * from "./MarkComplete";
 export * from "./LessonDataContext";
+export * from "./GoDeeper";
+export * from "./KeyNumber";
+export * from "./Picture";
+export * from "./FormulaCard";
+export * from "./BigIdea";
