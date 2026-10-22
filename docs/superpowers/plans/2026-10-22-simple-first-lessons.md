@@ -844,7 +844,8 @@ describe("GoDeeper", () => {
 
 describe("KeyNumber", () => {
   it("shows the value and what it means", () => {
-    render(<KeyNumber value="1.12 eV">silicon&apos;s band gap</KeyNumber>);
+    const { container } = render(<KeyNumber value="1.12 eV">silicon&apos;s band gap</KeyNumber>);
+    expect(container.querySelector("p[data-key-number]")).not.toBeNull();
     expect(screen.getByText("1.12 eV")).toBeTruthy();
     expect(screen.getByText("silicon's band gap")).toBeTruthy();
   });
@@ -910,7 +911,7 @@ export function GoDeeper({ summary = "Go deeper: the full engineering version", 
   return (
     <details data-deeper="" className="group rounded-xl border border-dashed border-border bg-bg/40">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-muted hover:text-text [&::-webkit-details-marker]:hidden">
-        <ChevronRight aria-hidden className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90" />
+        <ChevronRight aria-hidden className="h-4 w-4 shrink-0 motion-safe:transition-transform group-open:rotate-90" />
         {summary}
       </summary>
       <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">{children}</div>
@@ -975,7 +976,7 @@ export function FormulaCard({ formula }: { formula: Formula }) {
         <Sigma aria-hidden className="h-4 w-4 text-(--track)" />
         Formula
       </p>
-      <p className="mt-2 font-mono text-lg text-white">{formula.expr}</p>
+      <p className="mt-2 font-mono text-lg text-text">{formula.expr}</p>
       <dl className="mt-3 space-y-1 text-sm">
         {formula.parts.map((p) => (
           <div key={p.symbol} className="flex gap-3">
@@ -1002,7 +1003,7 @@ export function BigIdea({ text }: { text: string }) {
         <Lightbulb aria-hidden className="h-4 w-4" />
         The big idea
       </h2>
-      <p data-layer="simple" className="mt-2 max-w-[48ch] text-lg leading-relaxed text-text">
+      <p data-layer="simple" className="simple-text mt-2 text-text">
         {text}
       </p>
     </section>
@@ -1356,7 +1357,7 @@ export function Term({ t, children }: { t: string; children: ReactNode }) {
         onFocus={show}
         onBlur={() => setOpen(false)}
         onClick={show}
-        className="cursor-help rounded-sm underline decoration-(--track) decoration-dotted decoration-2 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
+        className="cursor-help rounded-sm underline decoration-(--track) decoration-dotted decoration-2 underline-offset-4 hover:text-(--track) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400"
       >
         {children}
       </button>
@@ -1369,7 +1370,7 @@ export function Term({ t, children }: { t: string; children: ReactNode }) {
             alignEnd ? "right-0" : "left-0",
           )}
         >
-          <span className="block font-semibold text-white">{term.term}</span>
+          <span className="block font-semibold text-text">{term.term}</span>
           <span className="mt-1 block text-text">{term.plain ?? term.def}</span>
           {term.plain && <span className="mt-2 block text-xs text-muted">{term.def}</span>}
         </span>
