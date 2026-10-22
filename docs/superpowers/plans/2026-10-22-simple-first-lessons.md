@@ -728,9 +728,10 @@ and
 Append to the end of `src/app/globals.css`:
 
 ```css
-/* Simple-first lessons: the plain layer, 17 px with a short measure */
+/* Simple-first lessons: the plain layer, 17 px with a short measure. A ch is the width of a zero, about 1.3 times
+   an average Inter letter, so 48ch holds at most about 68 characters per line. */
 .simple-text {
-  max-width: 68ch;
+  max-width: 48ch;
   font-size: 1.0625rem;
   line-height: 1.7;
 }
@@ -1001,7 +1002,7 @@ export function BigIdea({ text }: { text: string }) {
         <Lightbulb aria-hidden className="h-4 w-4" />
         The big idea
       </h2>
-      <p data-layer="simple" className="mt-2 max-w-[68ch] text-lg leading-relaxed text-text">
+      <p data-layer="simple" className="mt-2 max-w-[48ch] text-lg leading-relaxed text-text">
         {text}
       </p>
     </section>
@@ -1805,7 +1806,7 @@ export function LessonHeader({ meta, track }: { meta: LessonMeta; track: Track }
       </nav>
       <TrackPill track={track} />
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{meta.title}</h1>
-      <p className="max-w-[68ch] text-lg text-text/80">{meta.summary}</p>
+      <p className="max-w-[48ch] text-lg text-text/80">{meta.summary}</p>
       <p className="font-mono text-xs text-muted">
         Day {meta.day} · {meta.minutes} min
       </p>
