@@ -44,6 +44,15 @@ export interface Scenario {
 export interface KeyTerm {
   term: string;
   def: string;
+  /** Beginner definition, 25 words or fewer, shown first by <Term>. */
+  plain?: string;
+}
+
+export interface Formula {
+  /** The expression as written, for example "V = I × R". */
+  expr: string;
+  /** One entry per symbol in expr. */
+  parts: { symbol: string; meaning: string }[];
 }
 
 export interface LessonData {
@@ -51,6 +60,12 @@ export interface LessonData {
   scenario: Scenario;
   interview: InterviewQuestion[];
   quiz: QuizQuestion[];
+  /** Simple-first lessons (spec 2026-10-22): a lesson with a big idea gets the new layout. 2-4 sentences. */
+  bigIdea?: string;
+  /** Quick checks by id, 3 choices each, placed in the body with <ConceptStep check="id">. */
+  checks?: Record<string, QuizQuestion>;
+  /** "Remember this": 3-5 takeaways and the formulas worth memorising. */
+  remember?: { takeaways: string[]; formulas?: Formula[] };
 }
 
 export interface DayPlan {
