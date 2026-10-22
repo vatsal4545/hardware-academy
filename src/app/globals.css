@@ -119,9 +119,10 @@ body {
   color: var(--color-muted);
 }
 
-/* Simple-first lessons: the plain layer, 17 px with a short measure */
+/* Simple-first lessons: the plain layer, 17 px with a short measure. A ch is the width of a zero, about 1.3 times
+   an average Inter letter, so 48ch holds at most about 68 characters per line. */
 .simple-text {
-  max-width: 68ch;
+  max-width: 48ch;
   font-size: 1.0625rem;
   line-height: 1.7;
 }
