@@ -8,7 +8,7 @@ export function BigIdea({ text }: { text: string }) {
         <Lightbulb aria-hidden className="h-4 w-4" />
         The big idea
       </h2>
-      <p data-layer="simple" className="mt-2 max-w-[48ch] text-lg leading-relaxed text-text">
+      <p data-layer="simple" className="simple-text mt-2 text-text">
         {text}
       </p>
     </section>

@@ -9,7 +9,7 @@ export function FormulaCard({ formula }: { formula: Formula }) {
         <Sigma aria-hidden className="h-4 w-4 text-(--track)" />
         Formula
       </p>
-      <p className="mt-2 font-mono text-lg text-white">{formula.expr}</p>
+      <p className="mt-2 font-mono text-lg text-text">{formula.expr}</p>
       <dl className="mt-3 space-y-1 text-sm">
         {formula.parts.map((p) => (
           <div key={p.symbol} className="flex gap-3">

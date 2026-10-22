@@ -29,7 +29,8 @@ describe("GoDeeper", () => {
 
 describe("KeyNumber", () => {
   it("shows the value and what it means", () => {
-    render(<KeyNumber value="1.12 eV">silicon&apos;s band gap</KeyNumber>);
+    const { container } = render(<KeyNumber value="1.12 eV">silicon&apos;s band gap</KeyNumber>);
+    expect(container.querySelector("p[data-key-number]")).not.toBeNull();
     expect(screen.getByText("1.12 eV")).toBeTruthy();
     expect(screen.getByText("silicon's band gap")).toBeTruthy();
   });
