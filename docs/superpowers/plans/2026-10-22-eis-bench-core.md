@@ -2982,6 +2982,7 @@ describe("bench snapshot", () => {
     const snap = benchSnapshot(s, log);
     expect(snap.log).toHaveLength(30);
     expect(snap.recentReadings).toHaveLength(3);
+    expect(snap.recentReadings.every((r) => r.settled)).toBe(true);
     expect(JSON.stringify(snap).length).toBeLessThan(12_000);
   });
 });
@@ -3018,7 +3019,7 @@ const RULES = [
   "Continuity mode only on disconnected leads; never on a connected battery or a powered board. A handheld multimeter cannot resolve milliohms.",
   `The 0–${ENVELOPE_VOLTS} V figure is the project envelope, not a verified input rating; the eval board's limit is in the CN0510 guide. The 9 V battery is not allowed.`,
   `SensorPal is ADI's Windows GUI (compatible firmware, DAPLINK device, power cycle). The old CrossCore instructions don't apply; a Mac needs a separate verified firmware plan. Serial output: ${SERIAL_BAUD} baud, 8N1, no flow control.`,
-  `CN0510 is optimised above 1 Hz; a 0.1 Hz point takes more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping.`,
+  `CN0510 is optimised above 1 Hz; a 0.1 Hz point takes more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping: readings taken sooner drift, so the bench shows them but doesn't log them.`,
   "Every reading needs a temperature and a timestamp. Resolution, repeatability and accuracy are different things: a small spread doesn't prove accuracy.",
   "This instrument only measures: never charge, discharge or load a cell with it. No puffy, dented or leaking cells on the bench.",
 ];
@@ -3056,7 +3057,7 @@ export function benchSnapshot(bench: BenchState, log: readonly LogRow[]) {
     dut: bench.dutId ? { id: bench.dutId, name: partById(bench.dutId)?.name ?? bench.dutId, ...bench.cells[bench.dutId] } : null,
     leads: Object.fromEntries(CHANNELS.map((ch) => [ch, bench.channels[ch] ? { ...bench.channels[ch] } : "unclipped"])),
     faults: activeFaults(bench).map((f) => f.message),
-    recentReadings: bench.readings.slice(-3).map((r) => ({ freqHz: r.freqHz, valid: r.valid, reason: r.reason, zMilliohm: r.z, wiring: r.wiring, tempC: r.tempC })),
+    recentReadings: bench.readings.slice(-3).map((r) => ({ freqHz: r.freqHz, valid: r.valid, settled: r.settled, reason: r.reason, zMilliohm: r.z, wiring: r.wiring, tempC: r.tempC })),
     log: log.slice(-30).map((r) => ({ source: r.source, dut: r.dutId, freqHz: r.freqHz, zReal: r.zReal, zImag: r.zImag, tempC: r.tempC, reconnected: r.reconnected, calibration: r.calibration })),
   };
 }
