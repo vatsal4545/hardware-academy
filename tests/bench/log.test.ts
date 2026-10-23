@@ -83,6 +83,21 @@ describe("CSV", () => {
     expect(rows[0].notes).toBe("imported from Ω");
   });
 
+  it("reads units from a units column or the header, and skips a unit it doesn't know", () => {
+    const csv = "date,DUT-ID,freq,Z_real,Z_imag,units\n2026-10-20,D-01,1000,0.1124,-0.0008,ohms\n2026-10-20,D-01,1000,112.4,-0.8,mOhm\n2026-10-20,D-01,1000,0.1124,-0.0008,\u2126\n2026-10-20,D-01,1000,0.1,0,MΩ\n2026-10-20,D-01,1000,0.1,0,kΩ\n";
+    const { rows, skipped } = parseCsv(csv);
+    expect(rows.map((r) => Math.round(r.zReal * 10) / 10)).toEqual([112.4, 112.4, 112.4]);
+    expect(skipped.map((s) => s.line)).toEqual([5, 6]);
+    expect(skipped[0].reason).toMatch(/MΩ/);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (Ω),Z_imag (Ω)\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
+    expect(parseCsv("date,DUT-ID,freq,Z_real mΩ,Z_imag mΩ\n2026-10-20,D-01,1000,112.4,-0.8\n").rows[0].zReal).toBe(112.4);
+  });
+
+  it("marks a reconnection when the clip-cycle changes and the sheet has no reconnected column", () => {
+    const csv = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,1\n2026-10-20,S-10m,1000,10.0,0,2\n2026-10-20,D-01,1000,112,0,2\n";
+    expect(parseCsv(csv).rows.map((r) => r.reconnected)).toEqual([false, false, true, false]);
+  });
+
   it("skips bad rows with a reason and keeps the good ones", () => {
     const csv = "date,DUT-ID,freq,Z_real,Z_imag\n20/10/2026,D-01,1000,1,0\n2026-10-20,,1000,1,0\n2026-10-20,D-01,0,1,0\n2026-10-20,D-01,1000,abc,0\n2026-10-20,D-01,1000,1,0\n";
     const { rows, skipped } = parseCsv(csv);
@@ -124,6 +139,12 @@ describe("statistics and checks", () => {
     expect(wide.spreadOk).toBe(false);
   });
 
+  it("scores an imported shunt by its own nominal when its DUT-ID isn't a bench part", () => {
+    const rows = [10.02, 10.1, 9.98].map((z) => row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: z, reconnected: true }));
+    expect(gateTable(rows)[0].target.nominalMilliohm).toBe(10);
+    expect(checkLog([row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: 26 })]).map((c) => c.kind)).toContain("reads-high");
+  });
+
   it("flags missing temperatures and calibration states", () => {
     const kinds = checkLog([row({ tempC: null }), row({ calibration: "unknown" })]).map((c) => c.kind);
     expect(kinds).toContain("missing-temperature");
@@ -135,6 +156,7 @@ describe("statistics and checks", () => {
       checkLog([row({ nominal: "AAA 1.2 V", zReal: aaa }), row({ nominal: "AA 1.25 V", zReal: aa }), row({ nominal: "D 1.25 V", zReal: d })]).find((c) => c.kind === "size-ladder")!.message;
     expect(ladder(2000, 1000, 500)).toMatch(/holds/);
     expect(ladder(500, 1000, 2000)).toMatch(/out of order/);
+    expect(ladder(500, 1000, 2000)).toMatch(/same condition/);
   });
 
   it("points at the clip when the reconnection spread is wide, and at sense placement when a shunt reads high", () => {

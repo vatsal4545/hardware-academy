@@ -194,6 +194,20 @@ function num(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** A unit written after a column name, as in "Z_real mΩ" or "Z_real (Ω)". */
+const HEADER_UNIT = /\s*\(?\s*(milliohms?|m?Ω|m?ohms?)\s*\)?\s*$/i;
+
+/**
+ * The multiplier from a sheet's unit to milliohms, or null for a unit the log doesn't know. An empty unit means
+ * milliohms, the runbook's unit. The m is case-sensitive, because MΩ is megohms.
+ */
+function toMilliohm(unit: string): number | null {
+  const u = unit.normalize("NFC").trim();
+  if (u === "" || /^milliohms?$/i.test(u) || /^m(Ω|ohms?)$/.test(u.replace(/ohm/i, "ohm"))) return 1;
+  if (/^(Ω|ohms?)$/i.test(u)) return 1000;
+  return null;
+}
+
 /** Why an imported row can't be used, or null when it can. */
 function rowProblem(v: Record<string, string>): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date ?? "")) return "The date isn't YYYY-MM-DD.";
@@ -205,17 +219,23 @@ function rowProblem(v: Record<string, string>): string | null {
 }
 
 /**
- * Reads a CSV with the runbook's columns (the extra columns are optional). Rows default to "real". A `units` column
- * of Ω converts the impedances to milliohms and notes the original unit. Bad rows are skipped with a reason.
+ * Reads a CSV with the runbook's columns (the extra columns are optional). Rows default to "real". A unit of Ω, in a
+ * `units` column or after the Z_real header, converts the impedances to milliohms and notes the original unit; a unit
+ * the log doesn't know skips the row. Without a `reconnected` column, a new clip-cycle for the same device marks a
+ * reconnection. Bad rows are skipped with a reason.
  */
 export function parseCsv(text: string, idPrefix = "real"): ParseResult {
   const [header, ...records] = parseCsvRecords(text);
   const result: ParseResult = { rows: [], skipped: [] };
   if (!header) return result;
-  const fields = header.map((h) => HEADER_KEYS[key(h)]);
+  const named = header.map((h) => h.normalize("NFC"));
+  const fields = named.map((h) => HEADER_KEYS[key(h.replace(HEADER_UNIT, ""))]);
   for (const name of ["date", "dutId", "freqHz", "zReal", "zImag"]) {
     if (!fields.includes(name)) return { rows: [], skipped: [{ line: 1, reason: `The header has no ${name} column.` }] };
   }
+  const headerUnit = named[fields.indexOf("zReal")].match(HEADER_UNIT)?.[1] ?? "";
+  const hasReconnected = fields.includes("reconnected");
+  const lastCycle = new Map<string, number>();
   for (const [i, record] of records.entries()) {
     const line = i + 2;
     const v: Record<string, string> = {};
@@ -230,8 +250,15 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: problem ?? "Unreadable row." });
       continue;
     }
-    const ohms = v.units === "Ω" || v.units?.toLowerCase() === "ohm";
-    const k = ohms ? 1000 : 1;
+    const unit = v.units || headerUnit;
+    const k = toMilliohm(unit);
+    if (k === null) {
+      result.skipped.push({ line, reason: `The unit "${unit}" isn't mΩ or Ω.` });
+      continue;
+    }
+    const clipCycle = num(v.clipCycle) ?? 0;
+    const previousCycle = lastCycle.get(v.dutId);
+    lastCycle.set(v.dutId, clipCycle);
     const calibration = v.calibration === "measured" || v.calibration === "not-run" ? v.calibration : "unknown";
     const wiring = v.wiring === "4-wire" || v.wiring === "2-wire" || v.wiring === "mixed" ? v.wiring : "unknown";
     result.rows.push({
@@ -246,12 +273,14 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       freqHz: freq,
       zReal: re * k,
       zImag: im * k,
-      clipCycle: num(v.clipCycle) ?? 0,
-      reconnected: v.reconnected === "yes" || v.reconnected === "true",
+      clipCycle,
+      reconnected: hasReconnected
+        ? /^(yes|true|1)$/i.test(v.reconnected ?? "")
+        : previousCycle !== undefined && clipCycle !== previousCycle,
       calibration,
       wiring,
       cellVoltage: num(v.cellVoltage),
-      notes: [v.notes ?? "", ohms ? "imported from Ω" : ""].filter(Boolean).join("; "),
+      notes: [v.notes ?? "", k === 1000 ? "imported from Ω" : ""].filter(Boolean).join("; "),
       rawFile: v.rawFile ?? "",
     });
   }
@@ -314,11 +343,23 @@ export interface GateRow {
   spreadOk: boolean;
 }
 
+/** A shunt's nominal value in milliohms: from the bench's part, or else from a row's own nominal such as "10 mΩ". */
+function shuntNominal(rows: readonly LogRow[], dutId: string): number | undefined {
+  const preset = shuntPreset(partById(dutId)?.preset ?? "");
+  if (preset) return preset.nominalMilliohm;
+  for (const r of rows) {
+    const m = r.dutId === dutId ? r.nominal.match(/^\s*(\d+(?:\.\d+)?)\s*(\S+)\s*$/) : null;
+    const k = m ? toMilliohm(m[2]) : null;
+    if (m && k !== null) return Number(m[1]) * k;
+  }
+  return undefined;
+}
+
 /** Each shunt with a target and 1 kHz readings: its reconnection set when there is one, otherwise every reading. */
 export function gateTable(rows: readonly LogRow[]): GateRow[] {
   const out: GateRow[] = [];
   for (const dutId of [...new Set(rows.map((r) => r.dutId))]) {
-    const nominal = shuntPreset(partById(dutId)?.preset ?? "")?.nominalMilliohm;
+    const nominal = shuntNominal(rows, dutId);
     const target = TARGETS.find((t) => t.nominalMilliohm === nominal);
     if (!target) continue;
     const { reconnection } = repeatability(rows, dutId);
@@ -361,13 +402,13 @@ export function checkLog(rows: readonly LogRow[]): LogCheck[] {
     checks.push(
       aaa > aa && aa > d
         ? { kind: "size-ladder", message: "The size ladder holds: AAA > AA > D, falling with electrode area.", source: SOURCES.runbook }
-        : { kind: "size-ladder", message: "The size ladder is out of order (expected AAA > AA > D). Suspect contacts before chemistry.", source: SOURCES.runbook },
+        : { kind: "size-ladder", message: "The size ladder is out of order (expected AAA > AA > D). Compare cells in the same condition, since a fresher cell reads far lower; if they match, suspect contacts before chemistry.", source: SOURCES.runbook },
     );
   }
 
   for (const dutId of [...new Set(rows.map((r) => r.dutId))]) {
     const { reconnection } = repeatability(rows, dutId);
-    const nominal = shuntPreset(partById(dutId)?.preset ?? "")?.nominalMilliohm;
+    const nominal = shuntNominal(rows, dutId);
     const limit = TARGETS.find((t) => t.nominalMilliohm === nominal)?.spreadMaxMilliohm ?? 1;
     if (reconnection && reconnection.n >= 3 && reconnection.spread >= limit) {
       checks.push({ kind: "wide-spread", message: `${dutId}: the reconnection spread is ${reconnection.spread.toFixed(2)} mΩ. Most likely the clip is biting the wrapper or oxide: clean the terminals, bite bare metal and squeeze harder.`, source: SOURCES.runbook });
