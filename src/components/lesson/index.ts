@@ -23,3 +23,5 @@ export * from "./FormulaCard";
 export * from "./BigIdea";
 export * from "./QuickCheck";
 export * from "./Term";
+export * from "./ConceptStep";
+export * from "./TryThis";
