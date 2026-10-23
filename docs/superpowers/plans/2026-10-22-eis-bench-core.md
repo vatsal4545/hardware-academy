@@ -398,7 +398,7 @@ git commit -m "Model the bench's cells and shunts with the runbook's 1 kHz range
 
 **Interfaces:**
 - Consumes: `cellPreset`, `shuntPreset` (Task 2, in the test only).
-- Produces: `SOURCES` (the five document names), `PartStatus`, `PartKind`, `Part { id, name, kind, status, qty, role, source, note?, preset?, leaking? }`, `PARTS`, `partById(id)`, `partsOfKind(kind)`. Part ids used later: `eval-ad5941batz`, `eval-adicup3029`, `bnc-banana-adapters`, `kelvin-leads`, `esd-kit`, `usb-microscope`, `ir-thermometer`, `laptop`, `korad`, `shunt-1m`, `shunt-2m`, `shunt-7m5`, `shunt-10m`, `shunt-25m`, `shunt-100m`, `cell-aaa-duracell`, `cell-aa-energizer`, `cell-aa-amazon`, `cell-d-duracell`, `cell-d-generic` (leaking), `cell-9v`, `cell-18650`, `cell-26650`.
+- Produces: `SOURCES` (the four document names the bench cites), `PartStatus`, `PartKind`, `Part { id, name, kind, status, qty, role, source, note?, preset?, leaking? }`, `PARTS`, `partById(id)`, `partsOfKind(kind)`. Part ids used later: `eval-ad5941batz`, `eval-adicup3029`, `bnc-banana-adapters`, `kelvin-leads`, `esd-kit`, `usb-microscope`, `ir-thermometer`, `laptop`, `korad`, `shunt-1m`, `shunt-2m`, `shunt-7m5`, `shunt-10m`, `shunt-25m`, `shunt-100m`, `cell-aaa-duracell`, `cell-aa-energizer`, `cell-aa-amazon`, `cell-d-duracell`, `cell-d-generic` (leaking), `cell-9v`, `cell-18650`, `cell-26650`.
 
 - [ ] **Step 1: Write the failing test**
 
