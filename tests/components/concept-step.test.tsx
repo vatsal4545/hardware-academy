@@ -50,7 +50,7 @@ describe("ConceptStep", () => {
     expect(container.querySelector("[data-key-number], [data-deeper], [data-check-id]")).toBeNull();
   });
 
-  it("uses the reveal and simple-text classes by name: Tailwind only emits those globals.css rules when a file names them", () => {
+  it("uses the reveal and simple-text classes that globals.css defines", () => {
     const { container } = renderFullStep();
     expect(container.querySelector("article[data-step='2']")!.classList.contains("reveal")).toBe(true);
     expect(container.querySelector("[data-layer='simple']")!.classList.contains("simple-text")).toBe(true);

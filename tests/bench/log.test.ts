@@ -102,6 +102,15 @@ describe("CSV", () => {
     expect(row.rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8 });
   });
 
+  it("applies a unit written on one Z header to the other when that one names none", () => {
+    const realNamed = parseCsv("date,DUT-ID,freq,Z_real (Ω),Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0];
+    expect(realNamed.zReal).toBeCloseTo(112.4, 9);
+    expect(realNamed.zImag).toBeCloseTo(-0.8, 9);
+    const imagNamed = parseCsv("date,DUT-ID,freq,Z_real,Z_imag (Ω)\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0];
+    expect(imagNamed.zReal).toBeCloseTo(112.4, 9);
+    expect(imagNamed.zImag).toBeCloseTo(-0.8, 9);
+  });
+
   it("reads a unit column as units", () => {
     const { rows } = parseCsv("date,DUT-ID,freq,Z_real,Z_imag,unit\n2026-10-20,D-01,1000,0.1124,-0.0008,Ω\n");
     expect(rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8, notes: "imported from Ω" });

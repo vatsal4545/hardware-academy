@@ -20,7 +20,7 @@ const RULES = [
   `The 0–${ENVELOPE_VOLTS} V figure is the project envelope, not a verified input rating; the eval board's limit is in the CN0510 guide. The 9 V battery is not allowed.`,
   "This is a cell-level project: never connect it to EV packs or BESS equipment.",
   `SensorPal is ADI's Windows GUI (compatible firmware, DAPLINK device, power cycle). The old CrossCore instructions don't apply; a Mac needs a separate verified firmware plan. Serial output: ${SERIAL_BAUD} baud, 8N1, no flow control.`,
-  `CN0510 is optimised above 1 Hz; a 0.1 Hz point takes more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping: readings taken sooner drift, so the bench shows them but doesn't log them.`,
+  `CN0510 is optimised above 1 Hz; a 0.1 Hz point can take more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping: readings taken sooner drift, so the bench shows them but doesn't log them.`,
   "Every reading needs a temperature and a timestamp. Resolution, repeatability and accuracy are different things: a small spread doesn't prove accuracy.",
   "This instrument only measures: never charge, discharge or load a cell with it. No puffy, dented or leaking cells on the bench.",
 ];

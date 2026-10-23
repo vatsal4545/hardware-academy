@@ -280,8 +280,9 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: problem ?? "Unreadable row." });
       continue;
     }
-    const reUnit = v.units || realUnit;
-    const imUnit = v.units || imagUnit;
+    // A unit on one Z header covers the other when that one names none; a row's units value covers both.
+    const reUnit = v.units || realUnit || imagUnit;
+    const imUnit = v.units || imagUnit || realUnit;
     const kRe = toMilliohm(reUnit);
     const kIm = toMilliohm(imUnit);
     if (kRe === null || kIm === null) {

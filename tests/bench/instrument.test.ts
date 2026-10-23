@@ -87,7 +87,7 @@ describe("instrument", () => {
     expect(spread(wrapperReadings)).toBeGreaterThan(5);
   });
 
-  it("adds about 30-40 mΩ two-wire, against the same cell read four-wire", () => {
+  it("adds about 28-40 mΩ two-wire, against the same cell read four-wire", () => {
     const four = last(run(readyBench(), { type: "measure", freqHz: 1000 })).z!.re;
     const two = last(run(clipped(run(poweredBench(), { type: "measureReference" }), "cell-d-duracell", { "S+": { onForceWire: true }, "S-": { onForceWire: true } }), { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 }));
     expect(two.wiring).toBe("2-wire");
