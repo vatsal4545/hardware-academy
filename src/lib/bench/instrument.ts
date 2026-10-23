@@ -16,10 +16,13 @@ export const SERIAL_BAUD = 230400;
 export const SETTLE_SECONDS = 60;
 /** Simulated offset when the reference hasn't been measured. */
 const UNCALIBRATED_OFFSET_MILLIOHM = 2.5;
-/** Bench temperature when no infrared reading exists. */
+/** Simulated room temperature, used when no infrared reading exists. */
 export const AMBIENT_C = 23.8;
 
-/** Seconds of bench time one frequency point takes: CN0510 is optimised above 1 Hz, and 0.1 Hz takes over 40 s. */
+/**
+ * Seconds of bench time one frequency point takes, simulated as 4.5 cycles and at least 1 s. CN0510 is optimised above
+ * 1 Hz, and the guide says a 0.1 Hz point takes over 40 s.
+ */
 export function pointSeconds(freqHz: number): number {
   return Math.max(1, 4.5 / freqHz);
 }

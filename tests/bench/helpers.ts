@@ -38,7 +38,7 @@ export function clipped(s: BenchState, dutId: string, changes: Partial<Record<Ch
   return next;
 }
 
-/** Unclips and reclips every lead at the same contacts, then lets the junctions settle. */
+/** Unclips every lead and reclips it at the good contacts plus `changes`, then lets the junctions settle. */
 export function reclip(s: BenchState, changes: Partial<Record<Channel, Partial<ContactChoice>>> = {}): BenchState {
   let next = s;
   for (const channel of CHANNELS) next = benchReducer(next, { type: "disconnect", channel });

@@ -1,5 +1,6 @@
 // The virtual bench as data: its starting state and how each action changes it. Pure and deterministic: the same
-// seed and the same actions always give the same bench.
+// seed and the same actions always give the same bench. Bench times (clipping, unclipping, the reference and OCV
+// measurements) and the meter spreads are simulated.
 import { cellPreset } from "./dut";
 import { AMBIENT_C, ENVELOPE_VOLTS, RCAL_MILLIOHM, measurePoint, pointSeconds, powered, sweepFrequencies } from "./instrument";
 import { partById } from "./parts";
@@ -7,7 +8,7 @@ import { gaussian } from "./random";
 import { CHANNELS, type BenchAction, type BenchState, type CellRecord, type Channel, type FaultId, type Reading } from "./types";
 
 const MAX_READINGS = 500;
-/** Seconds of bench time that clipping and unclipping a lead take. */
+/** Simulated seconds of bench time that clipping and unclipping a lead take. */
 const CLIP_SECONDS = 5;
 const UNCLIP_SECONDS = 2;
 
