@@ -25,3 +25,7 @@ export * from "./QuickCheck";
 export * from "./Term";
 export * from "./ConceptStep";
 export * from "./TryThis";
+export * from "./Remember";
+export * from "./lessonParts";
+export * from "./LessonHeader";
+export * from "./OnThisPage";
