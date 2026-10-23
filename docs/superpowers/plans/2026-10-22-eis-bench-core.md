@@ -943,7 +943,7 @@ export function clipped(s: BenchState, dutId: string, changes: Partial<Record<Ch
   return next;
 }
 
-/** Unclips and reclips every lead at the same contacts, then lets the junctions settle. */
+/** Unclips every lead and reclips it at the good contacts plus `changes`, then lets the junctions settle. */
 export function reclip(s: BenchState, changes: Partial<Record<Channel, Partial<ContactChoice>>> = {}): BenchState {
   let next = s;
   for (const channel of CHANNELS) next = benchReducer(next, { type: "disconnect", channel });
@@ -1268,10 +1268,13 @@ export const SERIAL_BAUD = 230400;
 export const SETTLE_SECONDS = 60;
 /** Simulated offset when the reference hasn't been measured. */
 const UNCALIBRATED_OFFSET_MILLIOHM = 2.5;
-/** Bench temperature when no infrared reading exists. */
+/** Simulated room temperature, used when no infrared reading exists. */
 export const AMBIENT_C = 23.8;
 
-/** Seconds of bench time one frequency point takes: CN0510 is optimised above 1 Hz, and 0.1 Hz takes over 40 s. */
+/**
+ * Seconds of bench time one frequency point takes, simulated as 4.5 cycles and at least 1 s. CN0510 is optimised above
+ * 1 Hz, and the guide says a 0.1 Hz point takes over 40 s.
+ */
 export function pointSeconds(freqHz: number): number {
   return Math.max(1, 4.5 / freqHz);
 }
@@ -1370,7 +1373,8 @@ Create `src/lib/bench/state.ts`:
 
 ```ts
 // The virtual bench as data: its starting state and how each action changes it. Pure and deterministic: the same
-// seed and the same actions always give the same bench.
+// seed and the same actions always give the same bench. Bench times (clipping, unclipping, the reference and OCV
+// measurements) and the meter spreads are simulated.
 import { cellPreset } from "./dut";
 import { AMBIENT_C, ENVELOPE_VOLTS, RCAL_MILLIOHM, measurePoint, pointSeconds, powered, sweepFrequencies } from "./instrument";
 import { partById } from "./parts";
@@ -1378,7 +1382,7 @@ import { gaussian } from "./random";
 import { CHANNELS, type BenchAction, type BenchState, type CellRecord, type Channel, type FaultId, type Reading } from "./types";
 
 const MAX_READINGS = 500;
-/** Seconds of bench time that clipping and unclipping a lead take. */
+/** Simulated seconds of bench time that clipping and unclipping a lead take. */
 const CLIP_SECONDS = 5;
 const UNCLIP_SECONDS = 2;
 
