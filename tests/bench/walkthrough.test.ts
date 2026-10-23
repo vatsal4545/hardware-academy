@@ -49,6 +49,7 @@ describe("guided walkthrough of missions 1-4", () => {
       { type: "layOut" },
       { type: "identify", partId: "eval-ad5941batz" },
       { type: "identify", partId: "eval-adicup3029" },
+      { type: "identify", partId: "laptop" },
       ...partsOfKind("shunt").map((p): BenchAction => ({ type: "identify", partId: p.id })),
       ...CHANNELS.map((channel): BenchAction => ({ type: "continuity", target: { kind: "lead", channel } })),
       ...CHANNELS.map((channel): BenchAction => ({ type: "fitAdapter", channel })),
@@ -76,6 +77,7 @@ describe("guided walkthrough of missions 1-4", () => {
       ...CHANNELS.map((channel): BenchAction => ({ type: "connect", channel, contact: GOOD[channel] })),
       { type: "measureReference" },
       { type: "readTemperature", cellId: cell },
+      { type: "wait", seconds: 60 },
       { type: "measure", freqHz: 1000 },
     );
     expect(resumePoint(s.bench)!.mission.id).toBe("repeat");
@@ -85,7 +87,7 @@ describe("guided walkthrough of missions 1-4", () => {
     for (let i = 0; i < 10; i++) s.do({ type: "measure", freqHz: 1000 });
     for (let i = 0; i < 10; i++) {
       s.reclip();
-      s.do({ type: "readTemperature", cellId: cell }, { type: "measure", freqHz: 1000 });
+      s.do({ type: "measure", freqHz: 1000 });
     }
     s.do({ type: "answer", questionId: "repeat.cause", choice: "contact" });
 

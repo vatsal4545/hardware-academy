@@ -16,7 +16,7 @@ export const SERIAL_BAUD = 230400;
 export const SETTLE_SECONDS = 60;
 /** Simulated offset when the reference hasn't been measured. */
 const UNCALIBRATED_OFFSET_MILLIOHM = 2.5;
-/** Simulated room temperature, used when no infrared reading exists. */
+/** Simulated room temperature: the cells sit at it, and the infrared thermometer reads it with a little noise. */
 export const AMBIENT_C = 23.8;
 
 /**
@@ -58,7 +58,8 @@ export const BLOCKING_FAULTS: ReadonlySet<FaultId> = new Set<FaultId>(["shell-sh
 type Outcome = Omit<Reading, "seq" | "at" | "connection">;
 
 function invalid(s: BenchState, freqHz: number, reason: InvalidReason, dataArrived: boolean): Outcome {
-  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, tempC: null, wiring: null };
+  const settled = s.clock - s.lastContactAt >= SETTLE_SECONDS;
+  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, settled, tempC: null, wiring: null };
 }
 
 function round3(x: number): number {
@@ -84,8 +85,9 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
   const onPlus = (c: ChannelContact) => c.terminal === "+";
   if (!onPlus(ch["F+"]) || !onPlus(ch["S+"]) || onPlus(ch["F-"]) || onPlus(ch["S-"])) return invalid(s, freqHz, "miswired", true);
 
+  // The cell sits at room temperature; the reading records what the thermometer last showed.
   const tempC = s.cells[s.dutId]?.tempC ?? null;
-  const z = randlesImpedance(cellModel(preset, s.dutId, s.seed, tempC ?? AMBIENT_C), freqHz);
+  const z = randlesImpedance(cellModel(preset, s.dutId, s.seed, AMBIENT_C), freqHz);
   let re = z.re * 1000;
   let im = z.im * 1000;
 
@@ -111,6 +113,7 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
     dataArrived: true,
     z: { re: round3(re * k), im: round3(im * k) },
     calibrated: s.software.referenceMeasured,
+    settled: sinceContact >= SETTLE_SECONDS,
     tempC,
     wiring: wiringOf(ch),
   };

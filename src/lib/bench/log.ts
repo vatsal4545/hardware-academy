@@ -57,11 +57,12 @@ function describeDut(dutId: string): { chemistry: string; nominal: string } {
 }
 
 /**
- * A log row for a valid reading, or null for an invalid one. `previousConnection` is the connection count of the
- * previous logged reading of the same device, so the row knows whether the leads were reconnected in between.
+ * A log row for a valid, settled reading, or null otherwise: a reading taken within a minute of a clip moving still
+ * drifts, so it isn't logged (the runbook: wait a minute before reading). `previousConnection` is the connection count
+ * of the previous logged reading of the same device, so the row knows whether the leads were reconnected in between.
  */
 export function rowFromReading(r: Reading, bench: BenchState, when: { date: string; time: string }, previousConnection: number | null): LogRow | null {
-  if (!r.valid || !r.z || !r.dutId) return null;
+  if (!r.valid || !r.settled || !r.z || !r.dutId) return null;
   const temp = r.tempC === null ? "na" : String(r.tempC);
   return {
     id: `virtual-${r.seq}`,

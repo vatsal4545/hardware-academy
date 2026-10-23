@@ -76,6 +76,8 @@ export interface Reading {
   /** The bench's connection count when the reading was taken: a change means the leads were reconnected. */
   connection: number;
   calibrated: boolean;
+  /** A minute had passed since a clip last moved, so the junctions had settled and the reading doesn't drift. */
+  settled: boolean;
   tempC: number | null;
   wiring: Wiring | null;
 }

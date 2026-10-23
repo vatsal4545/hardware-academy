@@ -57,8 +57,9 @@ export function identifiedIntactCell(s: BenchState): boolean {
   return record?.inspected === true && record.ocv !== null;
 }
 
+/** Valid, settled 1 kHz readings of the chosen device: the ones the lab log keeps. */
 function validAt1k(s: BenchState) {
-  return s.readings.filter((r) => r.valid && r.dutId === s.dutId && r.freqHz === 1000);
+  return s.readings.filter((r) => r.valid && r.settled && r.dutId === s.dutId && r.freqHz === 1000);
 }
 
 /** The largest group of valid 1 kHz readings taken without the leads moving. */
@@ -91,6 +92,7 @@ export const MISSIONS: readonly Mission[] = [
       { id: "identify.log", title: "Create the lab log", done: ({ bench }) => bench.logCreated },
       { id: "identify.layout", title: "Lay everything out with USB, bench power and cells disconnected", done: ({ bench }) => bench.laidOut && !bench.usb.plugged && CHANNELS.every((ch) => !bench.channels[ch]) },
       { id: "identify.boards", title: "Read both board names and revision labels", target: "eval-ad5941batz", done: ({ bench }) => Boolean(bench.identified["eval-ad5941batz"] && bench.identified["eval-adicup3029"]) },
+      { id: "identify.computer", title: "Note the computer and its OS, and whether any firmware is already loaded", target: "laptop", done: ({ bench }) => Boolean(bench.identified["laptop"]) },
       { id: "identify.bags", title: "Note the full part number on every resistor bag", target: "shunt-10m", done: ({ bench }) => partsOfKind("shunt").every((p) => bench.identified[p.id]) },
       { id: "identify.leads", title: "Trace each lead plug to its jaw with continuity, leads disconnected", target: "kelvin-leads", done: ({ bench }) => CHANNELS.every((ch) => bench.continuityMapped[ch]) },
       { id: "identify.adapters", title: "Fit a BNC to banana adapter on each jack: centre pin only", target: "bnc-banana-adapters", done: ({ bench }) => CHANNELS.every((ch) => bench.adapters[ch]) },
@@ -123,7 +125,7 @@ export const MISSIONS: readonly Mission[] = [
       { id: "response.power", title: "Power the boards first, with the software connected", target: "eval-adicup3029", done: ({ bench }) => softwareLink(bench).ok },
       { id: "response.clip", title: "Clip four-wire: F+ and S+ on +, S− and F− on −, bare metal", target: "kelvin-leads", done: ({ bench }) => clippedCorrectly(bench) && !bench.faults.some((f) => BLOCKING_FAULTS.has(f.id)) },
       { id: "response.reference", title: "Keep RcalVal at 50.0 and measure the onboard reference", target: "laptop", done: ({ bench }) => bench.software.rcalVal === 50 && bench.software.referenceMeasured },
-      { id: "response.read", title: "Measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated) },
+      { id: "response.read", title: "Wait a minute after clipping, then measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated) },
       {
         id: "response.log",
         title: "Log it with frequency, wiring, calibration state and temperature",

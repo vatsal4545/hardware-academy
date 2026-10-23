@@ -61,9 +61,12 @@ describe("missions", () => {
     }
   });
 
-  it("counts a lead left off as not laid out cleanly", () => {
-    const s = run(clipped(poweredBench(), "cell-d-duracell"), { type: "layOut" });
-    expect(missionById("identify")!.steps.find((st) => st.id === "identify.layout")!.done({ bench: s, log: [] })).toBe(false);
-    expect(CHANNELS.every((ch) => s.channels[ch])).toBe(true);
+  it("counts leads left clipped, or USB left plugged in, as not laid out cleanly", () => {
+    const layout = missionById("identify")!.steps.find((st) => st.id === "identify.layout")!;
+    const leadsOn = run(clipped(poweredBench(), "cell-d-duracell"), { type: "unplugUsb" }, { type: "layOut" });
+    expect(CHANNELS.every((ch) => leadsOn.channels[ch])).toBe(true);
+    expect(layout.done({ bench: leadsOn, log: [] })).toBe(false);
+    expect(layout.done({ bench: run(poweredBench(), { type: "layOut" }), log: [] })).toBe(false);
+    expect(layout.done({ bench: run(initialBench(1), { type: "layOut" }), log: [] })).toBe(true);
   });
 });
