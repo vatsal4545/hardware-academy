@@ -8,6 +8,13 @@ describe("seeded randomness", () => {
     expect(unit(7, "contact:F+:1")).not.toBe(unit(8, "contact:F+:1"));
   });
 
+  it("gives the same numbers as always: a change to the hash or the generator would change every bench", () => {
+    expect(unit(7, "contact:F+:1")).toBe(0.2887131730094552);
+    expect(unit(7, "contact:F+:2")).toBe(0.00838625873439014);
+    expect(unit(8, "contact:F+:1")).toBe(0.09830598416738212);
+    expect(gaussian(11, "g0", 5, 2)).toBeCloseTo(8.00437346622066, 12);
+  });
+
   it("stays inside [0, 1) and inside the requested range", () => {
     for (let i = 0; i < 200; i++) {
       const u = unit(3, `k${i}`);

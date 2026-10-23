@@ -91,6 +91,33 @@ describe("CSV", () => {
     expect(rows[0].zReal).toBeCloseTo(112.4, 9);
     expect(rows[0].zImag).toBeCloseTo(-0.8, 9);
     expect(rows[0].notes).toBe("imported from Ω");
+    // 0.0102 × 1000 is 10.200000000000001 in floating point: the import rounds that noise away.
+    expect(parseCsv("date,DUT-ID,freq,Z_real,Z_imag,units\n2026-10-20,S-10m,1000,0.0102,-0.0041,Ω\n").rows[0]).toMatchObject({ zReal: 10.2, zImag: -4.1 });
+  });
+
+  it("reads Z_imag's unit from its own header, while a row's units value applies to both", () => {
+    const own = parseCsv("date,DUT-ID,freq,Z_real (mΩ),Z_imag (Ω)\n2026-10-20,D-01,1000,112.4,-0.0008\n");
+    expect(own.rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8 });
+    const row = parseCsv("date,DUT-ID,freq,Z_real (mΩ),Z_imag (Ω),units\n2026-10-20,D-01,1000,0.1124,-0.0008,Ω\n");
+    expect(row.rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8 });
+  });
+
+  it("reads a unit column as units", () => {
+    const { rows } = parseCsv("date,DUT-ID,freq,Z_real,Z_imag,unit\n2026-10-20,D-01,1000,0.1124,-0.0008,Ω\n");
+    expect(rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8, notes: "imported from Ω" });
+  });
+
+  it("reads a header unit after -, : or | too, and fails closed after any other mark", () => {
+    const sheet = (header: string, value: string) => parseCsv(`date,DUT-ID,freq,${header},Z_imag\n2026-10-20,D-01,1000,${value},-0.8\n`);
+    expect(sheet("Z_real-mΩ", "112.4").rows[0].zReal).toBe(112.4);
+    expect(sheet("Z_real:Ω", "0.1124").rows[0].zReal).toBe(112.4);
+    expect(sheet("Z_real|Ω", "0.1124").rows[0].zReal).toBe(112.4);
+    expect(sheet("Z_real+Ω", "0.1124").skipped[0].reason).toMatch(/Z_real/);
+  });
+
+  it("reads calibration, wiring and source in any case", () => {
+    const { rows } = parseCsv("date,DUT-ID,freq,Z_real,Z_imag,calibration,wiring,source\n2026-10-20,D-01,1000,112.4,-0.8,Measured,4-Wire,Virtual\n");
+    expect(rows[0]).toMatchObject({ calibration: "measured", wiring: "4-wire", source: "virtual" });
   });
 
   it("reads units from a units column or the header, and skips a unit it doesn't know", () => {
@@ -103,7 +130,7 @@ describe("CSV", () => {
     expect(parseCsv("date,DUT-ID,freq,Z_real mΩ,Z_imag mΩ\n2026-10-20,D-01,1000,112.4,-0.8\n").rows[0].zReal).toBe(112.4);
     expect(parseCsv("date,DUT-ID,freq,Z_real [Ω],Z_imag [Ω]\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
     expect(parseCsv("date,DUT-ID,freq,Z_real (µΩ),Z_imag (µΩ)\n2026-10-20,D-01,1000,112400,-800\n").skipped[0].reason).toMatch(/µΩ/);
-    expect(parseCsv("date,DUT-ID,freq,Z_real (Ω)*,Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").skipped[0].reason).toMatch(/zReal/);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (Ω)*,Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").skipped[0].reason).toMatch(/Z_real/);
   });
 
   it("marks a reconnection when the clip-cycle changes and the sheet has no reconnected column", () => {
@@ -111,8 +138,8 @@ describe("CSV", () => {
     expect(parseCsv(csv).rows.map((r) => r.reconnected)).toEqual([false, false, true, false]);
     const blank = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,\n2026-10-20,S-10m,1000,10.0,0,1\n";
     expect(parseCsv(blank).rows.map((r) => r.reconnected)).toEqual([false, false, false]);
-    const column = "date,DUT-ID,freq,Z_real,Z_imag,reconnected\n2026-10-20,S-10m,1000,10.1,0,Yes\n2026-10-20,S-10m,1000,10.2,0,TRUE\n2026-10-20,S-10m,1000,10.0,0,no\n";
-    expect(parseCsv(column).rows.map((r) => r.reconnected)).toEqual([true, true, false]);
+    const column = "date,DUT-ID,freq,Z_real,Z_imag,reconnected\n2026-10-20,S-10m,1000,10.1,0,Yes\n2026-10-20,S-10m,1000,10.2,0,TRUE\n2026-10-20,S-10m,1000,10.0,0,no\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.1,0,0\n";
+    expect(parseCsv(column).rows.map((r) => r.reconnected)).toEqual([true, true, false, true, false]);
   });
 
   it("skips bad rows with a reason and keeps the good ones", () => {
@@ -123,10 +150,12 @@ describe("CSV", () => {
     expect(skipped[0].reason).toMatch(/YYYY-MM-DD/);
   });
 
-  it("rejects a file without the required columns", () => {
+  it("rejects a file without the required columns, naming each missing one as its header is written", () => {
     const { rows, skipped } = parseCsv("date,DUT-ID,freq\n2026-10-20,D-01,1000\n");
     expect(rows).toEqual([]);
-    expect(skipped[0].reason).toMatch(/zReal/);
+    expect(skipped[0].reason).toBe("The header is missing the Z_real and Z_imag columns.");
+    expect(parseCsv("date,DUT-ID,freq,Z_real\n2026-10-20,D-01,1000,1\n").skipped[0].reason).toBe("The header is missing the Z_imag column.");
+    expect(parseCsv("time,notes\n10:00,x\n").skipped[0].reason).toBe("The header is missing the date, DUT-ID, freq, Z_real and Z_imag columns.");
   });
 });
 
@@ -137,6 +166,8 @@ describe("statistics and checks", () => {
     expect(s.mean).toBeCloseTo(10.2, 12);
     expect(s.spread).toBeCloseTo(0.2, 12);
     expect(stats([])).toBeNull();
+    // Too many values to spread into Math.min as arguments.
+    expect(stats(Array.from({ length: 200_000 }, (_, i) => i))).toMatchObject({ n: 200_000, min: 0, max: 199_999 });
   });
 
   it("keeps the stationary and reconnection sets apart", () => {

@@ -2,11 +2,12 @@ import { describe, it, expect } from "vitest";
 import { MISSIONS, clippedCorrectly, identifiedIntactCell, missionById, missionComplete, newlyDone, reconnectionCount, resumePoint, stationaryCount } from "@/lib/bench/missions";
 import { initialBench } from "@/lib/bench/state";
 import { CHANNELS, type BenchAction } from "@/lib/bench/types";
-import { GOOD, clipped, justClipped, poweredBench, readyBench, run } from "./helpers";
+import { GOOD, clipped, last, poweredBench, readyBench, run } from "./helpers";
 
 describe("missions", () => {
-  it("has four stage-1 missions with unique step ids and learn cards", () => {
+  it("has four stage-1 missions of 9, 6, 7 and 5 steps, with unique step ids and learn cards", () => {
     expect(MISSIONS.map((m) => m.number)).toEqual([1, 2, 3, 4]);
+    expect(MISSIONS.map((m) => m.steps.length)).toEqual([9, 6, 7, 5]);
     const ids = MISSIONS.flatMap((m) => m.steps.map((s) => s.id));
     expect(new Set(ids).size).toBe(ids.length);
     for (const m of MISSIONS) expect(m.learn.length).toBeGreaterThan(0);
@@ -80,11 +81,35 @@ describe("missions", () => {
   });
 
   it("counts only settled readings toward the stationary and reconnection sets", () => {
-    const early = run(justClipped(), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 1000 });
+    // An inspected cell with its voltage and temperature read: every step before Mission 3's reading can tick, so only
+    // the reading's own settle check holds it back.
+    const cell = "cell-d-duracell";
+    const identified = run(
+      poweredBench(),
+      { type: "measureReference" },
+      { type: "chooseDut", dutId: cell },
+      { type: "inspectCell", cellId: cell },
+      { type: "measureOcv", cellId: cell },
+      { type: "readTemperature", cellId: cell },
+    );
+    const early = run(clipped(identified, cell), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 1000 });
     expect(stationaryCount(early)).toBe(0);
     expect(reconnectionCount(early)).toBe(0);
+    expect(newlyDone({ bench: early, log: [] })).toContain("response.temperature");
     expect(newlyDone({ bench: early, log: [] })).not.toContain("response.read");
     expect(stationaryCount(run(early, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 }))).toBe(1);
+  });
+
+  it("counts only a four-wire reading as Mission 3's reading", () => {
+    const read = MISSIONS.flatMap((m) => m.steps).find((st) => st.id === "response.read")!;
+    const twoWire = run(
+      clipped(run(poweredBench(), { type: "measureReference" }), "cell-d-duracell", { "S+": { onForceWire: true }, "S-": { onForceWire: true } }),
+      { type: "wait", seconds: 60 },
+      { type: "measure", freqHz: 1000 },
+    );
+    expect(last(twoWire)).toMatchObject({ valid: true, settled: true, calibrated: true, wiring: "2-wire" });
+    expect(read.done({ bench: twoWire, log: [] })).toBe(false);
+    expect(read.done({ bench: run(readyBench(), { type: "measure", freqHz: 1000 }), log: [] })).toBe(true);
   });
 
   it("keeps Mission 1's computer and firmware check", () => {

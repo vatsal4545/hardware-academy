@@ -32,7 +32,7 @@ describe("leads and contacts", () => {
     }
   });
 
-  it("makes two-wire add about 40 mΩ of leads and contacts, as in the beginner guide", () => {
+  it("makes two-wire add 28 to 40 mΩ of leads and contacts: the beginner guide's 40 mΩ is the top of that range", () => {
     const twoWire = { ...fourWire, "S+": bare("+", 2, true), "S-": bare("-", 3, true) };
     expect(wiringOf(twoWire)).toBe("2-wire");
     for (let seed = 1; seed <= 30; seed++) {

@@ -64,6 +64,11 @@ function withCell(s: BenchState, cellId: string, patch: Partial<CellRecord>): Be
   return { ...s, cells: { ...s.cells, [cellId]: { ...cell(s, cellId), ...patch } } };
 }
 
+/** A finite number above zero: what a frequency or RcalVal has to be. */
+function positive(x: number): boolean {
+  return Number.isFinite(x) && x > 0;
+}
+
 function addReadings(s: BenchState, freqs: number[]): BenchState {
   let next = s;
   const added: Reading[] = [];
@@ -105,6 +110,7 @@ export function benchReducer(s: BenchState, a: BenchAction): BenchState {
       return next;
     }
     case "unplugUsb": {
+      if (!s.usb.plugged) return s;
       const next = { ...s, usb: { ...s.usb, plugged: false }, software: { ...s.software, referenceMeasured: false } };
       return dutIsCell(s) && anyConnected(s) ? withFault(next, "power-down-connected") : next;
     }
@@ -113,7 +119,8 @@ export function benchReducer(s: BenchState, a: BenchAction): BenchState {
     case "loadFirmware":
       if (!powered(s)) return s;
       if (s.usb.viaIsolator) return withFault(s, "isolator-debug");
-      return { ...s, software: { ...s.software, firmware: true } };
+      // Flashing with the isolator bypassed fixes the earlier failure, so its fault goes.
+      return { ...s, faults: s.faults.filter((f) => f.id !== "isolator-debug"), software: { ...s.software, firmware: true } };
     case "selectDevice":
       return s.software.app === "sensorpal" ? { ...s, software: { ...s.software, device: true } } : s;
     case "powerCycle": {
@@ -124,7 +131,7 @@ export function benchReducer(s: BenchState, a: BenchAction): BenchState {
     case "setBaud":
       return { ...s, software: { ...s.software, baud: a.baud } };
     case "setRcal":
-      return { ...s, software: { ...s.software, rcalVal: a.value } };
+      return positive(a.value) ? { ...s, software: { ...s.software, rcalVal: a.value } } : s;
     case "measureReference":
       return powered(s) && s.software.firmware ? { ...s, clock: s.clock + 2, software: { ...s.software, referenceMeasured: true } } : s;
     case "fitAdapter":
@@ -185,10 +192,11 @@ export function benchReducer(s: BenchState, a: BenchAction): BenchState {
     case "placeSupply":
       return { ...s, supplyNearLeads: a.nearLeads };
     case "wait":
-      return { ...s, clock: s.clock + Math.max(0, a.seconds) };
+      return Number.isFinite(a.seconds) ? { ...s, clock: s.clock + Math.max(0, a.seconds) } : s;
     case "measure":
-      return addReadings(s, [a.freqHz]);
+      return positive(a.freqHz) ? addReadings(s, [a.freqHz]) : s;
     case "sweep":
+      if (!positive(a.fromHz) || !positive(a.toHz) || !Number.isInteger(a.perDecade) || a.perDecade < 1) return s;
       return addReadings(s, sweepFrequencies(a.fromHz, a.toHz, a.perDecade));
     case "answer":
       return { ...s, answers: { ...s.answers, [a.questionId]: a.choice } };

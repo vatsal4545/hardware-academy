@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import { CircleQuestionMark } from "lucide-react";
+import { Check, CircleQuestionMark, X } from "lucide-react";
 import { hashString, seededOrder } from "@/lib/shuffle";
 import { cn } from "@/lib/cn";
 import { useLessonData } from "./LessonDataContext";
@@ -46,12 +46,25 @@ export function QuickCheck({ id }: { id: string }) {
               >
                 <input type="radio" name={name} checked={picked === ci} onChange={() => setPicked(ci)} className="mt-0.5 accent-cyan-400" />
                 <span>{q.choices[ci]}</span>
+                {/* An icon and words as well as the colour, so the result isn't shown by colour alone (WCAG 1.4.1). */}
+                {state === "right" && (
+                  <>
+                    <Check aria-hidden className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-green-300" />
+                    <span className="sr-only"> (correct answer)</span>
+                  </>
+                )}
+                {state === "wrong" && (
+                  <>
+                    <X aria-hidden className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                    <span className="sr-only"> (your answer)</span>
+                  </>
+                )}
               </label>
             );
           })}
         </div>
       </fieldset>
-      <p aria-live="polite" className={cn("mt-3 text-sm", right ? "text-green-300" : "text-red-300")}>
+      <p aria-live="polite" className={cn("text-sm", answered && "mt-3", right ? "text-green-300" : "text-red-300")}>
         {answered && (
           <>
             <span className="font-semibold">{right ? "Right. " : "Not quite. "}</span>

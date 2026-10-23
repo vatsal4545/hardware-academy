@@ -1,5 +1,6 @@
-// The leads between the board and the device under test. Resistances in milliohms; the values are simulated, chosen
-// so that a 10 mΩ standard plus 40 mΩ of leads and contacts reads about 50 mΩ two-wire, as in the beginner guide.
+// The leads between the board and the device under test. Resistances in milliohms; the values are simulated: two-wire
+// adds 28 to 40 mΩ (2 × (4 to 10 mΩ contact + 10 mΩ lead)); the beginner guide's simplified example, 10 + 40 = 50 mΩ,
+// is the top of that range.
 import { between, gaussian } from "./random";
 import { CHANNELS, type Channel, type ChannelContact, type Wiring } from "./types";
 
@@ -32,16 +33,17 @@ export function senseOffsetMilliohm(seed: number, channels: Contacts): number {
   return extra;
 }
 
-/** Wrapper or oxide bites make readings jump from one connection to the next. */
+/** Wrapper or oxide bites make readings jump from one connection to the next: 15 mΩ sd per bite (simulated). */
 export function jumpMilliohm(seed: number, channels: Contacts): number {
   let jump = 0;
-  for (const [channel, c] of Object.entries(channels) as Array<[Channel, ChannelContact]>) {
-    if (c.bite === "wrapper") jump += gaussian(seed, `jump:${channel}:${c.made}`, 0, 15);
+  for (const channel of CHANNELS) {
+    const c = channels[channel];
+    if (c?.bite === "wrapper") jump += gaussian(seed, `jump:${channel}:${c.made}`, 0, 15);
   }
   return jump;
 }
 
-/** Even a good four-wire hookup leaves a small error that changes with each reconnection. */
+/** Even a good four-wire hookup leaves a small error that changes with each reconnection: 0.08 mΩ sd (simulated). */
 export function residualMilliohm(seed: number, channels: Contacts): number {
   const made = CHANNELS.map((ch) => channels[ch]?.made ?? 0).join(".");
   return gaussian(seed, `residual:${made}`, 0, 0.08);

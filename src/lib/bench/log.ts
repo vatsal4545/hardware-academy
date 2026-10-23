@@ -180,6 +180,7 @@ const HEADER_KEYS: Record<string, string> = {
   notes: "notes",
   rawfile: "rawFile",
   units: "units",
+  unit: "units",
   calibration: "calibration",
   cellvoltage: "cellVoltage",
   reconnected: "reconnected",
@@ -198,8 +199,21 @@ function num(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** A unit written after a column name, as in "Z_real mΩ", "Z_real (Ω)" or "Z_real [µΩ]"; toMilliohm decides if it is known. */
-const HEADER_UNIT = /[\s([{/_]+((?:milli|[a-zµμΜ])?(?:Ω|ohms?))[\s)\]}]*$/i;
+/**
+ * A unit written after a column name and one separator, as in "Z_real mΩ", "Z_real (Ω)", "Z_real [µΩ]", "Z_real-mΩ",
+ * "Z_real:Ω" or "Z_real|Ω"; toMilliohm decides if it is known. A single separator keeps the match linear in the
+ * header's length.
+ */
+const HEADER_UNIT = /[\s([{/_:.|-]((?:milli|[a-zµμΜ])?(?:Ω|ohms?))[\s)\]}]*$/i;
+
+/** The log field a header names, if any: only the table's own keys count, never an inherited one such as "constructor". */
+function fieldOf(header: string): string | undefined {
+  const k = key(header.replace(HEADER_UNIT, ""));
+  return Object.hasOwn(HEADER_KEYS, k) ? HEADER_KEYS[k] : undefined;
+}
+
+/** The columns every sheet needs, with each header as the runbook writes it. */
+const REQUIRED = { date: "date", dutId: "DUT-ID", freqHz: "freq", zReal: "Z_real", zImag: "Z_imag" } as const;
 
 /**
  * The multiplier from a sheet's unit to milliohms, or null for a unit the log doesn't know. An empty unit means
@@ -210,6 +224,11 @@ function toMilliohm(unit: string): number | null {
   if (u === "" || /^milliohms?$/i.test(u) || /^m(Ω|ohms?)$/.test(u.replace(/ohm/i, "ohm"))) return 1;
   if (/^(Ω|ohms?)$/i.test(u)) return 1000;
   return null;
+}
+
+/** A value in milliohms, given the multiplier from its unit. Ω→mΩ products are rounded to 1e-6 mΩ, so 0.0102 Ω reads 10.2. */
+function inMilliohms(value: number, k: number): number {
+  return k === 1 ? value : Math.round(value * k * 1e6) / 1e6;
 }
 
 /** Why an imported row can't be used, or null when it can. */
@@ -223,21 +242,28 @@ function rowProblem(v: Record<string, string>): string | null {
 }
 
 /**
- * Reads a CSV with the runbook's columns (the extra columns are optional). Rows default to "real". A unit of Ω, in a
- * `units` column or after the Z_real header, converts the impedances to milliohms and notes the original unit; a unit
- * the log doesn't know skips the row. Without a `reconnected` column, a new clip-cycle for the same device marks a
- * reconnection. Bad rows are skipped with a reason.
+ * Reads a CSV with the runbook's columns (the extra columns are optional). Rows default to "real". A unit of Ω
+ * converts the impedances to milliohms and notes the original unit: a row's `units` (or `unit`) value applies to both,
+ * and otherwise Z_real and Z_imag each take the unit after their own header. A unit the log doesn't know skips the
+ * row. Calibration, wiring and source are read in any case. Without a `reconnected` column, a new clip-cycle for the
+ * same device marks a reconnection. Bad rows are skipped with a reason.
  */
 export function parseCsv(text: string, idPrefix = "real"): ParseResult {
   const [header, ...records] = parseCsvRecords(text);
   const result: ParseResult = { rows: [], skipped: [] };
   if (!header) return result;
   const named = header.map((h) => h.normalize("NFC"));
-  const fields = named.map((h) => HEADER_KEYS[key(h.replace(HEADER_UNIT, ""))]);
-  for (const name of ["date", "dutId", "freqHz", "zReal", "zImag"]) {
-    if (!fields.includes(name)) return { rows: [], skipped: [{ line: 1, reason: `The header has no ${name} column.` }] };
+  const fields = named.map(fieldOf);
+  const missing = Object.entries(REQUIRED)
+    .filter(([field]) => !fields.includes(field))
+    .map(([, name]) => name);
+  if (missing.length > 0) {
+    const list = missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}`;
+    return { rows: [], skipped: [{ line: 1, reason: `The header is missing the ${list} column${missing.length === 1 ? "" : "s"}.` }] };
   }
-  const headerUnit = named[fields.indexOf("zReal")].match(HEADER_UNIT)?.[1] ?? "";
+  const headerUnit = (field: string) => named[fields.indexOf(field)].match(HEADER_UNIT)?.[1] ?? "";
+  const realUnit = headerUnit("zReal");
+  const imagUnit = headerUnit("zImag");
   const hasReconnected = fields.includes("reconnected");
   const lastCycle = new Map<string, number>();
   for (const [i, record] of records.entries()) {
@@ -254,20 +280,24 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: problem ?? "Unreadable row." });
       continue;
     }
-    const unit = v.units || headerUnit;
-    const k = toMilliohm(unit);
-    if (k === null) {
-      result.skipped.push({ line, reason: `The unit "${unit}" isn't mΩ or Ω.` });
+    const reUnit = v.units || realUnit;
+    const imUnit = v.units || imagUnit;
+    const kRe = toMilliohm(reUnit);
+    const kIm = toMilliohm(imUnit);
+    if (kRe === null || kIm === null) {
+      result.skipped.push({ line, reason: `The unit "${kRe === null ? reUnit : imUnit}" isn't mΩ or Ω.` });
       continue;
     }
     const cycle = num(v.clipCycle);
     const previousCycle = lastCycle.get(v.dutId);
     if (cycle !== null) lastCycle.set(v.dutId, cycle);
-    const calibration = v.calibration === "measured" || v.calibration === "not-run" ? v.calibration : "unknown";
-    const wiring = v.wiring === "4-wire" || v.wiring === "2-wire" || v.wiring === "mixed" ? v.wiring : "unknown";
+    const calibrationValue = (v.calibration ?? "").toLowerCase();
+    const calibration = calibrationValue === "measured" || calibrationValue === "not-run" ? calibrationValue : "unknown";
+    const wiringValue = (v.wiring ?? "").toLowerCase();
+    const wiring = wiringValue === "4-wire" || wiringValue === "2-wire" || wiringValue === "mixed" ? wiringValue : "unknown";
     result.rows.push({
       id: `${idPrefix}-${line}`,
-      source: v.source === "virtual" ? "virtual" : "real",
+      source: (v.source ?? "").toLowerCase() === "virtual" ? "virtual" : "real",
       date: v.date,
       time: v.time ?? "",
       dutId: v.dutId,
@@ -275,8 +305,8 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       nominal: v.nominal ?? "",
       tempC: num(v.tempC),
       freqHz: freq,
-      zReal: re * k,
-      zImag: im * k,
+      zReal: inMilliohms(re, kRe),
+      zImag: inMilliohms(im, kIm),
       clipCycle: cycle ?? 0,
       reconnected: hasReconnected
         ? /^(yes|true|1)$/i.test(v.reconnected ?? "")
@@ -284,7 +314,7 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       calibration,
       wiring,
       cellVoltage: num(v.cellVoltage),
-      notes: [v.notes ?? "", k === 1000 ? "imported from Ω" : ""].filter(Boolean).join("; "),
+      notes: [v.notes ?? "", kRe === 1000 || kIm === 1000 ? "imported from Ω" : ""].filter(Boolean).join("; "),
       rawFile: v.rawFile ?? "",
     });
   }
@@ -302,8 +332,13 @@ export interface Stats {
 
 export function stats(values: readonly number[]): Stats | null {
   if (values.length === 0) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // A loop, not Math.min(...values): spreading a long log into arguments overflows the stack.
+  let min = values[0];
+  let max = values[0];
+  for (const v of values) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
   return { n: values.length, mean: values.reduce((a, b) => a + b, 0) / values.length, min, max, spread: max - min };
 }
 
@@ -354,7 +389,7 @@ function shuntNominal(rows: readonly LogRow[], dutId: string): number | undefine
   for (const r of rows) {
     const m = r.dutId === dutId ? r.nominal.match(/^\s*(\d+(?:\.\d+)?)\s*(\S+)\s*$/) : null;
     const k = m ? toMilliohm(m[2]) : null;
-    if (m && k !== null) return Number(m[1]) * k;
+    if (m && k !== null) return inMilliohms(Number(m[1]), k);
   }
   return undefined;
 }

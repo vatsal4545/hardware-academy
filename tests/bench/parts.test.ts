@@ -12,13 +12,14 @@ describe("parts catalogue", () => {
     for (const p of PARTS) expect(sources, p.id).toContain(p.source);
   });
 
-  it("keeps the real status: the Korad isn't bought, the adapters and lithium cells are pending", () => {
+  it("keeps the real status: the Korad isn't bought, the adapters and lithium cells are pending, and the rest is owned", () => {
     expect(partById("korad")).toMatchObject({ status: "not-bought" });
     expect(partById("korad")!.note).toMatch(/First Board/);
     expect(partById("bnc-banana-adapters")).toMatchObject({ status: "pending" });
     expect(partById("cell-18650")).toMatchObject({ status: "pending" });
     expect(partById("cell-26650")).toMatchObject({ status: "pending" });
-    expect(partById("eval-ad5941batz")).toMatchObject({ status: "owned" });
+    const notOwned = new Set(["korad", "bnc-banana-adapters", "cell-18650", "cell-26650"]);
+    for (const p of PARTS.filter((x) => !notOwned.has(x.id))) expect(p.status, p.id).toBe("owned");
   });
 
   it("has the six shunts from the order list, with their values", () => {

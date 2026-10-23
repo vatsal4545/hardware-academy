@@ -1,7 +1,54 @@
 import { describe, it, expect } from "vitest";
 import { benchReducer, connectBlocker, initialBench } from "@/lib/bench/state";
-import { CHANNELS } from "@/lib/bench/types";
+import { CHANNELS, type BenchAction } from "@/lib/bench/types";
 import { GOOD, clipped, last, poweredBench, readyBench, run } from "./helpers";
+
+/** One action of every type, each chosen to do real work on a powered, clipped bench. */
+const ONE_OF_EACH: { [T in BenchAction["type"]]: Extract<BenchAction, { type: T }> } = {
+  setMode: { type: "setMode", mode: "free" },
+  groundMat: { type: "groundMat" },
+  wearStrap: { type: "wearStrap" },
+  createLog: { type: "createLog" },
+  layOut: { type: "layOut" },
+  identify: { type: "identify", partId: "laptop" },
+  inspectBoards: { type: "inspectBoards" },
+  stackBoards: { type: "stackBoards", alignment: "offset" },
+  unstackBoards: { type: "unstackBoards" },
+  plugUsb: { type: "plugUsb", viaIsolator: true },
+  unplugUsb: { type: "unplugUsb" },
+  openApp: { type: "openApp", app: "serial" },
+  loadFirmware: { type: "loadFirmware" },
+  selectDevice: { type: "selectDevice" },
+  powerCycle: { type: "powerCycle" },
+  setBaud: { type: "setBaud", baud: 9600 },
+  setRcal: { type: "setRcal", value: 0.05 },
+  measureReference: { type: "measureReference" },
+  fitAdapter: { type: "fitAdapter", channel: "F+" },
+  removeAdapter: { type: "removeAdapter", channel: "F+" },
+  chooseDut: { type: "chooseDut", dutId: "cell-aa-amazon" },
+  connect: { type: "connect", channel: "F+", contact: { ...GOOD["F+"], via: "shell" } },
+  disconnect: { type: "disconnect", channel: "S+" },
+  inspectCell: { type: "inspectCell", cellId: "cell-d-duracell" },
+  measureOcv: { type: "measureOcv", cellId: "cell-d-duracell" },
+  readTemperature: { type: "readTemperature", cellId: "cell-d-duracell" },
+  continuity: { type: "continuity", target: { kind: "lead", channel: "S+" } },
+  placeSupply: { type: "placeSupply", nearLeads: true },
+  wait: { type: "wait", seconds: 30 },
+  measure: { type: "measure", freqHz: 1000 },
+  sweep: { type: "sweep", fromHz: 1000, toHz: 10, perDecade: 2 },
+  answer: { type: "answer", questionId: "repeat.cause", choice: "contact" },
+  resetAfterFault: { type: "resetAfterFault" },
+  markMission: { type: "markMission", stepIds: ["identify.mat"] },
+};
+
+/** Freezes a value and everything inside it, so any write to it throws. */
+function deepFreeze<T>(value: T): T {
+  if (typeof value === "object" && value !== null) {
+    for (const inner of Object.values(value)) deepFreeze(inner);
+    Object.freeze(value);
+  }
+  return value;
+}
 
 describe("bench state", () => {
   it("starts empty, in guided mode, with RcalVal at 50.0", () => {
@@ -69,6 +116,20 @@ describe("bench state", () => {
     expect(s.faults.map((f) => f.id)).toContain("isolator-debug");
   });
 
+  it("retires the isolator fault once firmware loads with the isolator bypassed", () => {
+    const failed = run(initialBench(1), { type: "stackBoards", alignment: "aligned" }, { type: "plugUsb", viaIsolator: true }, { type: "loadFirmware" });
+    const bypassed = run(failed, { type: "unplugUsb" }, { type: "plugUsb", viaIsolator: false }, { type: "loadFirmware" });
+    expect(bypassed.software.firmware).toBe(true);
+    expect(bypassed.faults.map((f) => f.id)).not.toContain("isolator-debug");
+  });
+
+  it("does nothing on unplugging USB that isn't plugged in: a cell clipped before power is a power-order fault only", () => {
+    const s = clipped(run(initialBench(2), ...CHANNELS.map((channel) => ({ type: "fitAdapter", channel }) as const)), "cell-d-duracell");
+    const unplugged = run(s, { type: "unplugUsb" });
+    expect(unplugged.faults.map((f) => f.id)).toEqual(["power-order"]);
+    expect(unplugged).toBe(s);
+  });
+
   it("maps a lead with continuity when it is disconnected, and flags continuity on live parts", () => {
     const mapped = run(initialBench(1), { type: "continuity", target: { kind: "lead", channel: "S+" } });
     expect(mapped.continuityMapped["S+"]).toBe(true);
@@ -107,6 +168,50 @@ describe("bench state", () => {
     const a = run(readyBench(21), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 10 });
     const b = run(readyBench(21), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 10 });
     expect(b.readings).toEqual(a.readings);
+  });
+
+  it("depends on the seed: two seeds give different readings for the same actions", () => {
+    const z = (seed: number) => last(run(readyBench(seed), { type: "measure", freqHz: 1000 })).z;
+    expect(z(21)).not.toEqual(z(22));
+  });
+
+  it("never changes the state it is given: one action of each type on a frozen bench", () => {
+    const actions = Object.values(ONE_OF_EACH);
+    expect(actions).toHaveLength(34);
+    for (const s of [deepFreeze(initialBench(3)), deepFreeze(run(readyBench(), { type: "measure", freqHz: 1000 }))]) {
+      const before = JSON.stringify(s);
+      for (const a of actions) {
+        expect(() => benchReducer(s, a), a.type).not.toThrow();
+        expect(JSON.stringify(s), a.type).toBe(before);
+      }
+    }
+  });
+
+  it("ignores numbers that would crash or poison the bench", () => {
+    const s = readyBench();
+    const bad: BenchAction[] = [
+      { type: "measure", freqHz: 0 },
+      { type: "measure", freqHz: -1000 },
+      { type: "measure", freqHz: NaN },
+      { type: "measure", freqHz: Infinity },
+      { type: "sweep", fromHz: 1000, toHz: 0, perDecade: 5 },
+      { type: "sweep", fromHz: -1, toHz: 1000, perDecade: 5 },
+      { type: "sweep", fromHz: NaN, toHz: 1, perDecade: 5 },
+      { type: "sweep", fromHz: 1000, toHz: Infinity, perDecade: 5 },
+      { type: "sweep", fromHz: 1000, toHz: 1, perDecade: 0 },
+      { type: "sweep", fromHz: 1000, toHz: 1, perDecade: 2.5 },
+      { type: "sweep", fromHz: 1000, toHz: 1, perDecade: NaN },
+      { type: "sweep", fromHz: 1000, toHz: 1, perDecade: Infinity },
+      { type: "setRcal", value: 0 },
+      { type: "setRcal", value: -50 },
+      { type: "setRcal", value: NaN },
+      { type: "setRcal", value: Infinity },
+      { type: "wait", seconds: NaN },
+      { type: "wait", seconds: Infinity },
+      { type: "wait", seconds: -Infinity },
+    ];
+    for (const a of bad) expect(benchReducer(s, a), `${a.type} ${Object.values(a).slice(1).join(" ")}`).toBe(s);
+    expect(run(s, { type: "wait", seconds: -5 }).clock).toBe(s.clock);
   });
 
   it("keeps at most 500 readings", () => {

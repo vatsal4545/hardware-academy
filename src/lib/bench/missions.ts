@@ -1,7 +1,7 @@
 // Missions 1-4 of the virtual bench, in the beginner guide's learning sequence. Each step is a check over the bench
 // and the lab log; steps tick in order and stay ticked.
 import { partById, partsOfKind } from "./parts";
-import { BLOCKING_FAULTS, SETTLE_SECONDS, softwareLink } from "./instrument";
+import { BLOCKING_FAULTS, settled, softwareLink } from "./instrument";
 import type { LogRow } from "./log";
 import { CHANNELS, type BenchState, type Channel } from "./types";
 
@@ -115,7 +115,7 @@ export const MISSIONS: readonly Mission[] = [
     ],
   },
   {
-    id: "first-response",
+    id: "response",
     number: 3,
     title: "First response",
     learn: ["four-wires", "impedance"],
@@ -125,11 +125,11 @@ export const MISSIONS: readonly Mission[] = [
       { id: "response.power", title: "Power the boards first, with the software connected", target: "eval-adicup3029", done: ({ bench }) => softwareLink(bench).ok },
       { id: "response.clip", title: "Clip four-wire: F+ and S+ on +, S− and F− on −, bare metal", target: "kelvin-leads", done: ({ bench }) => clippedCorrectly(bench) && !bench.faults.some((f) => BLOCKING_FAULTS.has(f.id)) },
       { id: "response.reference", title: "Keep RcalVal at 50.0 and measure the onboard reference", target: "laptop", done: ({ bench }) => bench.software.rcalVal === 50 && bench.software.referenceMeasured },
-      { id: "response.read", title: "Wait a minute after clipping, then measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated) },
+      { id: "response.temperature", title: "Read the cell's temperature with the IR thermometer", target: "ir-thermometer", done: ({ bench }) => bench.dutId !== null && bench.cells[bench.dutId]?.tempC != null },
+      { id: "response.read", title: "Wait a minute after clipping, then measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated && r.wiring === "4-wire") },
       {
         id: "response.log",
         title: "Log it with frequency, wiring, calibration state and temperature",
-        target: "ir-thermometer",
         done: (ctx) => logged(ctx).some((r) => r.calibration === "measured" && r.wiring === "4-wire" && r.tempC !== null),
       },
     ],
@@ -141,7 +141,7 @@ export const MISSIONS: readonly Mission[] = [
     learn: ["res-rep-acc"],
     doneWhen: "Mean and spread for both sets, with the variation explained.",
     steps: [
-      { id: "repeat.settle", title: "Let the junctions settle for a minute after clipping", done: ({ bench }) => clippedCorrectly(bench) && bench.clock - bench.lastContactAt >= SETTLE_SECONDS },
+      { id: "repeat.settle", title: "Let the junctions settle for a minute after clipping", done: ({ bench }) => clippedCorrectly(bench) && settled(bench) },
       { id: "repeat.stationary", title: "Take 10 readings at 1 kHz without moving the leads", target: "laptop", done: ({ bench }) => stationaryCount(bench) >= 10 },
       { id: "repeat.reconnect", title: "Take 10 more, reconnecting the clips at the same contacts and waiting a minute before each", target: "kelvin-leads", done: ({ bench }) => reconnectionCount(bench) >= 10 },
       {
@@ -164,7 +164,7 @@ export const MISSIONS: readonly Mission[] = [
             { id: "same", text: "Neither set: both always show exactly the same spread" },
           ],
           correct: "contact",
-          explain: "Every reconnection makes a new contact with its own resistance, so readings spread more. Readings without moving the leads only see noise.",
+          explain: "Every reconnection makes a new contact with its own resistance (simulated), so readings spread more. Readings without moving the leads, once settled, only see noise.",
         },
         done: ({ bench }) => bench.answers["repeat.cause"] === "contact",
       },

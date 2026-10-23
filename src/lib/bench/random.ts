@@ -17,7 +17,11 @@ export function between(seed: number, key: string, min: number, max: number): nu
 
 const SQRT3 = 1.7320508075688772;
 
-/** An approximately normal draw: four uniforms summed (Irwin-Hall), rescaled to the mean and standard deviation. */
+/**
+ * An approximately normal draw: four uniforms summed (Irwin-Hall), rescaled to the mean and standard deviation. It is
+ * hard-bounded: it never lands more than 2√3 (about 3.46) sd from the mean. It draws the keys `key#0` to `key#3`, so
+ * those names are taken.
+ */
 export function gaussian(seed: number, key: string, mean: number, sd: number): number {
   const sum = unit(seed, `${key}#0`) + unit(seed, `${key}#1`) + unit(seed, `${key}#2`) + unit(seed, `${key}#3`);
   return mean + (sum - 2) * SQRT3 * sd;

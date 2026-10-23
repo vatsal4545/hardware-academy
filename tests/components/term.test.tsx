@@ -41,7 +41,7 @@ describe("Term", () => {
     fireEvent.focusIn(button);
     expect(screen.getByRole("tooltip")).toBeTruthy();
     fireEvent.focusOut(button);
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("closes on Escape", () => {
@@ -49,14 +49,14 @@ describe("Term", () => {
     fireEvent.click(screen.getByRole("button", { name: "hole" }));
     expect(screen.getByRole("tooltip")).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("closes on a tap elsewhere", () => {
     renderTerm("Hole");
     fireEvent.click(screen.getByRole("button", { name: "hole" }));
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("stays open while the pointer presses inside the box", () => {
@@ -81,6 +81,26 @@ describe("Term", () => {
     } finally {
       rect.mockRestore();
       Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    }
+  });
+
+  it("opens upwards when the term sits low on the screen", () => {
+    const height = window.innerHeight;
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ left: 20, top: 700 } as DOMRect);
+    try {
+      renderTerm("Hole");
+      const button = screen.getByRole("button", { name: "hole" });
+      fireEvent.click(button);
+      // 700 px is below 60% of the 800 px screen (480 px), so the box sits above the term.
+      expect(screen.getByRole("tooltip").parentElement?.className).toMatch(/\bbottom-full\b/);
+      fireEvent.keyDown(document, { key: "Escape" });
+      rect.mockReturnValue({ left: 20, top: 100 } as DOMRect);
+      fireEvent.click(button);
+      expect(screen.getByRole("tooltip").parentElement?.className).toMatch(/\btop-full\b/);
+    } finally {
+      rect.mockRestore();
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: height });
     }
   });
 

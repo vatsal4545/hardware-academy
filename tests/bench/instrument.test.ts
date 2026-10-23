@@ -128,6 +128,13 @@ describe("instrument", () => {
     expect(f).toHaveLength(26);
   });
 
+  it("sweeps one point, without a duplicate or a crash, when the range is empty or reaches zero", () => {
+    expect(sweepFrequencies(1000, 0, 5)).toEqual([1000]);
+    expect(sweepFrequencies(0, 1000, 5)).toEqual([1000]);
+    expect(sweepFrequencies(1000, -10, 5)).toEqual([1000]);
+    expect(sweepFrequencies(1000, 1000, 5)).toEqual([1000]);
+  });
+
   it("records a sweep as one reading per frequency and advances bench time", () => {
     const before = readyBench();
     const after = run(before, { type: "sweep", fromHz: 1000, toHz: 1, perDecade: 2 });
@@ -147,8 +154,11 @@ describe("instrument", () => {
   });
 
   it("reads the same whatever the thermometer showed: the cell sits at room temperature", () => {
-    const plain = last(run(readyBench(), { type: "measure", freqHz: 1000 }));
-    const read = last(run(readyBench(), { type: "readTemperature", cellId: "cell-d-duracell" }, { type: "measure", freqHz: 1000 }));
+    const s = readyBench();
+    const plain = last(run(s, { type: "measure", freqHz: 1000 }));
+    const warm = { ...s, cells: { ...s.cells, "cell-d-duracell": { inspected: true, ocv: null, tempC: 35 } } };
+    const read = last(run(warm, { type: "measure", freqHz: 1000 }));
+    expect(read.tempC).toBe(35);
     expect(read.z).toEqual(plain.z);
   });
 });

@@ -21,24 +21,34 @@ export const AMBIENT_C = 23.8;
 
 /**
  * Seconds of bench time one frequency point takes, simulated as 4.5 cycles and at least 1 s. CN0510 is optimised above
- * 1 Hz, and the guide says a 0.1 Hz point takes over 40 s.
+ * 1 Hz, and the guide says a 0.1 Hz point can take more than 40 s.
  */
 export function pointSeconds(freqHz: number): number {
   return Math.max(1, 4.5 / freqHz);
 }
 
-/** Frequencies for a sweep from high to low, evenly spaced per decade. */
+/**
+ * Frequencies for a sweep from high to low, evenly spaced per decade, with no point twice. Unless both ends are finite
+ * and the lower one is above 0 Hz, the sweep is the higher end alone.
+ */
 export function sweepFrequencies(fromHz: number, toHz: number, perDecade: number): number[] {
   const hi = Math.max(fromHz, toHz);
   const lo = Math.min(fromHz, toHz);
+  if (!Number.isFinite(hi) || !Number.isFinite(lo) || lo <= 0) return [hi];
   const decades = Math.log10(hi / lo);
   const n = Math.max(1, Math.round(decades * perDecade));
-  return Array.from({ length: n + 1 }, (_, i) => Math.round(hi * 10 ** (-(i * decades) / n) * 1000) / 1000);
+  const points = Array.from({ length: n + 1 }, (_, i) => Math.round(hi * 10 ** (-(i * decades) / n) * 1000) / 1000);
+  return points.filter((f, i) => i === 0 || f !== points[i - 1]);
 }
 
 /** The boards are powered over USB and alive. */
 export function powered(s: BenchState): boolean {
   return s.usb.plugged && !s.boards.dead;
+}
+
+/** A minute has passed since a clip last moved, so the junctions have settled and readings don't drift. */
+export function settled(s: BenchState): boolean {
+  return s.clock - s.lastContactAt >= SETTLE_SECONDS;
 }
 
 /** Whether the software sees the board and receives data, and if not, why. */
@@ -58,8 +68,7 @@ export const BLOCKING_FAULTS: ReadonlySet<FaultId> = new Set<FaultId>(["shell-sh
 type Outcome = Omit<Reading, "seq" | "at" | "connection">;
 
 function invalid(s: BenchState, freqHz: number, reason: InvalidReason, dataArrived: boolean): Outcome {
-  const settled = s.clock - s.lastContactAt >= SETTLE_SECONDS;
-  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, settled, tempC: null, wiring: null };
+  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, settled: settled(s), tempC: null, wiring: null };
 }
 
 function round3(x: number): number {
@@ -94,10 +103,9 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
   re += senseOffsetMilliohm(s.seed, ch) + jumpMilliohm(s.seed, ch) + residualMilliohm(s.seed, ch);
   if (!s.software.referenceMeasured) re += UNCALIBRATED_OFFSET_MILLIOHM;
 
-  const sinceContact = s.clock - s.lastContactAt;
-  if (sinceContact < SETTLE_SECONDS) {
+  if (!settled(s)) {
     const sign = between(s.seed, `drift:${s.connections}`, 0, 1) < 0.5 ? -1 : 1;
-    re += sign * 0.4 * (1 - sinceContact / SETTLE_SECONDS);
+    re += sign * 0.4 * (1 - (s.clock - s.lastContactAt) / SETTLE_SECONDS);
   }
 
   const sd = 0.03 * (1 + 1 / freqHz) * (s.supplyNearLeads ? 4 : 1);
@@ -113,7 +121,7 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
     dataArrived: true,
     z: { re: round3(re * k), im: round3(im * k) },
     calibrated: s.software.referenceMeasured,
-    settled: sinceContact >= SETTLE_SECONDS,
+    settled: settled(s),
     tempC,
     wiring: wiringOf(ch),
   };

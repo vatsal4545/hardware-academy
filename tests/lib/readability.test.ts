@@ -48,6 +48,9 @@ describe("jsxToText", () => {
 
   it("re-attaches punctuation that a tag separates from its word", () => {
     expect(jsxToText(`<p>Run <code>make</code>. Then ( <em>wait</em> ).</p>`)).toBe("Run make. Then (wait).");
+    expect(jsxToText(`<p>Red <b>one</b>, blue <b>two</b>; green <b>three</b>: yes <b>four</b>! Why <b>five</b>?</p>`)).toBe(
+      "Red one, blue two; green three: yes four! Why five?",
+    );
   });
 });
 
@@ -94,7 +97,7 @@ describe("theorySectionSource and missingSentences", () => {
   });
 
   it("ignores code markup when the words are unchanged", () => {
-    const old = `<Section id="theory" title="T"><Prose><p>Always run <code>make test</code> first.</p></Prose></Section><Section id="viz" title="V"></Section>`;
+    const old = `<Section id="theory" title="T"><Prose><p>Always run <code>make test first</code>.</p></Prose></Section><Section id="viz" title="V"></Section>`;
     const after = `<ConceptStep n={1} title="New" deeper={<p>Always run make test first.</p>}><p>Simple.</p></ConceptStep>`;
     expect(missingSentences(old, after)).toEqual([]);
   });

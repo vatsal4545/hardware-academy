@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { LESSON_PARTS, type LessonPart } from "./lessonParts";
 
-/** Sticky list of the lesson's parts; the part nearest the top of the screen is marked as the current location. */
+/**
+ * The list of the lesson's parts; the part nearest the top of the screen is marked as the current location. It isn't
+ * sticky itself: the lesson shell that places it keeps it in view.
+ */
 export function OnThisPage({ parts = LESSON_PARTS }: { parts?: readonly LessonPart[] }) {
   const [active, setActive] = useState(parts[0]?.id ?? "");
 

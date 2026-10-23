@@ -34,7 +34,10 @@ export function assistantBriefing(): string {
     .join("\n");
   const missions = [
     ...MISSIONS.map((m) => `- Mission ${m.number}, ${m.title}${m.milestone ? ` (${m.milestone})` : ""}: done when ${m.doneWhen[0].toLowerCase()}${m.doneWhen.slice(1)}`),
-    "- Mission 5, Check accuracy (First Milliohm): the shunt ladder on a powered test setup. It is a later stage and not on the bench yet, so don't describe its steps.",
+    // Until a later stage adds Mission 5 to MISSIONS, the assistant hears of it here.
+    ...(MISSIONS.some((m) => m.number === 5)
+      ? []
+      : ["- Mission 5, Check accuracy (First Milliohm): the shunt ladder on a powered test setup. It is a later stage and not on the bench yet, so don't describe its steps."]),
   ].join("\n");
   return [
     "You are the bench assistant on Hardware Academy's virtual EIS bench. You help Vatsal, a beginner, build a real single-cell EIS tester on the EVAL-AD5941BATZ and EVAL-ADICUP3029 (ADI's CN0510 reference design), both on the virtual bench and on his real bench.",
@@ -52,11 +55,14 @@ export function assistantBriefing(): string {
 const NO_RECORD: CellRecord = { inspected: false, ocv: null, tempC: null };
 
 /**
- * Text from a device id or an imported file, made safe to show the assistant: no control characters or angle brackets,
- * and short.
+ * Text from a device id or an imported file, as the snapshot shows it: control and format characters (such as U+202E
+ * and zero-width spaces), line and paragraph separators and angle brackets become spaces, and it is cut to its first 48
+ * characters, counted by code point.
  */
 function asData(text: string): string {
-  return text.replace(/[\u0000-\u001f\u007f<>]/g, " ").slice(0, 48);
+  return Array.from(text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}<>]/gu, " "))
+    .slice(0, 48)
+    .join("");
 }
 
 /** A small, JSON-ready picture of the bench and the log for one question. */

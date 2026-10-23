@@ -61,7 +61,7 @@ export const PARTS: readonly Part[] = [
   { id: "resistor-kit", name: "Metal film resistor kit, 1/4 W ±1%", kind: "tool", status: "owned", qty: 1, role: "Simple circuits whose impedance can be calculated, in later lessons.", source: SOURCES.guide },
   { id: "esp32-s3", name: "ESP32-S3-DEV-KIT-N8R8", kind: "devkit", status: "owned", qty: 2, role: "The controller for the later custom product, after the ADI controller reproduces the measurements.", source: SOURCES.guide },
   { id: "laptop", name: "Your laptop", kind: "computer", status: "owned", qty: 1, role: "Runs the measurement software. SensorPal is a Windows program; a Mac needs a separate, verified firmware-loading plan.", source: SOURCES.guide },
-  { id: "korad", name: "Korad KA3005DE bench supply (linear)", kind: "supply", status: "not-bought", qty: 1, role: "Current-limited power (50 mA) for the first power-on of your own board.", source: SOURCES.orders, note: "Not bought yet: needed at First Board, the Rev A bring-up." },
+  { id: "korad", name: "Korad KA3005DE bench supply (linear)", kind: "supply", status: "not-bought", qty: 1, role: "Current-limited power (50 mA) for the first power-on of your own board.", source: SOURCES.orders, note: "Needed at First Board, the Rev A bring-up." },
 ];
 
 export function partById(id: string): Part | undefined {

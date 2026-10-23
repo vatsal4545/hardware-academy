@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { Hash } from "lucide-react";
 
-/** One number worth remembering, and what it means. */
+/**
+ * One number worth remembering, and what it means.
+ * Children must be inline content, because the card renders a <p>.
+ */
 export function KeyNumber({ value, children }: { value: string; children: ReactNode }) {
   return (
     <p data-key-number="" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-2/60 px-4 py-2.5">

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { ConceptStep, KeyNumber, LessonDataProvider, TryThis } from "@/components/lesson";
 import { lessonFixture } from "../helpers/fixtures";
 
@@ -49,6 +49,12 @@ describe("ConceptStep", () => {
     );
     expect(container.querySelector("[data-key-number], [data-deeper], [data-check-id]")).toBeNull();
   });
+
+  it("uses the reveal and simple-text classes by name: Tailwind only emits those globals.css rules when a file names them", () => {
+    const { container } = renderFullStep();
+    expect(container.querySelector("article[data-step='2']")!.classList.contains("reveal")).toBe(true);
+    expect(container.querySelector("[data-layer='simple']")!.classList.contains("simple-text")).toBe(true);
+  });
 });
 
 describe("TryThis", () => {
@@ -59,5 +65,11 @@ describe("TryThis", () => {
     fireEvent.click(first);
     expect(first.checked).toBe(true);
     expect((screen.getByLabelText("Switch to germanium") as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("is a group named by its Try this heading", () => {
+    render(<TryThis items={["Heat silicon to 400 K", "Switch to germanium"]} />);
+    const group = screen.getByRole("group", { name: "Try this" });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(2);
   });
 });

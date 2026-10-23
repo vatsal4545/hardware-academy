@@ -67,7 +67,7 @@ describe("guided walkthrough of missions 1-4", () => {
       { type: "powerCycle" },
       { type: "measure", freqHz: 1000 },
     );
-    expect(resumePoint(s.bench)!.mission.id).toBe("first-response");
+    expect(resumePoint(s.bench)!.mission.id).toBe("response");
 
     // Mission 3: First response.
     s.do(

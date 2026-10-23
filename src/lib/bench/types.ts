@@ -42,6 +42,7 @@ export type FaultId =
 /** A fault that happened: it stays until the bench is reset. */
 export interface FaultEvent {
   id: FaultId;
+  /** Bench time in seconds. */
   at: number;
 }
 
@@ -155,7 +156,7 @@ export type BenchAction =
   | { type: "selectDevice" }
   | { type: "powerCycle" }
   | { type: "setBaud"; baud: number }
-  | { type: "setRcal"; value: number }
+  | { type: "setRcal"; /** In milliohms, as the firmware's RcalVal is entered. */ value: number }
   | { type: "measureReference" }
   | { type: "fitAdapter"; channel: Channel }
   | { type: "removeAdapter"; channel: Channel }
