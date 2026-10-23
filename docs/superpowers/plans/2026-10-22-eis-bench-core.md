@@ -1886,11 +1886,18 @@ describe("CSV", () => {
     expect(skipped[0].reason).toMatch(/MΩ/);
     expect(parseCsv("date,DUT-ID,freq,Z_real (Ω),Z_imag (Ω)\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
     expect(parseCsv("date,DUT-ID,freq,Z_real mΩ,Z_imag mΩ\n2026-10-20,D-01,1000,112.4,-0.8\n").rows[0].zReal).toBe(112.4);
+    expect(parseCsv("date,DUT-ID,freq,Z_real [Ω],Z_imag [Ω]\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (µΩ),Z_imag (µΩ)\n2026-10-20,D-01,1000,112400,-800\n").skipped[0].reason).toMatch(/µΩ/);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (Ω)*,Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").skipped[0].reason).toMatch(/zReal/);
   });
 
   it("marks a reconnection when the clip-cycle changes and the sheet has no reconnected column", () => {
     const csv = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,1\n2026-10-20,S-10m,1000,10.0,0,2\n2026-10-20,D-01,1000,112,0,2\n";
     expect(parseCsv(csv).rows.map((r) => r.reconnected)).toEqual([false, false, true, false]);
+    const blank = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,\n2026-10-20,S-10m,1000,10.0,0,1\n";
+    expect(parseCsv(blank).rows.map((r) => r.reconnected)).toEqual([false, false, false]);
+    const column = "date,DUT-ID,freq,Z_real,Z_imag,reconnected\n2026-10-20,S-10m,1000,10.1,0,Yes\n2026-10-20,S-10m,1000,10.2,0,TRUE\n2026-10-20,S-10m,1000,10.0,0,no\n";
+    expect(parseCsv(column).rows.map((r) => r.reconnected)).toEqual([true, true, false]);
   });
 
   it("skips bad rows with a reason and keeps the good ones", () => {
@@ -1938,6 +1945,8 @@ describe("statistics and checks", () => {
     const rows = [10.02, 10.1, 9.98].map((z) => row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: z, reconnected: true }));
     expect(gateTable(rows)[0].target.nominalMilliohm).toBe(10);
     expect(checkLog([row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: 26 })]).map((c) => c.kind)).toContain("reads-high");
+    const reclipped = [10, 10.3, 10.6].map((z) => row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: z, reconnected: true }));
+    expect(checkLog(reclipped).map((c) => c.kind)).toContain("wide-spread");
   });
 
   it("flags missing temperatures and calibration states", () => {
@@ -2130,9 +2139,12 @@ export function parseCsvRecords(text: string): string[][] {
   return records.filter((r) => r.some((f) => f.trim() !== ""));
 }
 
-/** Header names compared without case, spaces, symbols or the degree sign: "temp °C" and "tempC" match. */
+/**
+ * Header names compared without case, spaces, symbols or the degree sign: "temp °C" and "tempC" match. Ω and µ are
+ * kept, so a column whose unit can't be read is not mistaken for a plain one.
+ */
 function key(header: string): string {
-  return header.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return header.toLowerCase().replace(/[^a-z0-9ωµμ]/g, "");
 }
 
 const HEADER_KEYS: Record<string, string> = {
@@ -2169,8 +2181,8 @@ function num(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** A unit written after a column name, as in "Z_real mΩ" or "Z_real (Ω)". */
-const HEADER_UNIT = /\s*\(?\s*(milliohms?|m?Ω|m?ohms?)\s*\)?\s*$/i;
+/** A unit written after a column name, as in "Z_real mΩ", "Z_real (Ω)" or "Z_real [µΩ]"; toMilliohm decides if it is known. */
+const HEADER_UNIT = /[\s([{/_]+((?:milli|[a-zµμΜ])?(?:Ω|ohms?))[\s)\]}]*$/i;
 
 /**
  * The multiplier from a sheet's unit to milliohms, or null for a unit the log doesn't know. An empty unit means
@@ -2231,9 +2243,9 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: `The unit "${unit}" isn't mΩ or Ω.` });
       continue;
     }
-    const clipCycle = num(v.clipCycle) ?? 0;
+    const cycle = num(v.clipCycle);
     const previousCycle = lastCycle.get(v.dutId);
-    lastCycle.set(v.dutId, clipCycle);
+    if (cycle !== null) lastCycle.set(v.dutId, cycle);
     const calibration = v.calibration === "measured" || v.calibration === "not-run" ? v.calibration : "unknown";
     const wiring = v.wiring === "4-wire" || v.wiring === "2-wire" || v.wiring === "mixed" ? v.wiring : "unknown";
     result.rows.push({
@@ -2248,10 +2260,10 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       freqHz: freq,
       zReal: re * k,
       zImag: im * k,
-      clipCycle,
+      clipCycle: cycle ?? 0,
       reconnected: hasReconnected
         ? /^(yes|true|1)$/i.test(v.reconnected ?? "")
-        : previousCycle !== undefined && clipCycle !== previousCycle,
+        : cycle !== null && previousCycle !== undefined && cycle !== previousCycle,
       calibration,
       wiring,
       cellVoltage: num(v.cellVoltage),
