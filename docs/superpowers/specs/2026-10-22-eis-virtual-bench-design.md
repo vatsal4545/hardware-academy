@@ -141,8 +141,8 @@ A measurement is valid only when all of these hold:
 Otherwise the result is "no valid measurement" with the reason, for example that the current sink needs a bias, which a
 loose resistor cannot provide.
 
-- Calibration: the onboard 50 mΩ reference is measured first; `RcalVal` must be `50.0`, in milliohms. `0.05` scales
-  results by 1000; the external resistor's value scales them wrongly.
+- Calibration: the onboard 50 mΩ reference is measured first; `RcalVal` must be `50.0`, in milliohms. `0.05` makes
+  results 1000 times too small (it divides them by 1000); the external resistor's value scales them wrongly.
 - Power order: connecting the cell before powering the boards, or powering down with it connected, is a fault.
 - Frequency: reliable above 1 Hz; a 0.1 Hz point takes more than 40 seconds of bench time (fast-forward available).
 - Noise: larger at low frequency, and near a switching supply placed close to the leads.
@@ -186,7 +186,7 @@ saved with the bench state. Server and browser render the same markup, and tests
 |---|---|---|---|---|
 | 1 | **Identify**: ground the ESD mat and strap, create the log, lay everything out disconnected, read board names and revisions, note the computer, its OS and any loaded firmware, keep the bag part numbers, map which lead fits which connector (BNC centre pin only), check continuity on disconnected leads only | Voltage, current and resistance; what each part does | A labelled inventory and connector map exist | 1 |
 | 2 | **Communicate** (First Boot): microscope check, stack the boards, USB into P10 (isolator optional), SensorPal with compatible firmware, the DAPLINK device and a power cycle, no cell connected | The signal chain, laptop to cell | The board is recognised and numbers arrive with nothing connected | 1 |
-| 3 | **First response**: power the boards, then connect an intact, identified cell; the onboard reference is measured first; one reading at 1 kHz | Four wires; what impedance is | One reading with frequency, units, wiring and calibration state recorded | 1 |
+| 3 | **First response**: power the boards, then connect an intact, identified cell; the onboard reference is measured first; the cell's temperature is read with the IR thermometer before the reading; one reading at 1 kHz | Four wires; what impedance is | One reading with frequency, units, wiring and calibration state recorded | 1 |
 | 4 | **Repeat**: 10 readings without moving the leads, then 10 after reconnecting at the same contacts | Resolution, repeatability and accuracy | Mean and spread for both sets, with the variation explained | 1 |
 | 5 | **Check accuracy** (First Milliohm): the shunt ladder on a powered test setup; the proposed milestone is a spread under 0.5 mΩ at 10 mΩ, which shows repeatability, not 1% accuracy | Why the current sink needs a bias | Error and spread logged per standard | 2 |
 | 6 | **Sweep** (First Cell): from 1 kHz to a full sweep | Reading a Nyquist plot; series R plus (R ∥ C) makes the arc | Repeatable curves for a cell | 2 |

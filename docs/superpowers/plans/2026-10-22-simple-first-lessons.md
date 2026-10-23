@@ -154,6 +154,13 @@ describe("jsxToText", () => {
     const source = `<p className="x">The <strong>hole</strong>{" "}moves.{/* note */} Silicon&apos;s gap.</p>`;
     expect(jsxToText(source)).toBe("The hole moves. Silicon's gap.");
   });
+
+  it("re-attaches punctuation that a tag separates from its word", () => {
+    expect(jsxToText(`<p>Run <code>make</code>. Then ( <em>wait</em> ).</p>`)).toBe("Run make. Then (wait).");
+    expect(jsxToText(`<p>Red <b>one</b>, blue <b>two</b>; green <b>three</b>: yes <b>four</b>! Why <b>five</b>?</p>`)).toBe(
+      "Red one, blue two; green three: yes four! Why five?",
+    );
+  });
 });
 
 describe("theorySectionSource and missingSentences", () => {
@@ -196,6 +203,12 @@ describe("theorySectionSource and missingSentences", () => {
       "Leakage doubles every ten degrees.",
     ]);
     expect(missingSentences(old, moved)).toEqual([]);
+  });
+
+  it("ignores code markup when the words are unchanged", () => {
+    const old = `<Section id="theory" title="T"><Prose><p>Always run <code>make test first</code>.</p></Prose></Section><Section id="viz" title="V"></Section>`;
+    const after = `<ConceptStep n={1} title="New" deeper={<p>Always run make test first.</p>}><p>Simple.</p></ConceptStep>`;
+    expect(missingSentences(old, after)).toEqual([]);
   });
 });
 ```
@@ -244,8 +257,10 @@ const ENTITIES: Record<string, string> = {
 
 /**
  * The visible text of a stretch of JSX source: comments, tags and their attributes are dropped, {" "} and {"..."}
- * literals and HTML entities are resolved, and whitespace is collapsed. Attribute text such as captions is dropped
- * too, so compare like with like: both sides of a comparison go through this function.
+ * literals and HTML entities are resolved, and whitespace is collapsed. Punctuation is re-attached: whitespace before
+ * . , ; : ! ? ) and after ( is removed, so a tag between a word and its punctuation (make</code>.) reads as plain
+ * text (make.). Attribute text such as captions is dropped too, so compare like with like: both sides of a comparison
+ * go through this function.
  */
 export function jsxToText(source: string): string {
   return source
@@ -255,6 +270,8 @@ export function jsxToText(source: string): string {
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:apos|quot|amp|lt|gt|nbsp);/g, (e) => ENTITIES[e])
     .replace(/\s+/g, " ")
+    .replace(/\s+([.,;:!?)])/g, "$1")
+    .replace(/\(\s+/g, "(")
     .trim();
 }
 
@@ -295,7 +312,7 @@ export function missingSentences(oldSource: string, newSource: string): string[]
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/lib/readability.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 12 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -926,7 +943,10 @@ Create `src/components/lesson/KeyNumber.tsx`:
 import type { ReactNode } from "react";
 import { Hash } from "lucide-react";
 
-/** One number worth remembering, and what it means. */
+/**
+ * One number worth remembering, and what it means.
+ * Children must be inline content, because the card renders a <p>.
+ */
 export function KeyNumber({ value, children }: { value: string; children: ReactNode }) {
   return (
     <p data-key-number="" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-2/60 px-4 py-2.5">
@@ -1054,7 +1074,7 @@ Create `tests/components/quick-check.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { LessonDataProvider, QuickCheck } from "@/components/lesson";
 import { lessonFixture } from "../helpers/fixtures";
 
@@ -1089,6 +1109,27 @@ describe("QuickCheck", () => {
     expect(screen.getByText("Right.")).toBeTruthy();
   });
 
+  it("marks the correct choice and a wrong pick with an icon and words, not by colour alone", () => {
+    const { container } = renderCheck("full-band");
+    const feedback = container.querySelector("[aria-live]")!;
+    expect(feedback.classList.contains("mt-3")).toBe(false);
+    fireEvent.click(screen.getByLabelText("The electrons are far too heavy to move"));
+    expect(feedback.classList.contains("mt-3")).toBe(true);
+    const row = (choice: string) => screen.getByText(choice).closest("label")!;
+    const correct = row("Every spot is taken, so nothing can move");
+    const picked = row("The electrons are far too heavy to move");
+    const other = row("The gap blocks them from the wires today");
+    expect(correct.querySelector("svg.lucide-check[aria-hidden='true']")).not.toBeNull();
+    expect(within(correct).getByText("(correct answer)").className).toBe("sr-only");
+    expect(picked.querySelector("svg.lucide-x[aria-hidden='true']")).not.toBeNull();
+    expect(within(picked).getByText("(your answer)").className).toBe("sr-only");
+    expect(other.querySelector("svg")).toBeNull();
+    expect(other.textContent).toBe("The gap blocks them from the wires today");
+    // A screen reader hears the words as part of each radio's name.
+    expect(screen.getByRole("radio", { name: /\(correct answer\)$/ })).toBe(correct.querySelector("input"));
+    expect(screen.getByRole("radio", { name: /\(your answer\)$/ })).toBe(picked.querySelector("input"));
+  });
+
   it("uses one group of native radios, so the keyboard works without extra code", () => {
     renderCheck("full-band");
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
@@ -1098,10 +1139,13 @@ describe("QuickCheck", () => {
 
   it("renders nothing and reports an unknown id", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const { container } = renderCheck("no-such-check");
-    expect(container.innerHTML).toBe("");
-    expect(error).toHaveBeenCalledWith('QuickCheck: no check "no-such-check" in this lesson\'s data');
-    error.mockRestore();
+    try {
+      const { container } = renderCheck("no-such-check");
+      expect(container.innerHTML).toBe("");
+      expect(error).toHaveBeenCalledWith('QuickCheck: no check "no-such-check" in this lesson\'s data');
+    } finally {
+      error.mockRestore();
+    }
   });
 });
 ```
@@ -1119,7 +1163,7 @@ Create `src/components/lesson/QuickCheck.tsx`:
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import { CircleQuestionMark } from "lucide-react";
+import { Check, CircleQuestionMark, X } from "lucide-react";
 import { hashString, seededOrder } from "@/lib/shuffle";
 import { cn } from "@/lib/cn";
 import { useLessonData } from "./LessonDataContext";
@@ -1164,12 +1208,25 @@ export function QuickCheck({ id }: { id: string }) {
               >
                 <input type="radio" name={name} checked={picked === ci} onChange={() => setPicked(ci)} className="mt-0.5 accent-cyan-400" />
                 <span>{q.choices[ci]}</span>
+                {/* An icon and words as well as the colour, so the result isn't shown by colour alone (WCAG 1.4.1). */}
+                {state === "right" && (
+                  <>
+                    <Check aria-hidden className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-green-300" />
+                    <span className="sr-only"> (correct answer)</span>
+                  </>
+                )}
+                {state === "wrong" && (
+                  <>
+                    <X aria-hidden className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                    <span className="sr-only"> (your answer)</span>
+                  </>
+                )}
               </label>
             );
           })}
         </div>
       </fieldset>
-      <p aria-live="polite" className={cn("mt-3 text-sm", right ? "text-green-300" : "text-red-300")}>
+      <p aria-live="polite" className={cn("text-sm", answered && "mt-3", right ? "text-green-300" : "text-red-300")}>
         {answered && (
           <>
             <span className="font-semibold">{right ? "Right. " : "Not quite. "}</span>
@@ -1191,7 +1248,7 @@ export * from "./QuickCheck";
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/components/quick-check.test.tsx`
-Expected: PASS, 5 tests.
+Expected: PASS, 6 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1264,7 +1321,7 @@ describe("Term", () => {
     fireEvent.focusIn(button);
     expect(screen.getByRole("tooltip")).toBeTruthy();
     fireEvent.focusOut(button);
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("closes on Escape", () => {
@@ -1272,14 +1329,14 @@ describe("Term", () => {
     fireEvent.click(screen.getByRole("button", { name: "hole" }));
     expect(screen.getByRole("tooltip")).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("closes on a tap elsewhere", () => {
     renderTerm("Hole");
     fireEvent.click(screen.getByRole("button", { name: "hole" }));
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("stays open while the pointer presses inside the box", () => {
@@ -1304,6 +1361,26 @@ describe("Term", () => {
     } finally {
       rect.mockRestore();
       Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    }
+  });
+
+  it("opens upwards when the term sits low on the screen", () => {
+    const height = window.innerHeight;
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ left: 20, top: 700 } as DOMRect);
+    try {
+      renderTerm("Hole");
+      const button = screen.getByRole("button", { name: "hole" });
+      fireEvent.click(button);
+      // 700 px is below 60% of the 800 px screen (480 px), so the box sits above the term.
+      expect(screen.getByRole("tooltip").parentElement?.className).toMatch(/\bbottom-full\b/);
+      fireEvent.keyDown(document, { key: "Escape" });
+      rect.mockReturnValue({ left: 20, top: 100 } as DOMRect);
+      fireEvent.click(button);
+      expect(screen.getByRole("tooltip").parentElement?.className).toMatch(/\btop-full\b/);
+    } finally {
+      rect.mockRestore();
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: height });
     }
   });
 
@@ -1443,7 +1520,7 @@ export * from "./Term";
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/components/term.test.tsx`
-Expected: PASS, 9 tests.
+Expected: PASS, 10 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1475,7 +1552,7 @@ Create `tests/components/concept-step.test.tsx`:
 
 ```tsx
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { ConceptStep, KeyNumber, LessonDataProvider, TryThis } from "@/components/lesson";
 import { lessonFixture } from "../helpers/fixtures";
 
@@ -1525,6 +1602,12 @@ describe("ConceptStep", () => {
     );
     expect(container.querySelector("[data-key-number], [data-deeper], [data-check-id]")).toBeNull();
   });
+
+  it("uses the reveal and simple-text classes by name: Tailwind only emits those globals.css rules when a file names them", () => {
+    const { container } = renderFullStep();
+    expect(container.querySelector("article[data-step='2']")!.classList.contains("reveal")).toBe(true);
+    expect(container.querySelector("[data-layer='simple']")!.classList.contains("simple-text")).toBe(true);
+  });
 });
 
 describe("TryThis", () => {
@@ -1535,6 +1618,12 @@ describe("TryThis", () => {
     fireEvent.click(first);
     expect(first.checked).toBe(true);
     expect((screen.getByLabelText("Switch to germanium") as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("is a group named by its Try this heading", () => {
+    render(<TryThis items={["Heat silicon to 400 K", "Switch to germanium"]} />);
+    const group = screen.getByRole("group", { name: "Try this" });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(2);
   });
 });
 ```
@@ -1604,11 +1693,13 @@ import { cn } from "@/lib/cn";
 
 /** "Things to try" with the interactive, as a checklist the reader ticks off. Not saved. */
 export function TryThis({ items }: { items: ReactNode[] }) {
-  const [done, setDone] = useState<boolean[]>(() => items.map(() => false));
+  // Keyed by position, so an item added later starts unticked.
+  const [done, setDone] = useState<Record<number, boolean>>({});
   const id = useId();
+  const headingId = useId();
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <p className="flex items-center gap-2 text-sm font-semibold">
+    <div role="group" aria-labelledby={headingId} className="rounded-xl border border-border bg-surface p-4">
+      <p id={headingId} className="flex items-center gap-2 text-sm font-semibold">
         <ListChecks aria-hidden className="h-4 w-4 text-(--track)" />
         Try this
       </p>
@@ -1619,8 +1710,8 @@ export function TryThis({ items }: { items: ReactNode[] }) {
               <input
                 id={`${id}-${i}`}
                 type="checkbox"
-                checked={done[i]}
-                onChange={() => setDone((d) => d.map((v, k) => (k === i ? !v : v)))}
+                checked={!!done[i]}
+                onChange={() => setDone((d) => ({ ...d, [i]: !d[i] }))}
                 className="mt-1 accent-cyan-400"
               />
               <span className={cn(done[i] && "text-muted line-through")}>{item}</span>
@@ -1643,7 +1734,7 @@ export * from "./TryThis";
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/components/concept-step.test.tsx`
-Expected: PASS, 4 tests.
+Expected: PASS, 6 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1905,7 +1996,10 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { LESSON_PARTS, type LessonPart } from "./lessonParts";
 
-/** Sticky list of the lesson's parts; the part nearest the top of the screen is marked as the current location. */
+/**
+ * The list of the lesson's parts; the part nearest the top of the screen is marked as the current location. It isn't
+ * sticky itself: the lesson shell that places it keeps it in view.
+ */
 export function OnThisPage({ parts = LESSON_PARTS }: { parts?: readonly LessonPart[] }) {
   const [active, setActive] = useState(parts[0]?.id ?? "");
 
