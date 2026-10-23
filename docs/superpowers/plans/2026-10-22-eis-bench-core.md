@@ -955,9 +955,14 @@ export function reclip(s: BenchState, changes: Partial<Record<Channel, Partial<C
   return benchReducer(next, { type: "wait", seconds: 60 });
 }
 
+/** A powered, calibrated bench clipped four-wire to a cell a moment ago: its junctions haven't settled yet. */
+export function justClipped(seed = 7, dutId = "cell-d-duracell"): BenchState {
+  return clipped(run(poweredBench(seed), { type: "measureReference" }), dutId);
+}
+
 /** A powered, calibrated bench clipped four-wire to a cell and settled: ready for a valid reading. */
 export function readyBench(seed = 7, dutId = "cell-d-duracell"): BenchState {
-  return run(clipped(run(poweredBench(seed), { type: "measureReference" }), dutId), { type: "wait", seconds: 60 });
+  return run(justClipped(seed, dutId), { type: "wait", seconds: 60 });
 }
 
 /** The newest reading. */
@@ -977,7 +982,7 @@ Create `tests/bench/instrument.test.ts`:
 import { describe, it, expect } from "vitest";
 import { pointSeconds, softwareLink, sweepFrequencies } from "@/lib/bench/instrument";
 import { initialBench } from "@/lib/bench/state";
-import { clipped, last, poweredBench, readyBench, reclip, run, spread } from "./helpers";
+import { clipped, justClipped, last, poweredBench, readyBench, reclip, run, spread } from "./helpers";
 
 describe("instrument", () => {
   it("delivers data with nothing connected once the software is set up", () => {
@@ -1109,6 +1114,23 @@ describe("instrument", () => {
     const after = run(before, { type: "sweep", fromHz: 1000, toHz: 1, perDecade: 2 });
     expect(after.readings.length - before.readings.length).toBe(7);
     expect(after.clock - before.clock).toBeGreaterThan(5);
+  });
+
+  it("marks a reading settled only a minute after a clip last moved, point by point in a sweep", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 });
+    expect(last(early).valid).toBe(true);
+    expect(last(early).settled).toBe(false);
+    expect(last(run(early, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 })).settled).toBe(true);
+    const swept = run(justClipped(), { type: "wait", seconds: 52 }, { type: "sweep", fromHz: 10_000, toHz: 1, perDecade: 2 });
+    const flags = swept.readings.map((r) => r.settled);
+    expect(flags.slice(0, 3)).toEqual([false, false, false]);
+    expect(flags.slice(3).every(Boolean)).toBe(true);
+  });
+
+  it("reads the same whatever the thermometer showed: the cell sits at room temperature", () => {
+    const plain = last(run(readyBench(), { type: "measure", freqHz: 1000 }));
+    const read = last(run(readyBench(), { type: "readTemperature", cellId: "cell-d-duracell" }, { type: "measure", freqHz: 1000 }));
+    expect(read.z).toEqual(plain.z);
   });
 });
 ```
@@ -1601,7 +1623,7 @@ export function connectBlocker(s: BenchState, channel: Channel): string | null {
 - [ ] **Step 4: Run the tests and the checks**
 
 Run: `npx vitest run tests/bench/instrument.test.ts tests/bench/state.test.ts && npm run typecheck && npx eslint src/lib/bench tests/bench`
-Expected: PASS, 31 tests (14 + 17); no type or lint errors.
+Expected: PASS, 33 tests (16 + 17); no type or lint errors.
 
 - [ ] **Step 5: Commit**
 
@@ -1800,7 +1822,7 @@ Create `tests/bench/log.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
 import { CSV_COLUMNS, TARGETS, checkLog, gateTable, parseCsv, repeatability, rowFromReading, stats, toCsv, type LogRow } from "@/lib/bench/log";
-import { last, readyBench, run } from "./helpers";
+import { justClipped, last, readyBench, run } from "./helpers";
 
 const when = { date: "2026-10-22", time: "14:05:00" };
 
@@ -1848,6 +1870,16 @@ describe("log rows from readings", () => {
     const s = run(readyBench(), { type: "measure", freqHz: 1000 });
     expect(rowFromReading(last(s), s, when, last(s).connection - 4)!.reconnected).toBe(true);
     expect(rowFromReading(last(s), s, when, last(s).connection)!.reconnected).toBe(false);
+  });
+
+  it("logs only settled readings: not a valid one inside the minute, nor an invalid one after it", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 });
+    expect(last(early).valid).toBe(true);
+    expect(rowFromReading(last(early), early, when, null)).toBeNull();
+    const openSense = run(readyBench(), { type: "disconnect", channel: "S+" }, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 });
+    expect(last(openSense).valid).toBe(false);
+    expect(last(openSense).settled).toBe(true);
+    expect(rowFromReading(last(openSense), openSense, when, null)).toBeNull();
   });
 
   it("does not log invalid readings", () => {
@@ -2418,7 +2450,7 @@ export function checkLog(rows: readonly LogRow[]): LogCheck[] {
 - [ ] **Step 4: Run the tests and the checks**
 
 Run: `npx vitest run tests/bench/log.test.ts && npm run typecheck && npx eslint src/lib/bench tests/bench`
-Expected: PASS, 18 tests; no type or lint errors.
+Expected: PASS, 19 tests; no type or lint errors.
 
 - [ ] **Step 5: Commit**
 
@@ -2445,10 +2477,10 @@ Create `tests/bench/missions.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { MISSIONS, clippedCorrectly, identifiedIntactCell, missionById, missionComplete, newlyDone, resumePoint } from "@/lib/bench/missions";
+import { MISSIONS, clippedCorrectly, identifiedIntactCell, missionById, missionComplete, newlyDone, reconnectionCount, resumePoint, stationaryCount } from "@/lib/bench/missions";
 import { initialBench } from "@/lib/bench/state";
-import { CHANNELS } from "@/lib/bench/types";
-import { clipped, poweredBench, readyBench, run } from "./helpers";
+import { CHANNELS, type BenchAction } from "@/lib/bench/types";
+import { GOOD, clipped, justClipped, poweredBench, readyBench, run } from "./helpers";
 
 describe("missions", () => {
   it("has four stage-1 missions with unique step ids and learn cards", () => {
@@ -2514,6 +2546,27 @@ describe("missions", () => {
     expect(layout.done({ bench: leadsOn, log: [] })).toBe(false);
     expect(layout.done({ bench: run(poweredBench(), { type: "layOut" }), log: [] })).toBe(false);
     expect(layout.done({ bench: run(initialBench(1), { type: "layOut" }), log: [] })).toBe(true);
+    const oneLead = run(
+      poweredBench(),
+      { type: "chooseDut", dutId: "cell-d-duracell" },
+      ...CHANNELS.map((channel): BenchAction => ({ type: "fitAdapter", channel })),
+      { type: "connect", channel: "S+", contact: GOOD["S+"] },
+      { type: "unplugUsb" },
+      { type: "layOut" },
+    );
+    expect(layout.done({ bench: oneLead, log: [] })).toBe(false);
+  });
+
+  it("counts only settled readings toward the stationary and reconnection sets", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 1000 });
+    expect(stationaryCount(early)).toBe(0);
+    expect(reconnectionCount(early)).toBe(0);
+    expect(newlyDone({ bench: early, log: [] })).not.toContain("response.read");
+    expect(stationaryCount(run(early, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 }))).toBe(1);
+  });
+
+  it("keeps Mission 1's computer and firmware check", () => {
+    expect(missionById("identify")!.steps.map((st) => st.id)).toContain("identify.computer");
   });
 });
 ```
@@ -2530,7 +2583,7 @@ import { CHANNELS, type BenchAction, type BenchState } from "@/lib/bench/types";
 import { GOOD } from "./helpers";
 
 /**
- * Plays the page's loop: apply an action, log every new valid reading (as the page will), then tick whatever
+ * Plays the page's loop: apply an action, log every new valid, settled reading (as the page will), then tick whatever
  * missions the bench now satisfies.
  */
 class Session {
@@ -2781,7 +2834,7 @@ export const MISSIONS: readonly Mission[] = [
     steps: [
       { id: "repeat.settle", title: "Let the junctions settle for a minute after clipping", done: ({ bench }) => clippedCorrectly(bench) && bench.clock - bench.lastContactAt >= SETTLE_SECONDS },
       { id: "repeat.stationary", title: "Take 10 readings at 1 kHz without moving the leads", target: "laptop", done: ({ bench }) => stationaryCount(bench) >= 10 },
-      { id: "repeat.reconnect", title: "Take 10 more, reconnecting the clips at the same contacts before each", target: "kelvin-leads", done: ({ bench }) => reconnectionCount(bench) >= 10 },
+      { id: "repeat.reconnect", title: "Take 10 more, reconnecting the clips at the same contacts and waiting a minute before each", target: "kelvin-leads", done: ({ bench }) => reconnectionCount(bench) >= 10 },
       {
         id: "repeat.log",
         title: "Log both sets",
@@ -2849,7 +2902,7 @@ export function resumePoint(bench: BenchState): { mission: Mission; step: Missio
 - [ ] **Step 4: Run the tests and the checks**
 
 Run: `npx vitest run tests/bench/missions.test.ts tests/bench/walkthrough.test.ts && npm run typecheck && npx eslint src/lib/bench tests/bench`
-Expected: PASS, 10 tests (9 + the walkthrough); no type or lint errors.
+Expected: PASS, 12 tests (11 + the walkthrough); no type or lint errors.
 
 - [ ] **Step 5: Commit**
 
@@ -3035,7 +3088,7 @@ git commit -m "Build the bench assistant's briefing and snapshot from the bench 
 - [ ] **Step 1: Run the whole suite and the checks**
 
 Run: `npm run lint && npm run typecheck && npm test`
-Expected: lint and type check clean, and every test passes: the existing suite plus 124 new tests in 11 files under
+Expected: lint and type check clean, and every test passes: the existing suite plus 129 new tests in 11 files under
 `tests/bench/`. Output should be clean: no warnings and no console noise.
 
 - [ ] **Step 2: Note the core in the README**

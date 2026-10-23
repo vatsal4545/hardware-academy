@@ -117,7 +117,9 @@ Pure TypeScript in `src/lib/bench/`, with no React and no three.js, unit-tested 
   | NiMH | 20-50 mΩ | 50-150 mΩ |
   | Molicel P26A / Samsung 25R / LiFePO4 (new, about 50% charge) | 15-20 / 20-25 / 10-20 mΩ | stage 2 |
 
-  Impedance changes with temperature through a stated assumption. Open-circuit voltages are standard nominal values.
+  Impedance changes with temperature through a stated assumption. In this stage the cells sit at the simulated room
+  temperature, and the infrared thermometer reads it with a little noise; a warming cell comes later. Open-circuit
+  voltages are standard nominal values.
 
 ### 6.2 Contacts and leads
 
@@ -144,7 +146,8 @@ loose resistor cannot provide.
 - Power order: connecting the cell before powering the boards, or powering down with it connected, is a fault.
 - Frequency: reliable above 1 Hz; a 0.1 Hz point takes more than 40 seconds of bench time (fast-forward available).
 - Noise: larger at low frequency, and near a switching supply placed close to the leads.
-- Settling: readings drift for about 60 seconds after clipping (thermal EMF).
+- Settling: readings drift for about 60 seconds after clipping (thermal EMF). The instrument still shows them, but the
+  lab log and the missions keep only settled readings, as the runbook says to wait a minute before reading.
 - Serial path: 230400 baud, 8N1, no flow control; a wrong baud rate gives no output.
 - The ADuM3160 isolator is full-speed only; some debug interfaces fail through it, and bypassing it fixes that.
 - Over-range: a cell above the 5 V project envelope is refused with a warning. The 5 V figure is the project envelope,
@@ -181,7 +184,7 @@ saved with the bench state. Server and browser render the same markup, and tests
 
 | # | Mission (runbook milestone) | Learn first | Done when | Stage |
 |---|---|---|---|---|
-| 1 | **Identify**: ground the ESD mat and strap, create the log, lay everything out disconnected, read board names and revisions, keep the bag part numbers, map which lead fits which connector (BNC centre pin only), check continuity on disconnected leads only | Voltage, current and resistance; what each part does | A labelled inventory and connector map exist | 1 |
+| 1 | **Identify**: ground the ESD mat and strap, create the log, lay everything out disconnected, read board names and revisions, note the computer, its OS and any loaded firmware, keep the bag part numbers, map which lead fits which connector (BNC centre pin only), check continuity on disconnected leads only | Voltage, current and resistance; what each part does | A labelled inventory and connector map exist | 1 |
 | 2 | **Communicate** (First Boot): microscope check, stack the boards, USB into P10 (isolator optional), SensorPal with compatible firmware, the DAPLINK device and a power cycle, no cell connected | The signal chain, laptop to cell | The board is recognised and numbers arrive with nothing connected | 1 |
 | 3 | **First response**: power the boards, then connect an intact, identified cell; the onboard reference is measured first; one reading at 1 kHz | Four wires; what impedance is | One reading with frequency, units, wiring and calibration state recorded | 1 |
 | 4 | **Repeat**: 10 readings without moving the leads, then 10 after reconnecting at the same contacts | Resolution, repeatability and accuracy | Mean and spread for both sets, with the variation explained | 1 |
