@@ -127,7 +127,7 @@ Pure TypeScript in `src/lib/bench/`, with no React and no three.js, unit-tested 
   terminals and leaves a small residual.
 - Sense on the force wire adds the force path between the tap and the terminal.
 - A four-terminal shunt joined into two loops adds connection resistance to the sensed path.
-- A BNC shell touching a cell terminal shorts the cell to board ground.
+- A BNC shell touching a cell terminal shorts the cell to board ground (simulated, as BRINGUP-RUNBOOK.md says; the guide says to verify real adapter wiring).
 
 ### 6.3 The instrument (CN0510 behaviour as documented)
 
@@ -163,7 +163,7 @@ Each row is reproducible in Free mode, shows its documented symptom, and is expl
 | Switching supply near the leads | Noise at low frequency |
 | Wrong baud rate | No serial output |
 | Isolator in the debug path | Board won't enumerate or flash |
-| BNC shell touching a cell | Short to board ground: fault and reset |
+| BNC shell touching a cell | Short to board ground (simulated): fault and reset |
 | Boards stacked offset by one | Board "killed": fault and reset |
 | Cell connected before the boards are powered, or left connected at power-down | Power-order fault |
 | `RcalVal` set to `0.05`, or to the external resistor's value | Results scaled wrongly (×1000 for `0.05`) |
