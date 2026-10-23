@@ -336,6 +336,7 @@ export interface ShuntPreset {
 export const SHUNT_PRESETS: readonly ShuntPreset[] = [
   { id: "shunt-1m", nominalMilliohm: 1, tolerance: 0.02, terminals: 4, inductanceNh: 1 },
   { id: "shunt-2m", nominalMilliohm: 2, tolerance: 0.01, terminals: 4, inductanceNh: 1 },
+  // The NOYITO panel shunt: no document gives its tolerance or terminal layout, so both are simulated.
   { id: "shunt-7m5", nominalMilliohm: 7.5, tolerance: 0.01, terminals: 4, inductanceNh: 5 },
   { id: "shunt-10m", nominalMilliohm: 10, tolerance: 0.005, terminals: 4, inductanceNh: 1 },
   { id: "shunt-25m", nominalMilliohm: 25, tolerance: 0.005, terminals: 4, inductanceNh: 1 },
@@ -362,7 +363,7 @@ export function randlesImpedance(m: Randles, freqHz: number): Complex {
   return add(add(complex(m.r0), arc), complex(warburg, -warburg));
 }
 
-/** The model of one particular cell: its preset with a ±10% spread on R0 drawn for that cell, at a temperature. */
+/** One particular cell's model: its preset with a simulated ±10% spread on R0 drawn for that cell, at a temperature. */
 export function cellModel(preset: CellPreset, cellId: string, seed: number, tempC: number): Randles {
   const spread = between(seed, `cell:${cellId}`, 0.9, 1.1);
   return atTemperature({ ...preset.model, r0: preset.model.r0 * spread }, tempC);
