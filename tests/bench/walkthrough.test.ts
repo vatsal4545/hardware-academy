@@ -7,7 +7,7 @@ import { CHANNELS, type BenchAction, type BenchState } from "@/lib/bench/types";
 import { GOOD } from "./helpers";
 
 /**
- * Plays the page's loop: apply an action, log every new valid reading (as the page will), then tick whatever
+ * Plays the page's loop: apply an action, log every new valid, settled reading (as the page will), then tick whatever
  * missions the bench now satisfies.
  */
 class Session {

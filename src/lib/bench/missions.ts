@@ -143,7 +143,7 @@ export const MISSIONS: readonly Mission[] = [
     steps: [
       { id: "repeat.settle", title: "Let the junctions settle for a minute after clipping", done: ({ bench }) => clippedCorrectly(bench) && bench.clock - bench.lastContactAt >= SETTLE_SECONDS },
       { id: "repeat.stationary", title: "Take 10 readings at 1 kHz without moving the leads", target: "laptop", done: ({ bench }) => stationaryCount(bench) >= 10 },
-      { id: "repeat.reconnect", title: "Take 10 more, reconnecting the clips at the same contacts before each", target: "kelvin-leads", done: ({ bench }) => reconnectionCount(bench) >= 10 },
+      { id: "repeat.reconnect", title: "Take 10 more, reconnecting the clips at the same contacts and waiting a minute before each", target: "kelvin-leads", done: ({ bench }) => reconnectionCount(bench) >= 10 },
       {
         id: "repeat.log",
         title: "Log both sets",

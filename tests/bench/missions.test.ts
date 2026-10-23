@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { MISSIONS, clippedCorrectly, identifiedIntactCell, missionById, missionComplete, newlyDone, resumePoint } from "@/lib/bench/missions";
+import { MISSIONS, clippedCorrectly, identifiedIntactCell, missionById, missionComplete, newlyDone, reconnectionCount, resumePoint, stationaryCount } from "@/lib/bench/missions";
 import { initialBench } from "@/lib/bench/state";
-import { CHANNELS } from "@/lib/bench/types";
-import { clipped, poweredBench, readyBench, run } from "./helpers";
+import { CHANNELS, type BenchAction } from "@/lib/bench/types";
+import { GOOD, clipped, justClipped, poweredBench, readyBench, run } from "./helpers";
 
 describe("missions", () => {
   it("has four stage-1 missions with unique step ids and learn cards", () => {
@@ -68,5 +68,26 @@ describe("missions", () => {
     expect(layout.done({ bench: leadsOn, log: [] })).toBe(false);
     expect(layout.done({ bench: run(poweredBench(), { type: "layOut" }), log: [] })).toBe(false);
     expect(layout.done({ bench: run(initialBench(1), { type: "layOut" }), log: [] })).toBe(true);
+    const oneLead = run(
+      poweredBench(),
+      { type: "chooseDut", dutId: "cell-d-duracell" },
+      ...CHANNELS.map((channel): BenchAction => ({ type: "fitAdapter", channel })),
+      { type: "connect", channel: "S+", contact: GOOD["S+"] },
+      { type: "unplugUsb" },
+      { type: "layOut" },
+    );
+    expect(layout.done({ bench: oneLead, log: [] })).toBe(false);
+  });
+
+  it("counts only settled readings toward the stationary and reconnection sets", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 }, { type: "measure", freqHz: 1000 });
+    expect(stationaryCount(early)).toBe(0);
+    expect(reconnectionCount(early)).toBe(0);
+    expect(newlyDone({ bench: early, log: [] })).not.toContain("response.read");
+    expect(stationaryCount(run(early, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 }))).toBe(1);
+  });
+
+  it("keeps Mission 1's computer and firmware check", () => {
+    expect(missionById("identify")!.steps.map((st) => st.id)).toContain("identify.computer");
   });
 });

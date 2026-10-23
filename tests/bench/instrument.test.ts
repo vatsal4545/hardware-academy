@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { pointSeconds, softwareLink, sweepFrequencies } from "@/lib/bench/instrument";
 import { initialBench } from "@/lib/bench/state";
-import { clipped, last, poweredBench, readyBench, reclip, run, spread } from "./helpers";
+import { clipped, justClipped, last, poweredBench, readyBench, reclip, run, spread } from "./helpers";
 
 describe("instrument", () => {
   it("delivers data with nothing connected once the software is set up", () => {
@@ -133,5 +133,22 @@ describe("instrument", () => {
     const after = run(before, { type: "sweep", fromHz: 1000, toHz: 1, perDecade: 2 });
     expect(after.readings.length - before.readings.length).toBe(7);
     expect(after.clock - before.clock).toBeGreaterThan(5);
+  });
+
+  it("marks a reading settled only a minute after a clip last moved, point by point in a sweep", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 });
+    expect(last(early).valid).toBe(true);
+    expect(last(early).settled).toBe(false);
+    expect(last(run(early, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 })).settled).toBe(true);
+    const swept = run(justClipped(), { type: "wait", seconds: 52 }, { type: "sweep", fromHz: 10_000, toHz: 1, perDecade: 2 });
+    const flags = swept.readings.map((r) => r.settled);
+    expect(flags.slice(0, 3)).toEqual([false, false, false]);
+    expect(flags.slice(3).every(Boolean)).toBe(true);
+  });
+
+  it("reads the same whatever the thermometer showed: the cell sits at room temperature", () => {
+    const plain = last(run(readyBench(), { type: "measure", freqHz: 1000 }));
+    const read = last(run(readyBench(), { type: "readTemperature", cellId: "cell-d-duracell" }, { type: "measure", freqHz: 1000 }));
+    expect(read.z).toEqual(plain.z);
   });
 });

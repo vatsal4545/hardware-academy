@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CSV_COLUMNS, TARGETS, checkLog, gateTable, parseCsv, repeatability, rowFromReading, stats, toCsv, type LogRow } from "@/lib/bench/log";
-import { last, readyBench, run } from "./helpers";
+import { justClipped, last, readyBench, run } from "./helpers";
 
 const when = { date: "2026-10-22", time: "14:05:00" };
 
@@ -48,6 +48,16 @@ describe("log rows from readings", () => {
     const s = run(readyBench(), { type: "measure", freqHz: 1000 });
     expect(rowFromReading(last(s), s, when, last(s).connection - 4)!.reconnected).toBe(true);
     expect(rowFromReading(last(s), s, when, last(s).connection)!.reconnected).toBe(false);
+  });
+
+  it("logs only settled readings: not a valid one inside the minute, nor an invalid one after it", () => {
+    const early = run(justClipped(), { type: "measure", freqHz: 1000 });
+    expect(last(early).valid).toBe(true);
+    expect(rowFromReading(last(early), early, when, null)).toBeNull();
+    const openSense = run(readyBench(), { type: "disconnect", channel: "S+" }, { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 });
+    expect(last(openSense).valid).toBe(false);
+    expect(last(openSense).settled).toBe(true);
+    expect(rowFromReading(last(openSense), openSense, when, null)).toBeNull();
   });
 
   it("does not log invalid readings", () => {

@@ -48,9 +48,14 @@ export function reclip(s: BenchState, changes: Partial<Record<Channel, Partial<C
   return benchReducer(next, { type: "wait", seconds: 60 });
 }
 
+/** A powered, calibrated bench clipped four-wire to a cell a moment ago: its junctions haven't settled yet. */
+export function justClipped(seed = 7, dutId = "cell-d-duracell"): BenchState {
+  return clipped(run(poweredBench(seed), { type: "measureReference" }), dutId);
+}
+
 /** A powered, calibrated bench clipped four-wire to a cell and settled: ready for a valid reading. */
 export function readyBench(seed = 7, dutId = "cell-d-duracell"): BenchState {
-  return run(clipped(run(poweredBench(seed), { type: "measureReference" }), dutId), { type: "wait", seconds: 60 });
+  return run(justClipped(seed, dutId), { type: "wait", seconds: 60 });
 }
 
 /** The newest reading. */
