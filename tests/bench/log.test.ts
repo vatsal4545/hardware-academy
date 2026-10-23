@@ -91,11 +91,18 @@ describe("CSV", () => {
     expect(skipped[0].reason).toMatch(/MΩ/);
     expect(parseCsv("date,DUT-ID,freq,Z_real (Ω),Z_imag (Ω)\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
     expect(parseCsv("date,DUT-ID,freq,Z_real mΩ,Z_imag mΩ\n2026-10-20,D-01,1000,112.4,-0.8\n").rows[0].zReal).toBe(112.4);
+    expect(parseCsv("date,DUT-ID,freq,Z_real [Ω],Z_imag [Ω]\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0].zReal).toBeCloseTo(112.4, 9);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (µΩ),Z_imag (µΩ)\n2026-10-20,D-01,1000,112400,-800\n").skipped[0].reason).toMatch(/µΩ/);
+    expect(parseCsv("date,DUT-ID,freq,Z_real (Ω)*,Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").skipped[0].reason).toMatch(/zReal/);
   });
 
   it("marks a reconnection when the clip-cycle changes and the sheet has no reconnected column", () => {
     const csv = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,1\n2026-10-20,S-10m,1000,10.0,0,2\n2026-10-20,D-01,1000,112,0,2\n";
     expect(parseCsv(csv).rows.map((r) => r.reconnected)).toEqual([false, false, true, false]);
+    const blank = "date,DUT-ID,freq,Z_real,Z_imag,clip-cycle\n2026-10-20,S-10m,1000,10.1,0,1\n2026-10-20,S-10m,1000,10.2,0,\n2026-10-20,S-10m,1000,10.0,0,1\n";
+    expect(parseCsv(blank).rows.map((r) => r.reconnected)).toEqual([false, false, false]);
+    const column = "date,DUT-ID,freq,Z_real,Z_imag,reconnected\n2026-10-20,S-10m,1000,10.1,0,Yes\n2026-10-20,S-10m,1000,10.2,0,TRUE\n2026-10-20,S-10m,1000,10.0,0,no\n";
+    expect(parseCsv(column).rows.map((r) => r.reconnected)).toEqual([true, true, false]);
   });
 
   it("skips bad rows with a reason and keeps the good ones", () => {
@@ -143,6 +150,8 @@ describe("statistics and checks", () => {
     const rows = [10.02, 10.1, 9.98].map((z) => row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: z, reconnected: true }));
     expect(gateTable(rows)[0].target.nominalMilliohm).toBe(10);
     expect(checkLog([row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: 26 })]).map((c) => c.kind)).toContain("reads-high");
+    const reclipped = [10, 10.3, 10.6].map((z) => row({ dutId: "S-10m", chemistry: "shunt", nominal: "10 mΩ", zReal: z, reconnected: true }));
+    expect(checkLog(reclipped).map((c) => c.kind)).toContain("wide-spread");
   });
 
   it("flags missing temperatures and calibration states", () => {

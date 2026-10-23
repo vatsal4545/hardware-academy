@@ -155,9 +155,12 @@ export function parseCsvRecords(text: string): string[][] {
   return records.filter((r) => r.some((f) => f.trim() !== ""));
 }
 
-/** Header names compared without case, spaces, symbols or the degree sign: "temp °C" and "tempC" match. */
+/**
+ * Header names compared without case, spaces, symbols or the degree sign: "temp °C" and "tempC" match. Ω and µ are
+ * kept, so a column whose unit can't be read is not mistaken for a plain one.
+ */
 function key(header: string): string {
-  return header.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return header.toLowerCase().replace(/[^a-z0-9ωµμ]/g, "");
 }
 
 const HEADER_KEYS: Record<string, string> = {
@@ -194,8 +197,8 @@ function num(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** A unit written after a column name, as in "Z_real mΩ" or "Z_real (Ω)". */
-const HEADER_UNIT = /\s*\(?\s*(milliohms?|m?Ω|m?ohms?)\s*\)?\s*$/i;
+/** A unit written after a column name, as in "Z_real mΩ", "Z_real (Ω)" or "Z_real [µΩ]"; toMilliohm decides if it is known. */
+const HEADER_UNIT = /[\s([{/_]+((?:milli|[a-zµμΜ])?(?:Ω|ohms?))[\s)\]}]*$/i;
 
 /**
  * The multiplier from a sheet's unit to milliohms, or null for a unit the log doesn't know. An empty unit means
@@ -256,9 +259,9 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: `The unit "${unit}" isn't mΩ or Ω.` });
       continue;
     }
-    const clipCycle = num(v.clipCycle) ?? 0;
+    const cycle = num(v.clipCycle);
     const previousCycle = lastCycle.get(v.dutId);
-    lastCycle.set(v.dutId, clipCycle);
+    if (cycle !== null) lastCycle.set(v.dutId, cycle);
     const calibration = v.calibration === "measured" || v.calibration === "not-run" ? v.calibration : "unknown";
     const wiring = v.wiring === "4-wire" || v.wiring === "2-wire" || v.wiring === "mixed" ? v.wiring : "unknown";
     result.rows.push({
@@ -273,10 +276,10 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       freqHz: freq,
       zReal: re * k,
       zImag: im * k,
-      clipCycle,
+      clipCycle: cycle ?? 0,
       reconnected: hasReconnected
         ? /^(yes|true|1)$/i.test(v.reconnected ?? "")
-        : previousCycle !== undefined && clipCycle !== previousCycle,
+        : cycle !== null && previousCycle !== undefined && cycle !== previousCycle,
       calibration,
       wiring,
       cellVoltage: num(v.cellVoltage),
