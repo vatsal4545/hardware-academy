@@ -21,3 +21,4 @@ export * from "./KeyNumber";
 export * from "./Picture";
 export * from "./FormulaCard";
 export * from "./BigIdea";
+export * from "./QuickCheck";
