@@ -5,28 +5,7 @@ import type { QuizQuestion } from "@/lib/curriculum";
 import { useProgress } from "@/lib/progress";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-
-// Deterministic shuffle so the correct choice does not sit at a predictable position,
-// while server and client render the same order for a given lesson.
-function hashString(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
-  return h >>> 0;
-}
-
-function seededOrder(seed: number, n: number): number[] {
-  const order = Array.from({ length: n }, (_, i) => i);
-  let s = seed || 1;
-  for (let i = n - 1; i > 0; i--) {
-    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
-    const j = s % (i + 1);
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-}
+import { hashString, seededOrder } from "@/lib/shuffle";
 
 export function Quiz({ slug, questions }: { slug: string; questions: QuizQuestion[] }) {
   const { recordQuiz } = useProgress();

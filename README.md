@@ -34,6 +34,7 @@ npm run gen:registry # regenerate registry.ts, bodies.ts and the static track an
 src/app                 routes: /, /plan, /learn/<track> and /learn/<track>/<slug> (generated, one file per track and lesson), /labs/*, /components, /scenarios, /interview, /references, /careers
 src/lib/curriculum.ts   tracks, lessons, days (single source of truth)
 src/lib/sim             pure simulation logic: robot, PID, kinematics, IPC-2221 trace width
+src/lib/bench           the virtual EIS bench's core: device models, parts, simulator, mistakes, missions, lab log, assistant briefing
 src/lib/progress.tsx    localStorage-backed progress store
 src/content/<track>     one <slug>.tsx (lesson body) and <slug>.data.ts (quiz, interview, scenario, key terms) per lesson
 src/content/registry.ts generated map from slug to lesson data (server pages and tests only)

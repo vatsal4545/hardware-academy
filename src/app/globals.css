@@ -2,11 +2,11 @@
 
 @theme {
   --color-bg: #0b0f17;
-  --color-surface: #121826;
-  --color-surface-2: #1a2235;
-  --color-border: #1f2937;
+  --color-surface: #151c2c;
+  --color-surface-2: #1f2840;
+  --color-border: #2a3550;
   --color-text: #e5e7eb;
-  --color-muted: #9ca3af;
+  --color-muted: #aab2c0;
   --color-semiconductors: #a78bfa;
   --color-pcb: #34d399;
   --color-robotics: #22d3ee;
@@ -75,7 +75,8 @@ body {
   margin-bottom: 0.4rem;
   font-weight: 600;
 }
-.prose-ha strong {
+.prose-ha strong,
+.simple-text strong {
   color: #ffffff;
   font-weight: 600;
 }
@@ -117,4 +118,43 @@ body {
   border-left: 3px solid var(--color-border);
   padding-left: 1rem;
   color: var(--color-muted);
+}
+
+/* Simple-first lessons: the plain layer, 17 px with a short measure. A ch is the width of a zero. Measured in Inter
+   at 17-18 px, 48ch holds at most about 68 characters per line. */
+.simple-text {
+  max-width: 48ch;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+.simple-text p {
+  margin-block: 0.75rem;
+}
+.simple-text p:first-child {
+  margin-top: 0;
+}
+.simple-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Steps fade in as they scroll into view. CSS only: browsers without scroll-driven animations, and readers who ask
+   for reduced motion, see the steps at once. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
 }
