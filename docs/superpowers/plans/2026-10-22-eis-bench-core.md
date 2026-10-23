@@ -710,6 +710,8 @@ export interface Reading {
   /** The bench's connection count when the reading was taken: a change means the leads were reconnected. */
   connection: number;
   calibrated: boolean;
+  /** A minute had passed since a clip last moved, so the junctions had settled and the reading doesn't drift. */
+  settled: boolean;
   tempC: number | null;
   wiring: Wiring | null;
 }
@@ -1268,7 +1270,7 @@ export const SERIAL_BAUD = 230400;
 export const SETTLE_SECONDS = 60;
 /** Simulated offset when the reference hasn't been measured. */
 const UNCALIBRATED_OFFSET_MILLIOHM = 2.5;
-/** Simulated room temperature, used when no infrared reading exists. */
+/** Simulated room temperature: the cells sit at it, and the infrared thermometer reads it with a little noise. */
 export const AMBIENT_C = 23.8;
 
 /**
@@ -1310,7 +1312,8 @@ export const BLOCKING_FAULTS: ReadonlySet<FaultId> = new Set<FaultId>(["shell-sh
 type Outcome = Omit<Reading, "seq" | "at" | "connection">;
 
 function invalid(s: BenchState, freqHz: number, reason: InvalidReason, dataArrived: boolean): Outcome {
-  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, tempC: null, wiring: null };
+  const settled = s.clock - s.lastContactAt >= SETTLE_SECONDS;
+  return { dutId: s.dutId, freqHz, valid: false, dataArrived, reason, calibrated: s.software.referenceMeasured, settled, tempC: null, wiring: null };
 }
 
 function round3(x: number): number {
@@ -1336,8 +1339,9 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
   const onPlus = (c: ChannelContact) => c.terminal === "+";
   if (!onPlus(ch["F+"]) || !onPlus(ch["S+"]) || onPlus(ch["F-"]) || onPlus(ch["S-"])) return invalid(s, freqHz, "miswired", true);
 
+  // The cell sits at room temperature; the reading records what the thermometer last showed.
   const tempC = s.cells[s.dutId]?.tempC ?? null;
-  const z = randlesImpedance(cellModel(preset, s.dutId, s.seed, tempC ?? AMBIENT_C), freqHz);
+  const z = randlesImpedance(cellModel(preset, s.dutId, s.seed, AMBIENT_C), freqHz);
   let re = z.re * 1000;
   let im = z.im * 1000;
 
@@ -1363,6 +1367,7 @@ export function measurePoint(s: BenchState, freqHz: number, seq: number): Outcom
     dataArrived: true,
     z: { re: round3(re * k), im: round3(im * k) },
     calibrated: s.software.referenceMeasured,
+    settled: sinceContact >= SETTLE_SECONDS,
     tempC,
     wiring: wiringOf(ch),
   };
@@ -2041,11 +2046,12 @@ function describeDut(dutId: string): { chemistry: string; nominal: string } {
 }
 
 /**
- * A log row for a valid reading, or null for an invalid one. `previousConnection` is the connection count of the
- * previous logged reading of the same device, so the row knows whether the leads were reconnected in between.
+ * A log row for a valid, settled reading, or null otherwise: a reading taken within a minute of a clip moving still
+ * drifts, so it isn't logged (the runbook: wait a minute before reading). `previousConnection` is the connection count
+ * of the previous logged reading of the same device, so the row knows whether the leads were reconnected in between.
  */
 export function rowFromReading(r: Reading, bench: BenchState, when: { date: string; time: string }, previousConnection: number | null): LogRow | null {
-  if (!r.valid || !r.z || !r.dutId) return null;
+  if (!r.valid || !r.settled || !r.z || !r.dutId) return null;
   const temp = r.tempC === null ? "na" : String(r.tempC);
   return {
     id: `virtual-${r.seq}`,
@@ -2501,10 +2507,13 @@ describe("missions", () => {
     }
   });
 
-  it("counts a lead left off as not laid out cleanly", () => {
-    const s = run(clipped(poweredBench(), "cell-d-duracell"), { type: "layOut" });
-    expect(missionById("identify")!.steps.find((st) => st.id === "identify.layout")!.done({ bench: s, log: [] })).toBe(false);
-    expect(CHANNELS.every((ch) => s.channels[ch])).toBe(true);
+  it("counts leads left clipped, or USB left plugged in, as not laid out cleanly", () => {
+    const layout = missionById("identify")!.steps.find((st) => st.id === "identify.layout")!;
+    const leadsOn = run(clipped(poweredBench(), "cell-d-duracell"), { type: "unplugUsb" }, { type: "layOut" });
+    expect(CHANNELS.every((ch) => leadsOn.channels[ch])).toBe(true);
+    expect(layout.done({ bench: leadsOn, log: [] })).toBe(false);
+    expect(layout.done({ bench: run(poweredBench(), { type: "layOut" }), log: [] })).toBe(false);
+    expect(layout.done({ bench: run(initialBench(1), { type: "layOut" }), log: [] })).toBe(true);
   });
 });
 ```
@@ -2563,6 +2572,7 @@ describe("guided walkthrough of missions 1-4", () => {
       { type: "layOut" },
       { type: "identify", partId: "eval-ad5941batz" },
       { type: "identify", partId: "eval-adicup3029" },
+      { type: "identify", partId: "laptop" },
       ...partsOfKind("shunt").map((p): BenchAction => ({ type: "identify", partId: p.id })),
       ...CHANNELS.map((channel): BenchAction => ({ type: "continuity", target: { kind: "lead", channel } })),
       ...CHANNELS.map((channel): BenchAction => ({ type: "fitAdapter", channel })),
@@ -2590,6 +2600,7 @@ describe("guided walkthrough of missions 1-4", () => {
       ...CHANNELS.map((channel): BenchAction => ({ type: "connect", channel, contact: GOOD[channel] })),
       { type: "measureReference" },
       { type: "readTemperature", cellId: cell },
+      { type: "wait", seconds: 60 },
       { type: "measure", freqHz: 1000 },
     );
     expect(resumePoint(s.bench)!.mission.id).toBe("repeat");
@@ -2599,7 +2610,7 @@ describe("guided walkthrough of missions 1-4", () => {
     for (let i = 0; i < 10; i++) s.do({ type: "measure", freqHz: 1000 });
     for (let i = 0; i < 10; i++) {
       s.reclip();
-      s.do({ type: "readTemperature", cellId: cell }, { type: "measure", freqHz: 1000 });
+      s.do({ type: "measure", freqHz: 1000 });
     }
     s.do({ type: "answer", questionId: "repeat.cause", choice: "contact" });
 
@@ -2684,8 +2695,9 @@ export function identifiedIntactCell(s: BenchState): boolean {
   return record?.inspected === true && record.ocv !== null;
 }
 
+/** Valid, settled 1 kHz readings of the chosen device: the ones the lab log keeps. */
 function validAt1k(s: BenchState) {
-  return s.readings.filter((r) => r.valid && r.dutId === s.dutId && r.freqHz === 1000);
+  return s.readings.filter((r) => r.valid && r.settled && r.dutId === s.dutId && r.freqHz === 1000);
 }
 
 /** The largest group of valid 1 kHz readings taken without the leads moving. */
@@ -2718,6 +2730,7 @@ export const MISSIONS: readonly Mission[] = [
       { id: "identify.log", title: "Create the lab log", done: ({ bench }) => bench.logCreated },
       { id: "identify.layout", title: "Lay everything out with USB, bench power and cells disconnected", done: ({ bench }) => bench.laidOut && !bench.usb.plugged && CHANNELS.every((ch) => !bench.channels[ch]) },
       { id: "identify.boards", title: "Read both board names and revision labels", target: "eval-ad5941batz", done: ({ bench }) => Boolean(bench.identified["eval-ad5941batz"] && bench.identified["eval-adicup3029"]) },
+      { id: "identify.computer", title: "Note the computer and its OS, and whether any firmware is already loaded", target: "laptop", done: ({ bench }) => Boolean(bench.identified["laptop"]) },
       { id: "identify.bags", title: "Note the full part number on every resistor bag", target: "shunt-10m", done: ({ bench }) => partsOfKind("shunt").every((p) => bench.identified[p.id]) },
       { id: "identify.leads", title: "Trace each lead plug to its jaw with continuity, leads disconnected", target: "kelvin-leads", done: ({ bench }) => CHANNELS.every((ch) => bench.continuityMapped[ch]) },
       { id: "identify.adapters", title: "Fit a BNC to banana adapter on each jack: centre pin only", target: "bnc-banana-adapters", done: ({ bench }) => CHANNELS.every((ch) => bench.adapters[ch]) },
@@ -2750,7 +2763,7 @@ export const MISSIONS: readonly Mission[] = [
       { id: "response.power", title: "Power the boards first, with the software connected", target: "eval-adicup3029", done: ({ bench }) => softwareLink(bench).ok },
       { id: "response.clip", title: "Clip four-wire: F+ and S+ on +, S− and F− on −, bare metal", target: "kelvin-leads", done: ({ bench }) => clippedCorrectly(bench) && !bench.faults.some((f) => BLOCKING_FAULTS.has(f.id)) },
       { id: "response.reference", title: "Keep RcalVal at 50.0 and measure the onboard reference", target: "laptop", done: ({ bench }) => bench.software.rcalVal === 50 && bench.software.referenceMeasured },
-      { id: "response.read", title: "Measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated) },
+      { id: "response.read", title: "Wait a minute after clipping, then measure once at 1 kHz", target: "laptop", done: ({ bench }) => validAt1k(bench).some((r) => r.calibrated) },
       {
         id: "response.log",
         title: "Log it with frequency, wiring, calibration state and temperature",
