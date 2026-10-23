@@ -1241,7 +1241,8 @@ describe("Term", () => {
   it("starts closed, with no tooltip in the page", () => {
     renderTerm("Hole");
     expect(screen.getByRole("button", { name: "hole" }).getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByRole("tooltip")).toBeNull();
+    // Absent, not just hidden: the readability gate must never count a definition.
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
   });
 
   it("opens on keyboard focus with the plain definition first and the technical one under it", () => {
@@ -1250,8 +1251,20 @@ describe("Term", () => {
     fireEvent.focusIn(button);
     const tip = screen.getByRole("tooltip");
     expect(button.getAttribute("aria-describedby")).toBe(tip.id);
-    expect(tip.textContent).toContain("The empty spot an electron leaves behind when it jumps up.");
-    expect(tip.textContent).toContain("The empty state an excited electron leaves in the valence band.");
+    const text = tip.textContent ?? "";
+    const plain = text.indexOf("The empty spot an electron leaves behind when it jumps up.");
+    const technical = text.indexOf("The empty state an excited electron leaves in the valence band.");
+    expect(plain).toBeGreaterThan(-1);
+    expect(technical).toBeGreaterThan(plain);
+  });
+
+  it("closes when keyboard focus moves on", () => {
+    renderTerm("Hole");
+    const button = screen.getByRole("button", { name: "hole" });
+    fireEvent.focusIn(button);
+    expect(screen.getByRole("tooltip")).toBeTruthy();
+    fireEvent.focusOut(button);
+    expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
   it("closes on Escape", () => {
@@ -1269,6 +1282,31 @@ describe("Term", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
+  it("stays open while the pointer presses inside the box", () => {
+    renderTerm("Hole");
+    fireEvent.click(screen.getByRole("button", { name: "hole" }));
+    const tip = screen.getByRole("tooltip");
+    fireEvent.pointerDown(tip);
+    // The press is cancelled, so focus stays on the term.
+    expect(fireEvent.mouseDown(tip)).toBe(false);
+    expect(screen.getByRole("tooltip")).toBeTruthy();
+  });
+
+  it("slides the box left to stay on a phone screen", () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ left: 200, top: 100 } as DOMRect);
+    try {
+      renderTerm("Hole");
+      fireEvent.click(screen.getByRole("button", { name: "hole" }));
+      // The box is 288 px wide, so it may start at most at 375 - 8 - 288 = 79 px: 121 px left of the term.
+      expect(screen.getByRole("tooltip").parentElement?.style.left).toBe("-121px");
+    } finally {
+      rect.mockRestore();
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    }
+  });
+
   it("shows the technical definition alone when there is no plain one", () => {
     render(
       <LessonDataProvider data={lessonFixture()}>
@@ -1283,11 +1321,14 @@ describe("Term", () => {
 
   it("renders plain text and reports a term the lesson does not define", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    renderTerm("Electron");
-    expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.getByText("An electron leaves a hole behind.")).toBeTruthy();
-    expect(error).toHaveBeenCalledWith('Term: no key term "Electron" in this lesson\'s data');
-    error.mockRestore();
+    try {
+      renderTerm("Electron");
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.getByText("An electron leaves a hole behind.")).toBeTruthy();
+      expect(error).toHaveBeenCalledWith('Term: no key term "Electron" in this lesson\'s data');
+    } finally {
+      error.mockRestore();
+    }
   });
 });
 ```
@@ -1308,6 +1349,9 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { useLessonData } from "./LessonDataContext";
 
+/** Space kept between the definition box and the edge of the screen, in px. */
+const EDGE = 8;
+
 /**
  * A word from the lesson's key terms. Hover, keyboard focus or a tap shows the plain definition with the technical one
  * under it; Escape, a tap elsewhere, blur or moving the mouse away closes it.
@@ -1315,7 +1359,7 @@ import { useLessonData } from "./LessonDataContext";
 export function Term({ t, children }: { t: string; children: ReactNode }) {
   const term = useLessonData()?.keyTerms.find((k) => k.term === t);
   const [open, setOpen] = useState(false);
-  const [alignEnd, setAlignEnd] = useState(false);
+  const [place, setPlace] = useState({ shift: 0, above: false });
   const box = useRef<HTMLSpanElement>(null);
   const tipId = useId();
 
@@ -1341,10 +1385,15 @@ export function Term({ t, children }: { t: string; children: ReactNode }) {
 
   if (!term) return <>{children}</>;
 
-  // Open towards the side with more room, so the box stays on screen near either edge of the column.
+  // The box is 18rem wide, or 80% of a phone screen. It starts under the term and slides left only as far as it must to
+  // stay on screen, and it opens upwards when the term sits low on the screen.
   const show = () => {
-    const left = box.current?.getBoundingClientRect().left ?? 0;
-    setAlignEnd(left > window.innerWidth / 2);
+    const at = box.current?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const viewport = document.documentElement.clientWidth || window.innerWidth;
+    const width = Math.min(18 * rem, 0.8 * window.innerWidth);
+    const left = Math.max(EDGE, Math.min(at.left, viewport - EDGE - width));
+    setPlace({ shift: left - at.left, above: at.top > 0.6 * window.innerHeight });
     setOpen(true);
   };
 
@@ -1362,17 +1411,22 @@ export function Term({ t, children }: { t: string; children: ReactNode }) {
         {children}
       </button>
       {open && (
+        // The gap to the term is padding, so the mouse can cross it without leaving. A press inside is cancelled, so
+        // focus stays on the term and blur doesn't close the box.
         <span
-          role="tooltip"
-          id={tipId}
-          className={cn(
-            "absolute top-full z-30 mt-2 block w-72 max-w-[80vw] rounded-lg border border-border bg-surface-2 p-3 text-left text-sm font-normal leading-snug shadow-xl",
-            alignEnd ? "right-0" : "left-0",
-          )}
+          className={cn("absolute z-30 block", place.above ? "bottom-full pb-2" : "top-full pt-2")}
+          style={{ left: place.shift }}
+          onMouseDown={(e) => e.preventDefault()}
         >
-          <span className="block font-semibold text-text">{term.term}</span>
-          <span className="mt-1 block text-text">{term.plain ?? term.def}</span>
-          {term.plain && <span className="mt-2 block text-xs text-muted">{term.def}</span>}
+          <span
+            role="tooltip"
+            id={tipId}
+            className="block w-72 max-w-[80vw] rounded-lg border border-border bg-surface-2 p-3 text-left text-sm font-normal leading-snug shadow-xl"
+          >
+            <span className="block font-semibold text-text">{term.term}</span>
+            <span className="mt-1 block text-text">{term.plain || term.def}</span>
+            {term.plain && <span className="mt-2 block text-xs text-muted">{term.def}</span>}
+          </span>
         </span>
       )}
     </span>
@@ -1389,7 +1443,7 @@ export * from "./Term";
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/components/term.test.tsx`
-Expected: PASS, 6 tests.
+Expected: PASS, 9 tests.
 
 - [ ] **Step 5: Commit**
 
