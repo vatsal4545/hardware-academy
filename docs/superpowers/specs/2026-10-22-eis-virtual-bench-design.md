@@ -128,7 +128,7 @@ Pure TypeScript in `src/lib/bench/`, with no React and no three.js, unit-tested 
 - Lead resistance is included. A two-wire measurement adds leads and contacts; a four-wire measurement senses at the
   terminals and leaves a small residual.
 - Sense on the force wire adds the force path between the tap and the terminal.
-- A four-terminal shunt joined into two loops adds connection resistance to the sensed path.
+- A four-terminal shunt joined into two loops can add connection resistance to the sensed path.
 - A BNC shell touching a cell terminal shorts the cell to board ground (simulated, as BRINGUP-RUNBOOK.md says; the guide says to verify real adapter wiring).
 
 ### 6.3 The instrument (CN0510 behaviour as documented)
@@ -139,12 +139,12 @@ A measurement is valid only when all of these hold:
 - a DC bias source is in the force loop, either a cell or the powered test setup.
 
 Otherwise the result is "no valid measurement" with the reason, for example that the current sink needs a bias, which a
-loose resistor cannot provide.
+loose resistor should not be assumed to provide.
 
 - Calibration: the onboard 50 mΩ reference is measured first; `RcalVal` must be `50.0`, in milliohms. `0.05` makes
   results 1000 times too small (it divides them by 1000); the external resistor's value scales them wrongly.
 - Power order: connecting the cell before powering the boards, or powering down with it connected, is a fault.
-- Frequency: reliable above 1 Hz; a 0.1 Hz point takes more than 40 seconds of bench time (fast-forward available).
+- Frequency: reliable above 1 Hz; a 0.1 Hz point can take more than 40 seconds of bench time (fast-forward available).
 - Noise: larger at low frequency, and near a switching supply placed close to the leads.
 - Settling: readings drift for about 60 seconds after clipping (thermal EMF). The instrument still shows them, but the
   lab log and the missions keep only settled readings, as the runbook says to wait a minute before reading.
@@ -169,7 +169,7 @@ Each row is reproducible in Free mode, shows its documented symptom, and is expl
 | BNC shell touching a cell | Short to board ground (simulated): fault and reset |
 | Boards stacked offset by one | Board "killed": fault and reset |
 | Cell connected before the boards are powered, or left connected at power-down | Power-order fault |
-| `RcalVal` set to `0.05`, or to the external resistor's value | Results scaled wrongly (×1000 for `0.05`) |
+| `RcalVal` set to `0.05`, or to the external resistor's value | Results scaled wrongly (`0.05` makes them 1000 times too small) |
 | Continuity mode on a connected cell or a powered board | Warning; no measurement |
 | Clipping straight onto a loose shunt | No valid measurement; explains the missing bias |
 | Four-terminal shunt wired as two-terminal | Extra connection resistance in the reading |
@@ -293,7 +293,7 @@ downloaded model files and no photographs.
   - R plus (R ∥ C) traces a semicircle;
   - two-wire adds leads and contacts and four-wire removes them;
   - sense on the force wire reads 2-3× high on the 10 mΩ standard with the default leads;
-  - no bias gives no valid measurement, and `RcalVal = 0.05` gives ×1000;
+  - no bias gives no valid measurement, and `RcalVal = 0.05` makes results 1000 times too small;
   - every catalogue row triggers;
   - every step predicate is checked both ways, and missions resume correctly;
   - the CSV round trip and import validation work, and the repeatability statistics are right;

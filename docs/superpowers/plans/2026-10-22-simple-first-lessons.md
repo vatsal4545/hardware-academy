@@ -65,7 +65,7 @@ Create:
 | `src/components/lesson/Remember.tsx` | "Remember this" (`#remember`) |
 | `src/components/lesson/lessonParts.ts` | The ordered list of page parts and their ids |
 | `src/components/lesson/LessonHeader.tsx` | Simple-first lesson header |
-| `src/components/lesson/OnThisPage.tsx` | Sticky "On this page" list |
+| `src/components/lesson/OnThisPage.tsx` | "On this page" list of the lesson's parts (the shell makes it sticky) |
 | `src/app/learn/lessonShellProps.ts` | `LessonShellProps`, shared by both shells |
 | `src/app/learn/LessonNav.tsx` | `LessonSidebar` and `LessonPager`, moved out of `LessonShell.tsx` |
 | `src/app/learn/ClassicLessonShell.tsx` | Today's layout, moved out of `LessonShell.tsx` unchanged |
@@ -643,7 +643,7 @@ git commit -m "Add the simple-first data fields and a lesson data context" -m "C
 
 **Files:**
 - Modify: `src/app/globals.css:3-18` (tokens) and append the simple-text and motion rules
-- Test: `tests/theme-contrast.test.ts`
+- Test: `tests/theme-contrast.test.ts` (the final fix wave added `tests/theme-css.test.ts`, which pins `.reveal` inside its guards)
 
 **Interfaces:**
 - Consumes: `tracks` from `src/lib/curriculum.ts`.
@@ -788,6 +788,9 @@ Append to the end of `src/app/globals.css`:
   }
 }
 ```
+
+Later, the final fix wave merged `.simple-text strong` into the `.prose-ha strong` rule and reworded the comment above
+`.simple-text`; `src/app/globals.css` holds the current text.
 
 - [ ] **Step 4: Run the test and watch it pass**
 
@@ -1603,7 +1606,7 @@ describe("ConceptStep", () => {
     expect(container.querySelector("[data-key-number], [data-deeper], [data-check-id]")).toBeNull();
   });
 
-  it("uses the reveal and simple-text classes by name: Tailwind only emits those globals.css rules when a file names them", () => {
+  it("uses the reveal and simple-text classes that globals.css defines", () => {
     const { container } = renderFullStep();
     expect(container.querySelector("article[data-step='2']")!.classList.contains("reveal")).toBe(true);
     expect(container.querySelector("[data-layer='simple']")!.classList.contains("simple-text")).toBe(true);

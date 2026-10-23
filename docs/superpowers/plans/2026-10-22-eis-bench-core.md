@@ -43,7 +43,7 @@ the page and the 3D bench on top of this; Plan 3 builds the Claude assistant.
 ## Decisions this plan makes beyond the spec
 
 1. **The `RcalVal` direction.** The firmware multiplies a ratio by `RcalVal`, so entering `0.05` makes results
-   **1000 times too small**. The spec's "scales results by 1000" didn't give the direction.
+   **1000 times too small**. The spec first said only "scales results by 1000"; it now gives the direction too.
 2. **Two-terminal wiring.** Its warning shows now. Its symptom (extra resistance in a reading) needs the powered test
    setup from stage 2, because a loose shunt gives no valid reading.
 3. **The Mission 1–4 step lists** are fixed here (in `missions.ts`); the spec gives each mission's summary. Fitting
@@ -912,7 +912,7 @@ The instrument and the reducer depend on each other (a `measure` action calls th
 
 **Interfaces:**
 - Consumes: Tasks 1–4.
-- Produces (`instrument.ts`): `RCAL_MILLIOHM = 50`, `ENVELOPE_VOLTS = 5`, `SERIAL_BAUD = 230400`, `SETTLE_SECONDS = 60`, `AMBIENT_C = 23.8`, `BLOCKING_FAULTS` (the five danger faults), `pointSeconds(freqHz)`, `sweepFrequencies(from, to, perDecade)`, `powered(s)`, `softwareLink(s): { ok: true } | { ok: false; reason }`, `measurePoint(s, freqHz, seq)`.
+- Produces (`instrument.ts`): `RCAL_MILLIOHM = 50`, `ENVELOPE_VOLTS = 5`, `SERIAL_BAUD = 230400`, `SETTLE_SECONDS = 60`, `AMBIENT_C = 23.8`, `BLOCKING_FAULTS` (the five danger faults), `pointSeconds(freqHz)`, `sweepFrequencies(from, to, perDecade)`, `powered(s)`, `settled(s)`, `softwareLink(s): { ok: true } | { ok: false; reason }`, `measurePoint(s, freqHz, seq)`.
 - Produces (`state.ts`): `initialBench(seed): BenchState`, `benchReducer(s, action): BenchState`, `dutIsCell(s)`, `anyConnected(s)`, `connectBlocker(s, channel): string | null`.
 - Produces (`tests/bench/helpers.ts`): `run(s, ...actions)`, `GOOD` (correct contacts), `poweredBench(seed)`, `clipped(s, dutId, changes)`, `reclip(s, changes)`, `readyBench(seed, dutId)`, `last(s)`, `spread(xs)`.
 
@@ -1084,7 +1084,7 @@ describe("instrument", () => {
     expect(spread(wrapperReadings)).toBeGreaterThan(5);
   });
 
-  it("adds about 30-40 mΩ two-wire, against the same cell read four-wire", () => {
+  it("adds about 28-40 mΩ two-wire, against the same cell read four-wire", () => {
     const four = last(run(readyBench(), { type: "measure", freqHz: 1000 })).z!.re;
     const two = last(run(clipped(run(poweredBench(), { type: "measureReference" }), "cell-d-duracell", { "S+": { onForceWire: true }, "S-": { onForceWire: true } }), { type: "wait", seconds: 60 }, { type: "measure", freqHz: 1000 }));
     expect(two.wiring).toBe("2-wire");
@@ -1788,7 +1788,7 @@ git commit -m "Simulate the CN0510 instrument and the bench's actions" -m "Co-Au
 - Test: `tests/bench/faults.test.ts`
 
 **Interfaces:**
-- Consumes: `partById`, `SOURCES` (Task 3); `SERIAL_BAUD`, `SETTLE_SECONDS`, `RCAL_MILLIOHM`, `softwareLink`, `BLOCKING_FAULTS` (Task 5); `shuntPreset` (Task 2).
+- Consumes: `partById`, `SOURCES` (Task 3); `SERIAL_BAUD`, `SETTLE_SECONDS`, `RCAL_MILLIOHM`, `settled`, `softwareLink`, `BLOCKING_FAULTS` (Task 5); `shuntPreset` (Task 2).
 - Produces: `Severity`, `Fault { id, severity, message, fix, source }`, `FAULTS: Record<FaultId, Omit<Fault, "id">>`, `activeFaults(s): Fault[]` (recorded events plus live conditions, danger first).
 
 - [ ] **Step 1: Write the failing test**
@@ -2068,6 +2068,15 @@ describe("CSV", () => {
     expect(own.rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8 });
     const row = parseCsv("date,DUT-ID,freq,Z_real (mΩ),Z_imag (Ω),units\n2026-10-20,D-01,1000,0.1124,-0.0008,Ω\n");
     expect(row.rows[0]).toMatchObject({ zReal: 112.4, zImag: -0.8 });
+  });
+
+  it("applies a unit written on one Z header to the other when that one names none", () => {
+    const realNamed = parseCsv("date,DUT-ID,freq,Z_real (Ω),Z_imag\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0];
+    expect(realNamed.zReal).toBeCloseTo(112.4, 9);
+    expect(realNamed.zImag).toBeCloseTo(-0.8, 9);
+    const imagNamed = parseCsv("date,DUT-ID,freq,Z_real,Z_imag (Ω)\n2026-10-20,D-01,1000,0.1124,-0.0008\n").rows[0];
+    expect(imagNamed.zReal).toBeCloseTo(112.4, 9);
+    expect(imagNamed.zImag).toBeCloseTo(-0.8, 9);
   });
 
   it("reads a unit column as units", () => {
@@ -2478,8 +2487,9 @@ export function parseCsv(text: string, idPrefix = "real"): ParseResult {
       result.skipped.push({ line, reason: problem ?? "Unreadable row." });
       continue;
     }
-    const reUnit = v.units || realUnit;
-    const imUnit = v.units || imagUnit;
+    // A unit on one Z header covers the other when that one names none; a row's units value covers both.
+    const reUnit = v.units || realUnit || imagUnit;
+    const imUnit = v.units || imagUnit || realUnit;
     const kRe = toMilliohm(reUnit);
     const kIm = toMilliohm(imUnit);
     if (kRe === null || kIm === null) {
@@ -2662,7 +2672,7 @@ export function checkLog(rows: readonly LogRow[]): LogCheck[] {
 - [ ] **Step 4: Run the tests and the checks**
 
 Run: `npx vitest run tests/bench/log.test.ts && npm run typecheck && npx eslint src/lib/bench tests/bench`
-Expected: PASS, 23 tests; no type or lint errors.
+Expected: PASS, 24 tests; no type or lint errors.
 
 - [ ] **Step 5: Commit**
 
@@ -2680,7 +2690,7 @@ git commit -m "Add the lab log with CSV import and export, statistics and checks
 - Test: `tests/bench/missions.test.ts`, `tests/bench/walkthrough.test.ts`
 
 **Interfaces:**
-- Consumes: `partById`, `partsOfKind` (Task 3); `BLOCKING_FAULTS`, `SETTLE_SECONDS`, `softwareLink` (Task 5); `LogRow` (Task 7); `CHANNELS` (Task 4).
+- Consumes: `partById`, `partsOfKind` (Task 3); `BLOCKING_FAULTS`, `settled`, `softwareLink` (Task 5); `LogRow` (Task 7); `CHANNELS` (Task 4).
 - Produces: `MissionContext { bench, log }`, `MissionQuestion`, `MissionStep { id, title, target?, question?, done(ctx) }`, `Mission { id, number, title, milestone?, learn: string[], doneWhen, steps }`, `MISSIONS`, `missionById(id)`, `clippedCorrectly(s)`, `identifiedIntactCell(s)`, `stationaryCount(s)`, `reconnectionCount(s)`, `newlyDone(ctx): string[]` (dispatch them with `{ type: "markMission", stepIds }`), `missionComplete(bench, mission)`, `resumePoint(bench)`. Learn-card ids Plan 2 must provide: `basics`, `parts`, `signal-chain`, `four-wires`, `impedance`, `res-rep-acc`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -3298,7 +3308,7 @@ const RULES = [
   `The 0–${ENVELOPE_VOLTS} V figure is the project envelope, not a verified input rating; the eval board's limit is in the CN0510 guide. The 9 V battery is not allowed.`,
   "This is a cell-level project: never connect it to EV packs or BESS equipment.",
   `SensorPal is ADI's Windows GUI (compatible firmware, DAPLINK device, power cycle). The old CrossCore instructions don't apply; a Mac needs a separate verified firmware plan. Serial output: ${SERIAL_BAUD} baud, 8N1, no flow control.`,
-  `CN0510 is optimised above 1 Hz; a 0.1 Hz point takes more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping: readings taken sooner drift, so the bench shows them but doesn't log them.`,
+  `CN0510 is optimised above 1 Hz; a 0.1 Hz point can take more than 40 s. Let the setup settle ${SETTLE_SECONDS} s after clipping: readings taken sooner drift, so the bench shows them but doesn't log them.`,
   "Every reading needs a temperature and a timestamp. Resolution, repeatability and accuracy are different things: a small spread doesn't prove accuracy.",
   "This instrument only measures: never charge, discharge or load a cell with it. No puffy, dented or leaking cells on the bench.",
 ];
@@ -3404,7 +3414,7 @@ git commit -m "Build the bench assistant's briefing and snapshot from the bench 
 - [ ] **Step 1: Run the whole suite and the checks**
 
 Run: `npm run lint && npm run typecheck && npm test`
-Expected: lint and type check clean, and every test passes: the existing suite plus 144 new tests in 11 files under
+Expected: lint and type check clean, and every test passes: the existing suite plus 145 new tests in 11 files under
 `tests/bench/`. Output should be clean: no warnings and no console noise.
 
 - [ ] **Step 2: Note the core in the README**
